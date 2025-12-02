@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { fetchGames, rentGame, sendMiss, fetchReviews,increaseViewCount } from './api';
+import { fetchGames, rentGame, sendMiss, fetchReviews, addReview, deleteReview, increaseViewCount } from './api';
 
 function GameDetail() {
   const { id } = useParams();
@@ -15,8 +15,15 @@ function GameDetail() {
   // 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [reserveForm, setReserveForm] = useState({ name: "", phone: "", count: "", agreed: false });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReviewSubmitting, setIsReviewSubmitting] = useState(false); // 리뷰 버튼용
 
-  // (기존 useEffect 로직 유지...)
+  const [toast, setToast] = useState(null);
+  
+  const showToast = (message) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
@@ -70,10 +77,19 @@ function GameDetail() {
 
     // ⭐ 멘트 수정: '찜' 대신 '예약' 사용
     if (window.confirm("게임을 예약하시겠습니까? 30분 내 미수령 시 자동 취소됩니다.")) {
-      await rentGame(game.id, renterInfo, count);
-      alert("✅ 예약 성공! 30분 내에 동아리방으로 와주세요.");
-      setGame({ ...game, status: "찜" });
-      setIsModalOpen(false);
+      setIsSubmitting(true);
+      
+      try {
+        await rentGame(game.id, renterInfo, count);
+        showToast("✅ 예약 완료! 30분 내에 수령해주세요.");
+        setGame({ ...game, status: "찜" });
+        setIsModalOpen(false);
+      } catch (e) {
+        alert("오류가 발생했습니다. 다시 시도해주세요.");
+      } finally {
+        // ⭐ [수정] 전송 끝 (성공하든 실패하든)
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -81,11 +97,53 @@ function GameDetail() {
   const handleMiss = async () => {
     if (window.confirm("이 게임을 하고 싶으셨나요? 운영진에게 수요를 알릴까요?")) {
       await sendMiss(game.id);
-      alert("전달되었습니다! 다음 구매 때 참고할게요.");
+      showToast("📩 전달되었습니다! 다음 구매 때 참고할게요.");
     }
   };
-  const handleSubmitReview = async () => { /* 기존 코드 */ };
-  const handleDeleteReview = async (reviewId) => { /* 기존 코드 */ };
+// ⭐ 리뷰 작성 핸들러
+  const handleSubmitReview = async () => {
+    if (!newReview.user_name || !newReview.password || !newReview.comment) return alert("모두 입력해주세요.");
+    
+    try {
+      await addReview({ ...newReview, game_id: game.id });
+      showToast("✨ 리뷰가 등록되었습니다!");
+      setNewReview({ user_name: "", password: "", rating: "5", comment: "" });
+      
+      // 목록 새로고침
+      const reviewsData = await fetchReviews();
+      if (Array.isArray(reviewsData)) {
+        const filteredReviews = reviewsData.filter(r => String(r.game_id) === String(id));
+        setReviews(filteredReviews.reverse());
+      }
+    } catch (e) {
+      alert("리뷰 등록 중 오류가 발생했습니다.");
+    } finally {
+      setIsReviewSubmitting(false); // 로딩 끝
+    }
+  };
+
+  // ⭐ 리뷰 삭제 핸들러
+  const handleDeleteReview = async (reviewId) => {
+    const pw = prompt("리뷰 작성 시 입력한 비밀번호를 입력하세요.");
+    if (!pw) return;
+    
+    try {
+      const res = await deleteReview(reviewId, pw);
+      if (res.status === "success") {
+        showToast("🗑️ 리뷰가 삭제되었습니다.");
+        const reviewsData = await fetchReviews();
+        if (Array.isArray(reviewsData)) {
+          const filteredReviews = reviewsData.filter(r => String(r.game_id) === String(id));
+          setReviews(filteredReviews.reverse());
+        }
+      } else {
+        alert("실패: " + (res.message || "비밀번호가 틀렸거나 오류가 발생했습니다."));
+      }
+    } catch (e) {
+      alert("삭제 중 통신 오류가 발생했습니다.");
+    }
+  };
+
 
   if (loading && !game) return <div style={{padding:"20px", textAlign:"center"}}>로딩 중...</div>;
   if (!game) return <div style={{padding:"20px", textAlign:"center"}}>게임을 찾을 수 없습니다.</div>;
@@ -142,9 +200,25 @@ function GameDetail() {
             </div>
             <div style={{ display: "flex", gap: "10px" }}>
               <input placeholder="솔직한 후기를 남겨주세요" value={newReview.comment} onChange={e=>setNewReview({...newReview, comment: e.target.value})} style={{flex: 1, padding:"8px", border:"1px solid #ddd", borderRadius:"4px"}} />
-              <button onClick={handleSubmitReview} style={{background:"#333", color:"white", border:"none", padding:"8px 15px", borderRadius:"4px", cursor:"pointer"}}>등록</button>
-            </div>
-         </div>
+              
+              <button 
+              onClick={handleSubmitReview} 
+              disabled={isReviewSubmitting}
+              style={{
+                background: isReviewSubmitting ? "#ccc" : "#333", 
+                color: "white", 
+                border: "none", 
+                padding: "8px 15px", 
+                borderRadius: "4px", 
+                cursor: isReviewSubmitting ? "wait" : "pointer",
+                minWidth: "60px"
+              }}
+            >
+              {isReviewSubmitting ? "..." : "등록"}
+            </button>
+          </div>
+        </div>
+
          {reviews.length === 0 ? <p style={{color:"#999", textAlign:"center"}}>아직 리뷰가 없습니다.</p> : (
             <div>
               {reviews.map(r => (
@@ -227,18 +301,23 @@ function GameDetail() {
 
             <div style={{ display: "flex", gap: "10px" }}>
               <button onClick={() => setIsModalOpen(false)} style={{ flex: 1, padding: "15px", background: "#f1f2f6", color: "#333", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", fontSize: "1em" }}>취소</button>
+              {/* ⭐ [NEW] 버튼 상태 변경 (로딩 중일 때 회색 + 텍스트 변경) */}
               <button 
                 onClick={submitReservation} 
-                disabled={!reserveForm.agreed} 
-                style={{ flex: 1, padding: "15px", background: reserveForm.agreed ? "#3498db" : "#95a5a6", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", fontSize: "1em", boxShadow: reserveForm.agreed ? "0 4px 6px rgba(52, 152, 219, 0.3)" : "none" }}
+                disabled={!reserveForm.agreed || isSubmitting} 
+                style={{ flex: 1, padding: "15px", background: isSubmitting ? "#ccc" : (reserveForm.agreed ? "#3498db" : "#95a5a6"), color: "white", border: "none", borderRadius: "8px", cursor: isSubmitting ? "wait" : "pointer", fontWeight: "bold" }}
               >
-                예약 완료
+                {isSubmitting ? "⏳ 예약 진행 중..." : "예약 완료"}
               </button>
             </div>
           </div>
         </div>
+        )}
+        {toast && (
+        <div className="toast-notification">
+          {toast}
+        </div>
       )}
-
     </div>
   );
 }

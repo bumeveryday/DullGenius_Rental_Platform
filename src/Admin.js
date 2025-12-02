@@ -101,8 +101,21 @@ function Admin() {
   // 설정 저장
   const handleConfigSave = async () => {
     if (!window.confirm("메인 페이지 설정을 저장하시겠습니까?")) return;
-    await saveConfig(config);
-    alert("저장되었습니다! 메인 페이지를 새로고침하면 적용됩니다.");
+    
+    try {
+      const response = await saveConfig(config);
+      
+      // ⭐ 서버 응답 확인 (성공일 때만 알림)
+      if (response && response.status === "success") {
+        alert("✅ 저장되었습니다! 메인 페이지를 새로고침하면 적용됩니다.");
+      } else {
+        // 실패 원인 알려주기
+        alert(`❌ 저장 실패: ${response.message || "알 수 없는 오류"}\n\n(팁: Apps Script '새 버전 배포'를 했는지 확인하세요!)`);
+      }
+    } catch (e) {
+      alert("통신 오류가 발생했습니다.");
+      console.error(e);
+    }
   };
 
   return (
