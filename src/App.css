@@ -1,38 +1,210 @@
-.App {
-  text-align: center;
+/* =========================================
+   1. 기본 설정 (Base)
+   ========================================= */
+* {
+  box-sizing: border-box;
 }
 
-.App-logo {
-  height: 40vmin;
+body {
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  background-color: #ffffff;
+  color: #333;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 링크 기본 스타일 제거 */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* =========================================
+   2. 애니메이션 정의 (Animations)
+   ========================================= */
+/* 부드럽게 위에서 아래로 등장 + 투명도 조절 */
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================
+   3. 레이아웃 & 대시보드 (Layout)
+   ========================================= */
+.trending-wrapper {
+  /* 기본 상태 (활성) */
+  max-height: 2000px; /* 넉넉하게 */
+  opacity: 1;
+  margin-bottom: 50px;
+  transform: translateY(0);
+  visibility: visible;
+  overflow: hidden; /* 접힐 때 내용 자르기 */
+
+  /* ⭐ [핵심 1] 처음 로딩될 때 '스르륵' 내려오게 함 */
+  animation: slideDownFade 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+
+  /* ⭐ [핵심 2] 검색해서 숨겨질 때 '부드럽게' 접히게 함 */
+  transition: 
+    max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.4s ease-in-out,
+    margin-bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.4s ease-in-out,
+    visibility 0.6s; /* visibility도 transition이 먹힙니다 (끝날 때 적용됨) */
+}
+
+/* 3. 숨김 상태 (클래스가 붙으면 적용됨) */
+.trending-wrapper.hidden {
+  max-height: 0;        /* 높이 0으로 압축 */
+  opacity: 0;           /* 투명하게 */
+  margin-bottom: 0;     /* 여백 제거 */
+  transform: translateY(-20px); /* 살짝 위로 올라가며 사라짐 */
+  visibility: hidden;   /* 클릭 방지 */
   pointer-events: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* 내부 그리드 레이아웃 (좌우 배치) */
+.dashboard-container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  flex-wrap: wrap; /* 모바일에서 줄바꿈 허용 */
+  gap: 40px;       /* 좌우 간격 */
+  align-items: flex-start;
+}
+
+/* 왼쪽 (테마 추천) & 오른쪽 (급상승) 비율 1:1 */
+.dashboard-left, .dashboard-right {
+  flex: 1;
+  min-width: 300px; /* 너무 좁아지면 줄바꿈 유도 */
+  min-width: 0;     /* Flex 자식의 가로 스크롤 버그 방지 (중요!) */
+}
+
+/* =========================================
+   4. 추천 테마 버튼 (Left Section)
+   ========================================= */
+.theme-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2열 */
+  gap: 15px;
+}
+
+.theme-btn {
+  padding: 20px;
+  border: none;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  font-size: 1rem;
+  font-weight: bold;
+  color: #555;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-align: left;
+  line-height: 1.4;
+  width: 100%;
+}
+
+.theme-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.theme-btn:active {
+  transform: scale(0.98);
+}
+
+/* =========================================
+   5. 인기 급상승 카드 (Right Section)
+   ========================================= */
+/* 가로 스크롤 영역 */
+.dashboard-right .scroll-container {
+  display: flex;
+  gap: 15px;
+  overflow-x: auto;
+  padding: 10px 5px 25px 5px; /* 그림자 잘림 방지 */
+  scroll-behavior: smooth;
+}
+
+/* 급상승 카드 디자인 */
+.trend-card {
+  position: relative; /* 뱃지 기준점 */
+  width: 150px;
+  min-width: 150px;   /* 너비 고정 */
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #eee;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  background: white;
+  transition: transform 0.2s;
+}
+
+.trend-card:hover {
+  transform: translateY(-5px);
+}
+
+/* 순위 뱃지 */
+.trend-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  background: linear-gradient(135deg, #ff6b6b, #ee5253);
   color: white;
+  padding: 5px 10px;
+  border-bottom-right-radius: 10px;
+  font-weight: bold;
+  font-size: 0.85rem;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
 }
 
-.App-link {
-  color: #61dafb;
+/* =========================================
+   6. 게임 리스트 (Main Grid)
+   ========================================= */
+.game-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 25px;
+  padding-bottom: 50px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+/* 말줄임표 처리 (...) */
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* =========================================
+   7. 모바일 반응형 (Mobile Media Query)
+   ========================================= */
+@media (max-width: 768px) {
+  /* 대시보드 레이아웃 변경 */
+  .dashboard-container {
+    flex-direction: column; /* 위아래로 쌓기 */
+    gap: 40px;
   }
-  to {
-    transform: rotate(360deg);
+  
+  /* 섹션 너비 꽉 채우기 */
+  .dashboard-left, .dashboard-right {
+    width: 100%;
+    flex: none;
+  }
+
+  /* 추천 버튼: 모바일에서는 글자 가운데 정렬 */
+  .theme-btn {
+    text-align: center;
+    padding: 15px;
+  }
+
+  /* 게임 리스트 카드 크기 조정 */
+  .game-list {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
   }
 }
