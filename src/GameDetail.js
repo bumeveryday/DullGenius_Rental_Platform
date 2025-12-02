@@ -185,34 +185,50 @@ function GameDetail() {
         </div>
       </div>
 
-      {/* 리뷰 섹션 (생략, 기존과 동일) */}
-      <div style={{ marginTop: "40px" }}>
-         {/* ... 기존 리뷰 코드 ... */}
-         <h3>📝 부원 리뷰 ({reviews.length})</h3>
-         {/* (위쪽 리뷰 렌더링 코드 그대로 사용하세요) */}
-         <div style={{ background: "#f8f9fa", padding: "15px", borderRadius: "10px", marginBottom: "20px" }}>
-            <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-              <input placeholder="닉네임" value={newReview.user_name} onChange={e=>setNewReview({...newReview, user_name: e.target.value})} style={{flex: 1, padding:"8px", border:"1px solid #ddd", borderRadius:"4px"}} />
-              <input type="password" placeholder="비밀번호" value={newReview.password} onChange={e=>setNewReview({...newReview, password: e.target.value})} style={{flex: 1, padding:"8px", border:"1px solid #ddd", borderRadius:"4px"}} />
-              <select value={newReview.rating} onChange={e=>setNewReview({...newReview, rating: e.target.value})} style={{padding:"8px", border:"1px solid #ddd", borderRadius:"4px"}}>
-                <option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option><option value="2">⭐⭐</option><option value="1">⭐</option>
-              </select>
-            </div>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <input placeholder="솔직한 후기를 남겨주세요" value={newReview.comment} onChange={e=>setNewReview({...newReview, comment: e.target.value})} style={{flex: 1, padding:"8px", border:"1px solid #ddd", borderRadius:"4px"}} />
-              
-              <button 
+      {/* 리뷰 섹션 */}
+      {/* 입력 폼 (디자인 개선됨) */}
+        <div className="review-form-box">
+          
+          {/* 상단: 닉네임, 비번, 별점 */}
+          <div className="review-row top-row">
+            <input 
+              className="review-input"
+              placeholder="닉네임" 
+              value={newReview.user_name} 
+              onChange={e=>setNewReview({...newReview, user_name: e.target.value})} 
+            />
+            <input 
+              type="password" 
+              className="review-input"
+              placeholder="비밀번호 (삭제용)" 
+              value={newReview.password} 
+              onChange={e=>setNewReview({...newReview, password: e.target.value})} 
+            />
+            <select 
+              className="review-input" 
+              value={newReview.rating} 
+              onChange={e=>setNewReview({...newReview, rating: e.target.value})}
+            >
+              <option value="5">⭐⭐⭐⭐⭐ (5점)</option>
+              <option value="4">⭐⭐⭐⭐ (4점)</option>
+              <option value="3">⭐⭐⭐ (3점)</option>
+              <option value="2">⭐⭐ (2점)</option>
+              <option value="1">⭐ (1점)</option>
+            </select>
+          </div>
+
+          {/* 하단: 코멘트, 등록버튼 */}
+          <div className="review-row bottom-row">
+            <input 
+              className="review-input"
+              placeholder="솔직한 후기를 남겨주세요 (최대 50자)" 
+              value={newReview.comment} 
+              onChange={e=>setNewReview({...newReview, comment: e.target.value})} 
+            />
+            <button 
               onClick={handleSubmitReview} 
-              disabled={isReviewSubmitting}
-              style={{
-                background: isReviewSubmitting ? "#ccc" : "#333", 
-                color: "white", 
-                border: "none", 
-                padding: "8px 15px", 
-                borderRadius: "4px", 
-                cursor: isReviewSubmitting ? "wait" : "pointer",
-                minWidth: "60px"
-              }}
+              disabled={isReviewSubmitting} 
+              className="review-submit-btn"
             >
               {isReviewSubmitting ? "..." : "등록"}
             </button>
@@ -233,9 +249,9 @@ function GameDetail() {
               ))}
             </div>
          )}
-      </div>
+      
 
-      {/* ⭐ [모달창] 직관적인 안내 문구 추가 ⭐ */}
+        {/* ⭐ [모달창] 직관적인 안내 문구 추가 ⭐ */}
       {isModalOpen && (
         <div style={{
           position: "fixed", top: 0, left: 0, width: "100%", height: "100%",

@@ -306,3 +306,72 @@ a {
   from { opacity: 1; transform: translate(-50%, 0); }
   to { opacity: 0; transform: translate(-50%, 20px); }
 }
+
+/* --- 리뷰 작성 폼 스타일 --- */
+.review-form-box {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  border: 1px solid #eee;
+}
+
+.review-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* 입력창 공통 스타일 */
+.review-input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border 0.2s;
+}
+
+.review-input:focus {
+  border-color: #3498db;
+}
+
+/* 등록 버튼 */
+.review-submit-btn {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+  min-width: 80px;
+}
+
+.review-submit-btn:disabled {
+  background: #ccc;
+  cursor: wait;
+}
+
+/* ⭐ [모바일 최적화] 화면이 좁을 때 세로로 쌓기 */
+@media (max-width: 768px) {
+  .review-row.top-row {
+    flex-direction: column; /* 닉네임/비번/별점을 세로로 */
+    gap: 12px;
+  }
+
+  /* 모바일에서는 버튼을 꽉 채우기 */
+  .review-submit-btn {
+    width: 100%; 
+    padding: 15px;
+    margin-top: 5px;
+  }
+  
+  /* 댓글 입력창과 버튼도 분리 (선택사항: 여기선 냅둠) */
+  .review-row.bottom-row {
+    flex-direction: column;
+  }
+}
