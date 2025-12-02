@@ -3,7 +3,7 @@
 // 설명: 메인 화면(Home) 및 라우터 설정, 데이터 로딩, 필터링 로직 포함
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { fetchGames, fetchTrending, fetchConfig } from './api'; // API 함수들 임포트
 import Admin from './Admin';         // 관리자 페이지 컴포넌트
 import GameDetail from './GameDetail'; // 상세 페이지 컴포넌트
@@ -384,6 +384,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/game/:id" element={<GameDetail />} />
         <Route path="/admin-secret" element={<Admin />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
