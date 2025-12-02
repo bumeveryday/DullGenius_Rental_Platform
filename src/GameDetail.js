@@ -18,7 +18,7 @@ function GameDetail() {
 
   // (기존 useEffect 로직 유지...)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (id) increaseViewCount(id);
     const loadData = async () => {
