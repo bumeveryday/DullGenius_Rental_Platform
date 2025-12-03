@@ -4,11 +4,10 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { searchNaver, addGame, fetchGames, adminUpdateGame, updateGameTags, fetchConfig, saveConfig, deleteGame } from './api';
+import { searchNaver, addGame, fetchGames, adminUpdateGame, updateGameTags, fetchConfig, saveConfig, deleteGame, approveDibsByRenter, returnGamesByRenter, verifyAdminPassword } from './api';
 
 function Admin() {
-  // ⭐ [NEW] 관리자 암호 (원하는 비밀번호로 바꾸세요!)
-  const ADMIN_PASSWORD = "9503"; 
+
 
   // ⭐ [NEW] 인증 상태 (false: 잠금, true: 해제)
   // 세션 스토리지(SessionStorage)를 써서 새로고침해도 로그인 유지 (브라우저 끄면 삭제됨)
@@ -16,6 +15,29 @@ function Admin() {
     sessionStorage.getItem("admin_auth") === "true"
   );
   const [inputPassword, setInputPassword] = useState("");
+
+  //로그인 핸들러 (서버 통신)
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    
+    if (!inputPassword) return alert("암호를 입력하세요.");
+
+    try {
+      // 서버에 비밀번호 확인 요청
+      const res = await verifyAdminPassword(inputPassword);
+      
+      if (res.status === "success") {
+        setIsAuthenticated(true);
+        sessionStorage.setItem("admin_auth", "true");
+        alert("로그인 되었습니다."); // (선택사항)
+      } else {
+        alert("암호가 틀렸습니다.");
+        setInputPassword("");
+      }
+    } catch (error) {
+      alert("로그인 서버 오류: " + error);
+    }
+  };
 
   // --- 기존 상태 관리 ---
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -39,18 +61,6 @@ function Admin() {
   useEffect(() => {
     if (isAuthenticated) loadData();
   }, [isAuthenticated]);
-
-  // ⭐ [NEW] 로그인 핸들러
-  const handleLogin = (e) => {
-    e.preventDefault(); // 엔터 키 등으로 인한 새로고침 방지
-    if (inputPassword === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem("admin_auth", "true"); // 로그인 상태 저장
-    } else {
-      alert("암호가 틀렸습니다.");
-      setInputPassword("");
-    }
-  };
 
   // ⭐ [NEW] 로그아웃 핸들러
   const handleLogout = () => {
@@ -100,6 +110,70 @@ function Admin() {
     loadData();
   };
 
+  // ⭐ [스마트 반납] 한 사람의 대여가 여러 개면 물어보기
+  const handleReturn = async (game) => {
+    const renterName = game.renter;
+    
+    // 이 사람이 빌려간('대여중') 게임이 몇 개인지 계산
+    const sameUserRentals = games.filter(g => g.status === "대여중" && g.renter === renterName);
+    const count = sameUserRentals.length;
+
+    // 1. 1개뿐이면 -> 그냥 단건 반납
+    if (count <= 1) {
+      if (window.confirm(`[${game.name}] 반납 처리하시겠습니까?`)) {
+        await adminUpdateGame(game.id, "대여가능");
+        alert("반납되었습니다.");
+        loadData();
+      }
+      return;
+    }
+
+    // 2. 여러 개면 -> 일괄 반납할지 물어봄
+    if (window.confirm(`💡 [${renterName}] 님이 현재 빌려간 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '반납' 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 반납합니다)`)) {
+      // 확인: 일괄 처리
+      await returnGamesByRenter(renterName);
+      alert(`${count}건이 일괄 반납되었습니다.`);
+      loadData();
+    } else {
+      // 취소: 단건 처리
+      await adminUpdateGame(game.id, "대여가능");
+      alert("반납되었습니다.");
+      loadData();
+    }
+  };
+
+  // ⭐ [스마트 수령] 한 사람의 찜이 여러 개면 물어보기
+  const handleReceive = async (game) => {
+    const renterName = game.renter;
+    
+    // 이 사람 이름으로 된 '찜'이 몇 개인지 계산
+    const sameUserDibs = games.filter(g => g.status === "찜" && g.renter === renterName);
+    const count = sameUserDibs.length;
+
+    // 1. 찜이 1개뿐이면 -> 그냥 단건 처리
+    if (count <= 1) {
+      if (window.confirm(`[${game.name}] 현장 수령 확인하시겠습니까?`)) {
+        await adminUpdateGame(game.id, "대여중");
+        alert("처리되었습니다.");
+        loadData();
+      }
+      return;
+    }
+
+    // 2. 찜이 여러 개면 -> 일괄 처리할지 물어봄
+    if (window.confirm(`💡 [${renterName}] 님이 예약한 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '대여중'으로 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 처리합니다)`)) {
+      // 확인: 일괄 처리
+      await approveDibsByRenter(renterName);
+      alert(`${count}건이 일괄 수령 처리되었습니다.`);
+      loadData();
+    } else {
+      // 취소: 단건 처리 (원래 하려던 것만)
+      await adminUpdateGame(game.id, "대여중");
+      alert("처리되었습니다.");
+      loadData();
+    }
+  };
+
   const handleTagChange = async (game, currentTags) => {
     const newTags = prompt(`[${game.name}] 태그 수정`, currentTags || "");
     if (newTags === null) return;
@@ -122,7 +196,7 @@ function Admin() {
     alert("저장되었습니다.");
   };
 
-// 1. 설정값 변경 (입력창)
+  // 1. 설정값 변경 (입력창)
   const handleConfigChange = (idx, field, value) => {
     const newConfig = [...config];
     newConfig[idx][field] = value;
@@ -205,12 +279,12 @@ function Admin() {
                     <button onClick={() => handleDelete(game)} style={{...actionBtnStyle("#fff"), color:"#e74c3c", border:"1px solid #e74c3c", width:"30px", padding:0}} title="삭제">🗑️</button>
                     {game.status === "찜" ? (
                       <>
-                        <button onClick={() => handleStatusChange(game.id, "대여중", game.name)} style={actionBtnStyle("#3498db")}>🤝 수령</button>
+                        <button onClick={() => handleReceive(game)} style={actionBtnStyle("#3498db")}>🤝 수령</button>
                         <button onClick={() => handleStatusChange(game.id, "대여가능", game.name)} style={actionBtnStyle("#e74c3c")}>🚫 취소</button>
                       </>
                     ) : game.status !== "대여가능" ? (
                       <>
-                        <button onClick={() => handleStatusChange(game.id, "대여가능", game.name)} style={actionBtnStyle("#2ecc71")}>↩️ 반납</button>
+                        <button onClick={() => handleReturn(game)} style={actionBtnStyle("#2ecc71")}>↩️ 반납</button>
                         <button onClick={() => handleStatusChange(game.id, "분실", game.name)} style={actionBtnStyle("#95a5a6")}>⚠️ 분실</button>
                       </>
                     ) : null}

@@ -170,3 +170,39 @@ export const deleteGame = async (gameId) => {
     body: JSON.stringify(payload),
   }).then(res => res.json());
 };
+
+// 17. [관리자] 특정 대여자 일괄 수령
+export const approveDibsByRenter = async (renterName) => {
+  const payload = {
+    action: "approveDibsByRenter",
+    renter_name: renterName
+  };
+  return fetch(API_BASE_URL, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }).then(res => res.json());
+};
+
+// 19. [관리자] 특정 대여자 일괄 반납
+export const returnGamesByRenter = async (renterName) => {
+  const payload = {
+    action: "returnGamesByRenter",
+    renter_name: renterName
+  };
+  return fetch(API_BASE_URL, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }).then(res => res.json());
+};
+
+// 20. [관리자] 로그인 인증 (서버에서 확인)
+export const verifyAdminPassword = async (password) => {
+  const payload = {
+    action: "login",
+    password: password
+  };
+  return fetch(API_BASE_URL, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }).then(res => res.json());
+};
