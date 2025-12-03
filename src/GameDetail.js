@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { fetchGames, rentGame, sendMiss, fetchReviews, addReview, deleteReview, increaseViewCount } from './api';
+import { TEXTS } from './constants';
 
 function GameDetail() {
   const { id } = useParams();
@@ -263,14 +264,10 @@ function GameDetail() {
             <h3 style={{ marginTop: 0, textAlign: "center", fontSize: "1.4em" }}>📅 대여 예약하기</h3>
             
             {/* 2. 프로세스 안내 (핵심!) */}
-            <div style={{ background: "#f0f9ff", padding: "15px", borderRadius: "10px", marginBottom: "20px", fontSize: "0.9em", color: "#333", lineHeight: "1.5" }}>
-              <strong>💡 이용 방법 안내</strong>
-              <ul style={{ margin: "5px 0 0 20px", padding: 0 }}>
-                <li>예약 후 <strong>30분 이내</strong>에 방문해주세요.</li>
-                <li>시간 내 미수령 시 <strong>자동 취소</strong>됩니다.</li>
-                <li>동아리방에서 운영진 확인 후 수령하세요.</li>
-              </ul>
-            </div>
+            {/* 모달 안내 문구 교체 */}
+          <div style={{ background: "#f0f9ff", padding: "15px", borderRadius: "10px", marginBottom: "20px", fontSize: "0.9em", color: "#333", lineHeight: "1.5", whiteSpace: "pre-wrap" }}>
+             {TEXTS.MODAL_GUIDE}
+          </div>
 
             <div style={{ marginBottom: "15px" }}>
               <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>닉네임 (또는 이름)</label>
@@ -311,13 +308,13 @@ function GameDetail() {
                   onChange={e => setReserveForm({...reserveForm, agreed: e.target.checked})}
                   style={{ marginTop: "3px", transform: "scale(1.2)" }}
                 />
-                <span><strong>(필수)</strong> 대여 중 발생한 파손 및 분실 시, 동일 제품 변상 또는 그에 상응하는 금액을 지불할 것을 동의합니다.</span>
-              </label>
+                <span>{TEXTS.AGREEMENT_LABEL}</span>
+                </label>
             </div>
 
             <div style={{ display: "flex", gap: "10px" }}>
               <button onClick={() => setIsModalOpen(false)} style={{ flex: 1, padding: "15px", background: "#f1f2f6", color: "#333", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", fontSize: "1em" }}>취소</button>
-              {/* ⭐ [NEW] 버튼 상태 변경 (로딩 중일 때 회색 + 텍스트 변경) */}
+              {/* 버튼 상태 변경 (로딩 중일 때 회색 + 텍스트 변경) */}
               <button 
                 onClick={submitReservation} 
                 disabled={!reserveForm.agreed || isSubmitting} 

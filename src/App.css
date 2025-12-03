@@ -377,3 +377,56 @@ a {
     flex-direction: column;
   }
 }
+
+/* =========================================
+   8. 이용 안내 배너 (Simple Text Version)
+   ========================================= */
+.guide-wrapper {
+  margin-bottom: 30px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  background: white;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+}
+
+/* 토글 버튼 (헤더) */
+.guide-toggle-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 25px;
+  background: #f8f9fa;
+  border: none;
+  cursor: pointer;
+  font-size: 1.05rem;
+  color: #444;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.guide-toggle-btn:hover {
+  background: #eff1f3;
+}
+
+/* ⭐ 텍스트 뷰어 영역 (핵심) */
+.guide-textarea-view {
+  padding: 25px;
+  background: #ffffff;
+  color: #555;
+  font-size: 1rem;
+  line-height: 1.8;       /* 줄 간격을 넓게 해서 읽기 편하게 */
+  white-space: pre-wrap;  /* ⭐ 핵심: 코드상의 줄바꿈과 띄어쓰기를 그대로 표현 */
+  word-break: break-all;  /* 긴 단어 줄바꿈 */
+  border-top: 1px solid #eee;
+  font-family: inherit;   /* 폰트 상속 */
+}
+
+/* 모바일에서는 좌우 여백을 조금 줄임 */
+@media (max-width: 768px) {
+  .guide-textarea-view {
+    padding: 20px;
+    font-size: 0.95rem;
+  }
+}

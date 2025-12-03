@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { fetchGames, fetchTrending, fetchConfig } from './api'; // API 함수들 임포트
 import Admin from './Admin';         // 관리자 페이지 컴포넌트
 import GameDetail from './GameDetail'; // 상세 페이지 컴포넌트
+import { TEXTS } from './constants'; // 텍스트 수집 
 import './App.css';
 import logo from './logo.png';             // 스타일시트
 
@@ -17,6 +18,7 @@ function Home() {
   
   // 데이터 관련 상태
   const [games, setGames] = useState([]);       // 전체 게임 목록 (200개)
+  const [showGuide, setShowGuide] = useState(false); // 안내 문구 토글 상태 
   const [trending, setTrending] = useState([]); // 인기 급상승 게임 (Top 5)
   const [config, setConfig] = useState([]);     // 홈페이지 설정값 (추천 버튼 등)
   const [pageLoading, setPageLoading] = useState(true);
@@ -31,6 +33,7 @@ function Home() {
   const filterSectionRef = useRef(null);
   // 외부 링크 (부원 가입 구글 폼)
   const JOIN_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdoBGEPRM5TIef66Nen7Sc8pWKkAqCMi90ftM1x9QZsX_5a6g/viewform?usp=header";
+
 
   // ==========================================
   // 2. 이펙트 & 데이터 로딩 (Effects)
@@ -257,6 +260,29 @@ return (
         
         <div><Link to="/admin-secret" style={{ fontSize: "0.8em", color: "#ccc", textDecoration: "none" }}>Admin</Link></div>
       </header>
+
+
+      {/*심플한 텍스트 안내 배너 */}
+      <div className="guide-wrapper">
+        <button 
+          className="guide-toggle-btn" 
+          onClick={() => setShowGuide(!showGuide)}
+        >
+          <span>💡 <strong>이용 안내 & 공지사항</strong></span>
+          <span>{showGuide ? "▲ 접기" : "▼ 펼치기"}</span>
+        </button>
+
+        {/* white-space: "pre-wrap" 스타일 덕분에 
+            위의 guideText 변수에 적은 줄바꿈이 그대로 보입니다.
+        */}
+        {showGuide && (
+          <div className="guide-textarea-view">
+            {TEXTS.MAIN_GUIDE} {/* --------- constants.js로 대체 */}
+          </div>
+        )}
+      </div>
+
+
 
       {/* --- [대시보드: 추천 테마 + 인기 급상승] --- */}
       <div className="trending-wrapper dashboard-container">
