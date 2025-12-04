@@ -29,17 +29,87 @@ function DashboardTab({ games, loading, onReload }) {
     }
   };
 
-  // ... (handleStatusChange, handleReturn, handleReceive, handleDelete 등 기존 로직 그대로 유지) ...
-  // (지면 관계상 기존 로직 생략, 위에서 작성한 것과 동일하게 유지하세요)
-  const handleStatusChange = async (gameId, newStatus, gameName) => { /*...*/ };
-  const handleReturn = async (game) => { /*...*/ };
-  const handleReceive = async (game) => { /*...*/ };
-  const handleDelete = async (game) => {
-      if (!window.confirm(`[${game.name}] 정말 삭제합니까?`)) return;
-      await deleteGame(game.id);
+  
+ // 3. 단순 상태 변경 (분실, 대여취소 등)
+  const handleStatusChange = async (gameId, newStatus, gameName) => {
+    let msg = `[${gameName}] 상태를 '${newStatus}'(으)로 변경하시겠습니까?`;
+    if (newStatus === "대여중") msg = "현장 수령 확인하시겠습니까?";
+    if (newStatus === "대여가능") msg = "반납 처리하시겠습니까?";
+
+    if (!window.confirm(msg)) return;
+
+    try {
+      await adminUpdateGame(gameId, newStatus);
+      alert("처리되었습니다.");
       onReload();
+    } catch (e) {
+      alert("오류 발생: " + e);
+    }
   };
 
+  // 4. 스마트 반납 (일괄 처리 로직)
+  const handleReturn = async (game) => {
+    const renterName = game.renter;
+    const sameUserRentals = games.filter(g => g.status === "대여중" && g.renter === renterName);
+    const count = sameUserRentals.length;
+
+    if (count <= 1) {
+      if (window.confirm(`[${game.name}] 반납 처리하시겠습니까?`)) {
+        await adminUpdateGame(game.id, "대여가능");
+        alert("반납되었습니다.");
+        onReload();
+      }
+      return;
+    }
+
+    if (window.confirm(`💡 [${renterName}] 님이 현재 빌려간 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '반납' 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 반납합니다)`)) {
+      await returnGamesByRenter(renterName);
+      alert(`${count}건이 일괄 반납되었습니다.`);
+      onReload();
+    } else {
+      await adminUpdateGame(game.id, "대여가능");
+      alert("반납되었습니다.");
+      onReload();
+    }
+  };
+
+  // 5. 스마트 수령 (일괄 찜 처리 로직)
+  const handleReceive = async (game) => {
+    const renterName = game.renter;
+    const sameUserDibs = games.filter(g => g.status === "찜" && g.renter === renterName);
+    const count = sameUserDibs.length;
+
+    if (count <= 1) {
+      if (window.confirm(`[${game.name}] 현장 수령 확인하시겠습니까?`)) {
+        await adminUpdateGame(game.id, "대여중");
+        alert("처리되었습니다.");
+        onReload();
+      }
+      return;
+    }
+
+    if (window.confirm(`💡 [${renterName}] 님이 예약한 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '대여중'으로 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 처리합니다)`)) {
+      await approveDibsByRenter(renterName);
+      alert(`${count}건이 일괄 수령 처리되었습니다.`);
+      onReload();
+    } else {
+      await adminUpdateGame(game.id, "대여중");
+      alert("처리되었습니다.");
+      onReload();
+    }
+  };
+
+  // 6. 게임 삭제
+  const handleDelete = async (game) => {
+    if (!window.confirm(`[${game.name}] 정말 삭제합니까?\n되돌릴 수 없습니다.`)) return;
+    try {
+      await deleteGame(game.id);
+      alert("삭제되었습니다.");
+      onReload();
+    } catch (e) {
+      alert("삭제 실패");
+    }
+  };
 
   return (
     <div>
