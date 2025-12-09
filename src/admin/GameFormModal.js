@@ -32,6 +32,13 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
     onSubmit(formData); // 부모 컴포넌트에게 입력된 데이터 전달
   };
 
+  const openBGGSearch = () => {
+    if (!formData.name) return alert("게임 이름을 먼저 입력해주세요.");
+    // 영문 이름 검색이 정확하므로, 사용자가 한글로 입력했더라도 일단 검색창을 띄워줌
+    const url = `https://boardgamegeek.com/geeksearch.php?action=search&objecttype=boardgame&q=${encodeURIComponent(formData.name)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div style={styles.modalOverlay}>
       <div style={styles.modalContent}>
@@ -44,6 +51,13 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
             onChange={e => setFormData({...formData, name: e.target.value})} 
             style={styles.input} 
           />
+          <button 
+              onClick={openBGGSearch} 
+              style={{ ...styles.cancelBtn, flex: "0 0 auto", background: "#2c3e50", color: "white", fontSize: "0.8em" }}
+              title="BGG에서 검색하여 난이도 확인"
+            >
+              🔍 BGG 검색
+            </button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
