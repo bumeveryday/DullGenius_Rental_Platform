@@ -227,8 +227,8 @@ export const loginUser = async (name, studentId, password) => {
   const payload = {
     action: "loginUser", // Main.gs의 HANDLERS와 일치해야 함
     name: name,
-    student_id: studentId,
-    password: password
+    id: studentId,
+    pw: password
   };
   
   // fetch 요청 보냄
