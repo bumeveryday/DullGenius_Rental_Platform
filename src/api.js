@@ -221,3 +221,19 @@ export const fetchGameLogs = async (gameId) => {
     body: JSON.stringify(payload),
   }).then(res => res.json());
 };
+
+// 23. 부원 로그인 / 본인 확인
+export const loginUser = async (name, studentId, password) => {
+  const payload = {
+    action: "loginUser", // Main.gs의 HANDLERS와 일치해야 함
+    name: name,
+    student_id: studentId,
+    password: password
+  };
+  
+  // fetch 요청 보냄
+  return fetch(API_BASE_URL, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }).then(res => res.json());
+};

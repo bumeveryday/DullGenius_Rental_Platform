@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { fetchGames, rentGame, sendMiss, fetchReviews, addReview, deleteReview, increaseViewCount } from './api';
 import { TEXTS } from './constants';
+import LoginModal from './LoginModal';
 
 function GameDetail() {
   const { id } = useParams();
@@ -14,12 +15,11 @@ function GameDetail() {
   const [newReview, setNewReview] = useState({ user_name: "", password: "", rating: "5", comment: "" });
 
   // 모달 상태
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [reserveForm, setReserveForm] = useState({ name: "", phone: "", count: "", agreed: false });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false); // 리뷰 버튼용
 
   const [toast, setToast] = useState(null);
+
   
   const showToast = (message) => {
     setToast(message);
@@ -60,42 +60,25 @@ function GameDetail() {
     loadData();
   }, [id]);
 
-  // 전화번호 하이픈 자동완성
-  const handlePhoneChange = (e) => {
-    const regex = /^[0-9\b -]{0,13}$/;
-    if (regex.test(e.target.value)) {
-      let val = e.target.value.replace(/[^0-9]/g, '');
-      if (val.length > 3 && val.length <= 7) {
-        val = val.slice(0,3) + "-" + val.slice(3);
-      } else if (val.length > 7) {
-        val = val.slice(0,3) + "-" + val.slice(3,7) + "-" + val.slice(7,11);
-      }
-      setReserveForm({ ...reserveForm, phone: val });
-    }
-  };
+// ✅ [신규] LoginModal에서 '대여확정'을 눌렀을 때 실행되는 함수
+  const handleRentConfirm = async (userInfo) => {
+    const { name, phone, studentId } = userInfo; 
+    
+    // 서버로 보낼 대여자 정보 포맷팅 (예: 홍길동(010-1234-5678))
+    // 학번도 같이 기록하고 싶다면: `${name}/${studentId}(${phone})` 등으로 변경 가능
+    const renterInfo = `${name}(${phone})`; 
 
-  const submitReservation = async () => {
-    const { name, phone, count, agreed } = reserveForm;
-    if (!name || !phone) return alert("이름과 전화번호를 입력해주세요.");
-    if (!agreed) return alert("책임 동의에 체크해주세요.");
-
-    const renterInfo = `${name}(${phone})`;
-
-    // ⭐ 멘트 수정: '찜' 대신 '예약' 사용
-    if (window.confirm("게임을 예약하시겠습니까? 30분 내 미수령 시 자동 취소됩니다.")) {
-      setIsSubmitting(true);
+    try {
+      // 인원수(count)는 LoginModal에 아직 기능이 없다면 임시로 빈값("") 또는 0 처리
+      // 만약 인원수 입력도 중요하다면 LoginModal을 수정해야 합니다. 
+      // 여기서는 일단 기능 연동을 우선으로 합니다.
+      await rentGame(game.id, renterInfo, 0); 
       
-      try {
-        await rentGame(game.id, renterInfo, count);
-        showToast("✅ 예약 완료! 30분 내에 수령해주세요.");
-        setGame({ ...game, status: "찜" });
-        setIsModalOpen(false);
-      } catch (e) {
-        alert("오류가 발생했습니다. 다시 시도해주세요.");
-      } finally {
-        // ⭐ [수정] 전송 끝 (성공하든 실패하든)
-        setIsSubmitting(false);
-      }
+      showToast("✅ 예약 완료! 30분 내에 수령해주세요.");
+      setGame({ ...game, status: "찜" });
+      setIsLoginModalOpen(false); // 모달 닫기
+    } catch (e) {
+      alert("대여 요청 중 오류가 발생했습니다.");
     }
   };
 
@@ -179,8 +162,8 @@ function GameDetail() {
 
         <div style={{ marginTop: "20px" }}>
           {game.status === "대여가능" ? (
-            // ⭐ 버튼 텍스트 변경: '찜' -> '방문 수령 예약'
-            <button onClick={() => setIsModalOpen(true)} style={{ width: "100%", padding: "15px", background: "#2ecc71", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight:"bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(46, 204, 113, 0.3)" }}>
+            // ✅ [변경] 버튼 클릭 시 setIsLoginModalOpen(true)
+            <button onClick={() => setIsLoginModalOpen(true)} style={{ width: "100%", padding: "15px", background: "#2ecc71", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight:"bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(46, 204, 113, 0.3)" }}>
               📅 방문 수령 예약 (30분)
             </button>
           ) : (
@@ -192,7 +175,7 @@ function GameDetail() {
       </div>
 
       {/* 리뷰 섹션 */}
-      {/* 입력 폼 (디자인 개선됨) */}
+      {/* 입력 폼 */}
         <div className="review-form-box">
           <h3>리뷰 남기기</h3>
           {/* 상단: 닉네임, 비번, 별점 */}
@@ -257,81 +240,15 @@ function GameDetail() {
          )}
       
 
-        {/* ⭐ [모달창] 직관적인 안내 문구 추가 ⭐ */}
-      {isModalOpen && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-          background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
-        }}>
-          <div style={{ background: "white", padding: "25px", borderRadius: "15px", width: "90%", maxWidth: "400px", boxShadow: "0 5px 20px rgba(0,0,0,0.2)" }}>
-            
-            {/* 1. 타이틀 변경 */}
-            <h3 style={{ marginTop: 0, textAlign: "center", fontSize: "1.4em" }}>📅 대여 예약하기</h3>
-            
-            {/* 2. 프로세스 안내 (핵심!) */}
-            {/* 모달 안내 문구 교체 */}
-          <div style={{ background: "#f0f9ff", padding: "15px", borderRadius: "10px", marginBottom: "20px", fontSize: "0.9em", color: "#333", lineHeight: "1.5", whiteSpace: "pre-wrap" }}>
-             {TEXTS.MODAL_GUIDE}
-          </div>
+{/* ✅ [변경] 기존의 긴 모달 코드를 LoginModal 컴포넌트로 교체 */}
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)}
+        onConfirm={handleRentConfirm}
+        gameName={game.name}
+      />
 
-            <div style={{ marginBottom: "15px" }}>
-              <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>닉네임 (또는 이름)</label>
-              <input 
-                value={reserveForm.name} 
-                onChange={e => setReserveForm({...reserveForm, name: e.target.value})}
-                placeholder="예: 24학번 김철수"
-                style={{ width: "100%", padding: "12px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "1em" }} 
-              />
-            </div>
-
-            <div style={{ marginBottom: "15px" }}>
-              <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>전화번호</label>
-              <input 
-                value={reserveForm.phone} 
-                onChange={handlePhoneChange}
-                placeholder="010-0000-0000"
-                style={{ width: "100%", padding: "12px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "1em" }} 
-              />
-            </div>
-
-            <div style={{ marginBottom: "20px" }}>
-              <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>플레이 인원 (선택)</label>
-              <input 
-                type="number"
-                value={reserveForm.count} 
-                onChange={e => setReserveForm({...reserveForm, count: e.target.value})}
-                placeholder="숫자만 입력"
-                style={{ width: "100%", padding: "12px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "1em" }} 
-              />
-            </div>
-
-            <div style={{ marginBottom: "25px", padding: "12px", background: "#fff5f5", borderRadius: "8px", fontSize: "0.85em", color: "#e74c3c", border: "1px solid #ffcccc" }}>
-              <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer" }}>
-                <input 
-                  type="checkbox" 
-                  checked={reserveForm.agreed}
-                  onChange={e => setReserveForm({...reserveForm, agreed: e.target.checked})}
-                  style={{ marginTop: "3px", transform: "scale(1.2)" }}
-                />
-                <span>{TEXTS.AGREEMENT_LABEL}</span>
-                </label>
-            </div>
-
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button onClick={() => setIsModalOpen(false)} style={{ flex: 1, padding: "15px", background: "#f1f2f6", color: "#333", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", fontSize: "1em" }}>취소</button>
-              {/* 버튼 상태 변경 (로딩 중일 때 회색 + 텍스트 변경) */}
-              <button 
-                onClick={submitReservation} 
-                disabled={!reserveForm.agreed || isSubmitting} 
-                style={{ flex: 1, padding: "15px", background: isSubmitting ? "#ccc" : (reserveForm.agreed ? "#3498db" : "#95a5a6"), color: "white", border: "none", borderRadius: "8px", cursor: isSubmitting ? "wait" : "pointer", fontWeight: "bold" }}
-              >
-                {isSubmitting ? "⏳ 예약 진행 중..." : "예약 완료"}
-              </button>
-            </div>
-          </div>
-        </div>
-        )}
-        {toast && (
+      {toast && (
         <div className="toast-notification">
           {toast}
         </div>
@@ -339,5 +256,4 @@ function GameDetail() {
     </div>
   );
 }
-
 export default GameDetail;

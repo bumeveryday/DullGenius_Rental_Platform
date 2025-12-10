@@ -11,6 +11,8 @@ import { TEXTS } from './constants'; // 텍스트 수집
 import './App.css';
 import logo from './logo.png'; 
 import FilterBar from './FilterBar';            // 스타일시트
+import Login from './Login';   // 로그인 페이지
+import Signup from './Signup'; // 회원가입 페이지
 
 function Home() {
   // ==========================================
@@ -18,6 +20,7 @@ function Home() {
   // ==========================================
   
   // 데이터 관련 상태
+  const [user, setUser] = useState(null);
   const [games, setGames] = useState([]);       // 전체 게임 목록 (200개)
   const [showGuide, setShowGuide] = useState(false); // 안내 문구 토글 상태 
   const [trending, setTrending] = useState([]); // 인기 급상승 게임 (Top 5)
@@ -39,6 +42,22 @@ function Home() {
   // ==========================================
   // 2. 이펙트 & 데이터 로딩 (Effects)
   // ==========================================
+
+
+  // 앱 실행 시 로그인 유지 확인
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  // 로그아웃 핸들러
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    alert("로그아웃 되었습니다.");
+  };
 
   // [디바운싱] 검색어 입력 시 0.3초 대기 후 검색 실행 (성능 최적화)
   useEffect(() => {
@@ -245,6 +264,26 @@ function Home() {
 return (
     <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
       
+      <div style={{ position: "absolute", top: "10px", right: "10px", fontSize: "0.9em", zIndex: 10 }}>
+        {user ? (
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <span style={{ fontWeight: "bold", color: "#2c3e50" }}>👋 {user.nickname}님</span>
+            <button 
+              onClick={handleLogout}
+              style={{ padding: "5px 10px", border: "1px solid #ddd", background: "white", borderRadius: "5px", cursor: "pointer" }}
+            >
+              로그아웃
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: "10px" }}>
+            <Link to="/login" style={{ textDecoration: "none", color: "#555", fontWeight: "bold" }}>로그인</Link>
+            <span style={{color: "#ddd"}}>|</span>
+            <Link to="/signup" style={{ textDecoration: "none", color: "#3498db", fontWeight: "bold" }}>회원가입</Link>
+          </div>
+        )}
+      </div>
+      
       {/* --- [헤더 영역] --- */}
       <header style={{ marginBottom: "30px", textAlign: "center" }}>
         {/* 로고 + 텍스트 조합 */}
@@ -425,6 +464,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/game/:id" element={<GameDetail />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/admin-secret" element={<Admin />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
