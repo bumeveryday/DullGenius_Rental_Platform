@@ -17,7 +17,6 @@ useEffect(() => {
         setName(currentUser.name);
         setStudentId(currentUser.studentId || currentUser.student_id || "");
         setPhone(currentUser.phone || ""); // 전화번호가 없을 수도 있음 대비
-        setHasSavedUser(true); // 편의상 true로 두되, 렌더링에서 currentUser 여부로 분기함
       } else {
         // ✅ Case 2: 비로그인 상태 -> 기존 로직대로 로컬스토리지 확인
         const saved = localStorage.getItem('user');
