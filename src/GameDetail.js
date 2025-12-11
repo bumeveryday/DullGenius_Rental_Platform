@@ -4,10 +4,11 @@ import { fetchGames, rentGame, sendMiss, fetchReviews, addReview, deleteReview, 
 import { TEXTS } from './constants';
 import LoginModal from './LoginModal';
 
-function GameDetail() {
+function GameDetail({ user, sessionUser, setSessionUser }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const currentUser = user;
 
   const [game, setGame] = useState(location.state?.game || null);
   const [reviews, setReviews] = useState([]);
@@ -15,7 +16,7 @@ function GameDetail() {
   const [newReview, setNewReview] = useState({ user_name: "", password: "", rating: "5", comment: "" });
 
   // 모달 상태
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // 로그인모달
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false); // 리뷰 버튼용
 
   const [toast, setToast] = useState(null);
@@ -62,23 +63,22 @@ function GameDetail() {
 
 // ✅ [신규] LoginModal에서 '대여확정'을 눌렀을 때 실행되는 함수
   const handleRentConfirm = async (userInfo) => {
-    const { name, phone, studentId } = userInfo; 
+    const { name, phone, studentId, password } = userInfo; 
     
     // 서버로 보낼 대여자 정보 포맷팅 (예: 홍길동(010-1234-5678))
     // 학번도 같이 기록하고 싶다면: `${name}/${studentId}(${phone})` 등으로 변경 가능
     const renterInfo = `${name}(${phone})`; 
 
     try {
-      // 인원수(count)는 LoginModal에 아직 기능이 없다면 임시로 빈값("") 또는 0 처리
-      // 만약 인원수 입력도 중요하다면 LoginModal을 수정해야 합니다. 
-      // 여기서는 일단 기능 연동을 우선으로 합니다.
-      await rentGame(game.id, renterInfo, 0); 
+      // [수정] rentGame 함수에 학번, 비번, 이름, 전화번호를 모두 따로 넘깁니다.
+      // 인원수는 일단 0으로 둠 (나중에 모달에서 입력받게 되면 변경).
+      await rentGame(game.id, studentId, password, name, phone, 0); 
       
       showToast("✅ 예약 완료! 30분 내에 수령해주세요.");
       setGame({ ...game, status: "찜" });
       setIsLoginModalOpen(false); // 모달 닫기
     } catch (e) {
-      alert("대여 요청 중 오류가 발생했습니다.");
+      alert("대여 실패: " + (e.message || "오류가 발생했습니다."));
     }
   };
 
@@ -246,6 +246,9 @@ function GameDetail() {
         onClose={() => setIsLoginModalOpen(false)}
         onConfirm={handleRentConfirm}
         gameName={game.name}
+        currentUser={currentUser}    // 로그인 유저 (영구)
+        sessionUser={sessionUser}    // ✅ 임시 유저 (휘발성) 전달
+        setSessionUser={setSessionUser} // ✅ 상태 저장 함수 전달
       />
 
       {toast && (

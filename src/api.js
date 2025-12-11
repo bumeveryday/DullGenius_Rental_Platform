@@ -16,18 +16,20 @@ export const fetchGames = async () => {
 };
 
 // 2. 찜하기 (30분 뒤 만료 시간 자동 계산)
-export const rentGame = async (gameId, renterName, playerCount) => {
+export const rentGame = async (gameId, studentId, password, renterName, phone, playerCount) => {
   // 1. 현재 시간 가져오기
   const now = new Date();
   
-  // 2. 30분 더하기 (밀리초 단위 계산: 30분 * 60초 * 1000)
+  // 2. 30분 더하기
   const thirtyMinutesLater = new Date(now.getTime() + 30 * 60 * 1000);
   
   const payload = {
-    action: "dibs",
+    action: "rent",        // ⭐ [중요] 액션 이름을 'dibs'에서 'rent'로 변경 (서버 코드와 매칭 필요)
     game_id: gameId,
-    renter: renterName,
-    // ⭐ [핵심] 사람이 읽는 한글 대신, 기계가 읽기 좋은 표준 포맷(ISO) 사용
+    student_id: studentId, // ⭐ 학번 (Users 시트 조회용)
+    password: password,    // ⭐ 비밀번호 (검증용)
+    renter: renterName,    // 이름
+    phone: phone,          // 전화번호 (연락용)
     due_date: thirtyMinutesLater.toISOString(), 
     player_count: playerCount
   };
@@ -35,7 +37,14 @@ export const rentGame = async (gameId, renterName, playerCount) => {
   return fetch(API_BASE_URL, {
     method: "POST",
     body: JSON.stringify(payload),
-  }).then(res => res.json());
+  }).then(async (res) => {
+    // 서버 응답 확인 (비밀번호 틀렸을 때 에러 처리용)
+    const data = await res.json();
+    if (data.result === "error") {
+      throw new Error(data.message); // "비밀번호가 일치하지 않습니다" 등
+    }
+    return data;
+  });
 };
 
 // 3. [관리자용] 네이버 검색
@@ -120,17 +129,20 @@ export const fetchTrending = async () => {
 };
 
 // 12. [관리자] 게임 상태 강제 변경 (현장 대여 포함)
-export const adminUpdateGame = async (gameId, newStatus, renterName = null) => {
+export const adminUpdateGame = async (gameId, status, renterName, userId) => {
   const payload = {
     action: "adminUpdate",
     game_id: gameId,
-    status: newStatus,
-    renter: renterName // ⭐ 대여자 이름 추가 전송
+    status: status,
+    renter: renterName, // 이름 텍스트
+    user_id: userId,    // ⭐ 추가된 ID
+    // due_date 등 필요한 경우 추가
   };
-  return fetch(API_BASE_URL, {
+  const response = await fetch(API_BASE_URL, {
     method: "POST",
     body: JSON.stringify(payload),
-  }).then(res => res.json());
+  });
+  return response.json();
 };
 
 // 14. [공통] 설정값(Config) 가져오기
@@ -163,15 +175,18 @@ export const deleteGame = async (gameId) => {
 };
 
 // 17. [관리자] 특정 대여자 일괄 수령
-export const approveDibsByRenter = async (renterName) => {
+export const approveDibsByRenter = async (renterName, userId) => {
   const payload = {
     action: "approveDibsByRenter",
-    renter_name: renterName
+    renter_name: renterName,
+    user_id: userId,     // 👈 여기가 핵심!
   };
-  return fetch(API_BASE_URL, {
+  
+  const response = await fetch(API_BASE_URL, {
     method: "POST",
     body: JSON.stringify(payload),
-  }).then(res => res.json());
+  });
+  return response.json();
 };
 
 // 19. [관리자] 특정 대여자 일괄 반납
@@ -180,10 +195,11 @@ export const returnGamesByRenter = async (renterName) => {
     action: "returnGamesByRenter",
     renter_name: renterName
   };
-  return fetch(API_BASE_URL, {
+  const response = await fetch(API_BASE_URL, {
     method: "POST",
     body: JSON.stringify(payload),
-  }).then(res => res.json());
+  });
+  return response.json();
 };
 
 // 20. [관리자] 로그인 인증 (서버에서 확인)
@@ -222,18 +238,39 @@ export const fetchGameLogs = async (gameId) => {
   }).then(res => res.json());
 };
 
-// 23. 부원 로그인 / 본인 확인
-export const loginUser = async (name, studentId, password) => {
+// 23. 부원 로그인 (수정됨)
+export const loginUser = async (studentId, password) => {
   const payload = {
-    action: "loginUser", // Main.gs의 HANDLERS와 일치해야 함
-    name: name,
-    id: studentId,
-    pw: password
+    action: "loginUser", 
+    student_id: studentId, // 백엔드는 'student_id'를 원함
+    password: password
   };
   
-  // fetch 요청 보냄
   return fetch(API_BASE_URL, {
     method: "POST",
     body: JSON.stringify(payload),
   }).then(res => res.json());
+};
+
+// 24. [NEW] 회원가입 (추가됨)
+export const signupUser = async (userData) => {
+  // userData 구조: { name, studentId, password, phone }
+  const payload = {
+    action: "signup",
+    name: userData.name,
+    student_id: userData.studentId, // 프론트엔드(studentId) -> 백엔드(student_id) 매핑
+    password: userData.password,
+    phone: userData.phone
+  };
+
+  return fetch(API_BASE_URL, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }).then(res => res.json());
+};
+
+// 25. 유저 목록 가져오기 함수 추가
+export const fetchUsers = async () => {
+  const response = await fetch(`${API_BASE_URL}?action=getUsers`);
+  return response.json();
 };

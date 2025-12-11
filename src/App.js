@@ -14,13 +14,12 @@ import FilterBar from './FilterBar';            // 스타일시트
 import Login from './Login';   // 로그인 페이지
 import Signup from './Signup'; // 회원가입 페이지
 
-function Home() {
+function Home({ user, onLogout, sessionUser, setSessionUser }) {
   // ==========================================
   // 1. 상태 관리 (State Management)
   // ==========================================
   
   // 데이터 관련 상태
-  const [user, setUser] = useState(null);
   const [games, setGames] = useState([]);       // 전체 게임 목록 (200개)
   const [showGuide, setShowGuide] = useState(false); // 안내 문구 토글 상태 
   const [trending, setTrending] = useState([]); // 인기 급상승 게임 (Top 5)
@@ -42,22 +41,6 @@ function Home() {
   // ==========================================
   // 2. 이펙트 & 데이터 로딩 (Effects)
   // ==========================================
-
-
-  // 앱 실행 시 로그인 유지 확인
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
-
-  // 로그아웃 핸들러
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
-    alert("로그아웃 되었습니다.");
-  };
 
   // [디바운싱] 검색어 입력 시 0.3초 대기 후 검색 실행 (성능 최적화)
   useEffect(() => {
@@ -137,7 +120,7 @@ function Home() {
     loadData();
   }, []);
 
-  // ⭐ [NEW] 필터 변경 시 자동 스크롤 (화면을 필터 바 위치로 내림)
+  // 필터 변경 시 자동 스크롤 (화면을 필터 바 위치로 내림)
   useEffect(() => {
     // 아무 필터나 걸려있으면 스크롤 이동 (초기 로딩 시엔 이동 안 함)
     const isFiltered = searchTerm || selectedCategory !== "전체" || difficultyFilter !== "전체" || playerFilter !== "all" || onlyAvailable;
@@ -267,9 +250,9 @@ return (
       <div style={{ position: "absolute", top: "10px", right: "10px", fontSize: "0.9em", zIndex: 10 }}>
         {user ? (
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <span style={{ fontWeight: "bold", color: "#2c3e50" }}>👋 {user.nickname}님</span>
+            <span style={{ fontWeight: "bold", color: "#2c3e50" }}>👋 {user.name}님</span>
             <button 
-              onClick={handleLogout}
+              onClick={onLogout}
               style={{ padding: "5px 10px", border: "1px solid #ddd", background: "white", borderRadius: "5px", cursor: "pointer" }}
             >
               로그아웃
@@ -459,12 +442,53 @@ return (
 
 // 라우터 설정 (메인)
 function App() {
-  return (
+  const [user, setUser] = useState(null);
+
+  const [sessionUser, setSessionUser] = useState(null);
+
+useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  // 로그아웃 핸들러 (Home에 전달)
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    alert("로그아웃 되었습니다.");
+  };
+
+return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/game/:id" element={<GameDetail />} />
-        <Route path="/login" element={<Login />} />
+        {/* Home에 user 상태와 handleLogout 전달 */}
+        <Route 
+          path="/" 
+          element={
+            <Home 
+              user={user} 
+              onLogout={handleLogout} 
+              sessionUser={sessionUser} 
+              setSessionUser={setSessionUser}
+            />
+          } 
+        />
+        
+        {/* GameDetail에 user와 sessionUser 전달 */}
+        <Route 
+          path="/game/:id" 
+          element={
+            <GameDetail 
+              user={user} 
+              sessionUser={sessionUser} 
+              setSessionUser={setSessionUser} 
+            />
+          } 
+        />
+        
+        <Route path="/login" element={<Login setUser={setUser} />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/admin-secret" element={<Admin />} />
         <Route path="*" element={<Navigate to="/" replace />} />

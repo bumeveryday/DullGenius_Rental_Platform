@@ -1,61 +1,87 @@
+// src/Login.js
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { loginUser } from './api';
 
-// 배포한 구글 앱스 스크립트 URL (따옴표 안에 넣어주세요)
-const API_URL = "여기에_GAS_웹앱_URL_입력"; 
-
-function Login() {
-  const [id, setId] = useState("");
-  const [pw, setPw] = useState("");
+function Login({ setUser }) { // App.js에서 setUser를 prop으로 받아야 함
   const navigate = useNavigate();
+  const [studentId, setStudentId] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: "loginUser", id, pw }), // action 이름 확인: loginUser
-      });
-      const data = await response.json();
+    if (!studentId || !password) return alert("학번과 비밀번호를 입력해주세요.");
+    if (studentId.length !== 8) {
+      return alert("학번은 8자리여야 합니다.");
+    }
 
-      if (data.success) {
-        // [핵심] 로컬 스토리지에 유저 정보 저장
-        localStorage.setItem("user", JSON.stringify(data.user));
-        alert(`${data.user.nickname}님 환영합니다!`);
-        navigate("/"); // 메인으로 이동
+
+    setLoading(true);
+    try {
+      const res = await loginUser(studentId, password);
+      
+      if (res.success) {
+        // ✅ [수정] 입력한 비밀번호(password)를 유저 정보에 포함시켜서 저장
+        const userWithPassword = { ...res.user, password: password };
+
+        // 1. 로컬 스토리지에 저장 (비밀번호 포함됨)
+        localStorage.setItem("user", JSON.stringify(userWithPassword));
+        
+        // 2. App.js 상태 업데이트
+        if (setUser) setUser(userWithPassword);
+        
+        alert(`${res.user.name}님 환영합니다!`);
+        navigate("/");
       } else {
-        alert(data.message);
+        alert(res.message); // "학번 또는 비밀번호 불일치" 등
       }
     } catch (error) {
       console.error("Login Error:", error);
       alert("로그인 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: "400px", margin: "50px auto", padding: "20px", textAlign: "center" }}>
-      <h2>로그인</h2>
-      <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+    <div style={styles.container}>
+      <h2 style={{ textAlign: "center", marginBottom: "30px" }}>🔐 로그인</h2>
+      <form onSubmit={handleSubmit} style={styles.form}>
         <input 
-          type="text" placeholder="ID" value={id} onChange={(e) => setId(e.target.value)} 
-          style={{ padding: "10px", fontSize: "16px" }}
+          type="number" 
+          placeholder="학번" 
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
+          style={styles.input}
+          maxLength={8}
+          onInput={(e) => {
+            if (e.target.value.length > 8) e.target.value = e.target.value.slice(0, 8);
+    }}
         />
         <input 
-          type="password" placeholder="Password" value={pw} onChange={(e) => setPw(e.target.value)} 
-          style={{ padding: "10px", fontSize: "16px" }}
+          type="password" 
+          placeholder="비밀번호" 
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={styles.input}
         />
-        <button type="submit" style={{ padding: "10px", background: "#3498db", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "16px" }}>
-          로그인
+        <button type="submit" style={styles.button} disabled={loading}>
+          {loading ? "로그인 중..." : "로그인"}
         </button>
       </form>
-      <div style={{ marginTop: "20px" }}>
-        아직 회원이 아니신가요? <Link to="/signup">회원가입</Link>
-      </div>
-      <div style={{ marginTop: "10px" }}>
-        <Link to="/">메인으로 돌아가기</Link>
+      <div style={{ textAlign: "center", marginTop: "20px", fontSize: "0.9em" }}>
+        계정이 없으신가요? <Link to="/signup" style={{ color: "#3498db" }}>회원가입</Link>
       </div>
     </div>
   );
 }
+
+const styles = {
+  container: { maxWidth: "400px", margin: "100px auto", padding: "30px", border: "1px solid #ddd", borderRadius: "10px", backgroundColor: "#fff" },
+  form: { display: "flex", flexDirection: "column", gap: "15px" },
+  input: { padding: "12px", border: "1px solid #ddd", borderRadius: "5px", fontSize: "1em" },
+  button: { padding: "12px", backgroundColor: "#333", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", fontSize: "1em" }
+};
 
 export default Login;
