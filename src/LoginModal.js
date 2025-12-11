@@ -7,11 +7,6 @@ function LoginModal({isOpen, onClose, onConfirm, gameName, currentUser, sessionU
   const [name, setName] = useState("");
   const [studentId, setStudentId] = useState("");
   const [phone, setPhone] = useState(""); // 연락처 (1주차 필수)
-  const [password, setPassword] = useState("");
-  
-  // 모드 상태
-  const [isRemember, setIsRemember] = useState(false); // '기억하기' 체크 여부
-  const [hasSavedUser, setHasSavedUser] = useState(false); // 재방문자 여부
 
   // 모달이 열릴 때 로컬스토리지 확인
 useEffect(() => {
@@ -30,14 +25,10 @@ useEffect(() => {
           const user = JSON.parse(saved);
           setName(user.name);
           setStudentId(user.studentId);
-          setHasSavedUser(true); 
         } else {
-          setHasSavedUser(false);
           setName("");
           setStudentId("");
           setPhone("");
-          setPassword("");
-          setIsRemember(false);
         }
       }
     }

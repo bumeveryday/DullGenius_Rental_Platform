@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { fetchGames, rentGame, sendMiss, fetchReviews, addReview, deleteReview, increaseViewCount } from './api';
-import { TEXTS } from './constants';
+//import { TEXTS } from './constants';
 import LoginModal from './LoginModal';
 
 function GameDetail({ user, sessionUser, setSessionUser }) {
@@ -65,10 +65,6 @@ function GameDetail({ user, sessionUser, setSessionUser }) {
   const handleRentConfirm = async (userInfo) => {
     const { name, phone, studentId, password } = userInfo; 
     
-    // 서버로 보낼 대여자 정보 포맷팅 (예: 홍길동(010-1234-5678))
-    // 학번도 같이 기록하고 싶다면: `${name}/${studentId}(${phone})` 등으로 변경 가능
-    const renterInfo = `${name}(${phone})`; 
-
     try {
       // [수정] rentGame 함수에 학번, 비번, 이름, 전화번호를 모두 따로 넘깁니다.
       // 인원수는 일단 0으로 둠 (나중에 모달에서 입력받게 되면 변경).
