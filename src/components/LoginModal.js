@@ -1,6 +1,6 @@
-// src/LoginModal.js
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { TEXTS } from '../constants';
 
 function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, sessionUser, setSessionUser }) {
   // 입력값 상태
@@ -13,12 +13,11 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
     if (isOpen) {
       if (currentUser) {
         // ✅ Case 1: 이미 로그인된 상태 (부모에게서 정보 받음)
-        // 정보를 state에 세팅하고, 별도 모드 진입 없이 바로 대여 가능한 상태로 준비
         setName(currentUser.name);
         setStudentId(currentUser.studentId || currentUser.student_id || "");
-        setPhone(currentUser.phone || ""); // 전화번호가 없을 수도 있음 대비
+        setPhone(currentUser.phone || "");
       } else {
-        // ✅ Case 2: 비로그인 상태 -> 기존 로직대로 로컬스토리지 확인
+        // ✅ Case 2: 비로그인 상태
         const saved = localStorage.getItem('user');
         if (saved) {
           const user = JSON.parse(saved);
@@ -31,13 +30,11 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
         }
       }
     }
-  }, [isOpen, currentUser]); // currentUser 의존성 추가
-
-
+  }, [isOpen, currentUser]);
 
   // 대여 버튼 클릭 핸들러
   const handleSubmit = () => {
-    // 1. 필수 정보 입력 확인 (이름, 학번, 전화번호)
+    // 1. 필수 정보 입력 확인
     if (!name || !studentId || !phone) return alert("정보를 모두 입력해주세요.");
 
     // 2. 임시 유저(Guest)라면 세션에 저장
@@ -45,17 +42,15 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
       setSessionUser({ name, studentId, phone });
     }
 
-    // ✅ [수정] 비밀번호 결정 로직
-    // 로그인된 유저면? -> 저장된 비밀번호(currentUser.password) 사용
-    // 비회원/임시유저면? -> 빈 값("") 사용
+    // ✅ 비밀번호 결정 로직
     const passwordToSend = currentUser ? currentUser.password : "";
 
-    // 3. 대여 확정 (결정된 비밀번호 전송)
+    // 3. 대여 확정
     onConfirm({
       name,
       studentId,
       phone,
-      password: passwordToSend // <-- 여기가 핵심입니다!
+      password: passwordToSend
     });
 
     onClose();
@@ -66,33 +61,27 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
-        <h3>🎲 찜하기</h3>
-        <p style={{ color: "#666", fontSize: "0.9em", marginBottom: "20px" }}>
-          <b>{gameName}</b>의 대여 예약을 진행합니다.<br />
-          분실/파손 시 책임이 발생할 수 있습니다.
-        </p>
+        <h3>{TEXTS.USER_MODAL_TITLE}</h3>
+        <p style={{ color: "#666", fontSize: "0.9em", marginBottom: "20px" }}
+          dangerouslySetInnerHTML={{ __html: TEXTS.USER_MODAL_DESC.replace("{gameName}", gameName) }}
+        />
 
-        {/* ✅ [화면 분기] 1. 로그인 된 회원 (적어두신 내용 그대로 유지) */}
         {currentUser ? (
           <div style={{ background: "#f0f9ff", padding: "20px", borderRadius: "10px", marginBottom: "20px" }}>
             <div style={{ fontSize: "1.2em", fontWeight: "bold", color: "#2c3e50" }}>{currentUser.name} 님</div>
             <div style={{ color: "#7f8c8d", fontSize: "0.9em", marginTop: "5px" }}>{currentUser.studentId}</div>
             <div style={{ color: "#7f8c8d", fontSize: "0.9em" }}>{currentUser.phone}</div>
 
-            <p style={{ color: "#3498db", fontSize: "0.85em", marginTop: "15px" }}>
-              ✨ 로그인된 계정으로 대여합니다.<br />
-              30분이 지나면 예약이 취소되니, <br />
-              늦기 전에 동아리방에서 수령해가세요!
-            </p>
+            <p style={{ color: "#3498db", fontSize: "0.85em", marginTop: "15px" }}
+              dangerouslySetInnerHTML={{ __html: TEXTS.USER_MODAL_LOGGED_IN_DESC }}
+            />
           </div>
         ) : (
-          /* ✅ [화면 분기] 2. 비로그인 (수정됨: 비밀번호 제거, 가입 유도) */
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
 
-            {/* 임시 정보가 있다면 표시 */}
             {sessionUser && (
               <div style={{ fontSize: "0.8em", color: "#27ae60", textAlign: "left", marginLeft: "5px", marginBottom: "-5px" }}>
-                ⚡ 이전에 입력한 정보를 불러왔습니다.
+                {TEXTS.USER_MODAL_GUEST_INFO_LOADED}
               </div>
             )}
 
@@ -110,18 +99,17 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
             />
             <input placeholder="연락처 (010-0000-0000)" value={phone} onChange={(e) => setPhone(e.target.value)} style={styles.input} />
 
-            {/* 비밀번호 입력란을 없애고, 가입 유도 문구로 대체 */}
             <div style={{ fontSize: "0.85em", color: "#888", marginTop: "10px", lineHeight: "1.4", background: "#f9f9f9", padding: "10px", borderRadius: "8px" }}>
-              여기다가 비밀번호만 더하면 회원가입 끝나요.<br />
-              매번 입력하기 귀찮다면? <Link to="/signup" style={{ color: "#3498db", fontWeight: "bold" }}>회원가입</Link>
+              <span dangerouslySetInnerHTML={{ __html: TEXTS.USER_MODAL_GUEST_SIGNUP_PROMO }} />
+              <Link to="/signup" style={{ color: "#3498db", fontWeight: "bold" }}>회원가입</Link>
             </div>
           </div>
         )}
 
         <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
-          <button onClick={onClose} style={styles.cancelBtn}>취소</button>
+          <button onClick={onClose} style={styles.cancelBtn}>{TEXTS.BTN_CANCEL}</button>
           <button onClick={handleSubmit} style={styles.confirmBtn}>
-            {currentUser ? "바로 대여하기" : "정보 입력 후 대여"}
+            {currentUser ? TEXTS.BTN_RENT_NOW : TEXTS.BTN_RENT_AFTER_INFO}
           </button>
         </div>
       </div>

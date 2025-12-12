@@ -1,7 +1,7 @@
 // src/Signup.js
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signupUser } from './api';
+import { signupUser } from '../api';
 
 function Signup() {
   const navigate = useNavigate();

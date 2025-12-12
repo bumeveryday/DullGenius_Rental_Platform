@@ -1,11 +1,12 @@
 // src/admin/DashboardTab.js
-import { useState, useEffect, useMemo} from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { adminUpdateGame, deleteGame, approveDibsByRenter, returnGamesByRenter, editGame, fetchGameLogs, fetchUsers } from '../api';
 import GameFormModal from './GameFormModal'; // 공통 모달 임포트
-import FilterBar from '../FilterBar';
+import FilterBar from '../components/FilterBar';
+import { TEXTS } from '../constants';
 
 function DashboardTab({ games, loading, onReload }) {
-  
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [targetGame, setTargetGame] = useState(null);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -13,7 +14,7 @@ function DashboardTab({ games, loading, onReload }) {
   const [logGameName, setLogGameName] = useState("");
 
   const [allUsers, setAllUsers] = useState([]);
-// 필터 관련 변수
+  // 필터 관련 변수
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [renterFilter, setRenterFilter] = useState(""); // 👤 대여자 검색용
@@ -51,14 +52,14 @@ function DashboardTab({ games, loading, onReload }) {
     const target = allUsers.find(u => {
       if (!u.name) return false; // 이름 없는 데이터 건너뜀
       const cleanUserName = u.name.replace(/\s+/g, "");
-      
-        return cleanInput.includes(cleanUserName);
+
+      return cleanInput.includes(cleanUserName);
     });
 
     return target ? target.id : null;
   };
 
-// 검색어 디바운싱 (0.3초 딜레이)
+  // 검색어 디바운싱 (0.3초 딜레이)
   useEffect(() => {
     const timer = setTimeout(() => setSearchTerm(inputValue), 300);
     return () => clearTimeout(timer);
@@ -88,7 +89,7 @@ function DashboardTab({ games, loading, onReload }) {
       } else {
         if (searchTerm && !game.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
       }
-      
+
       // 2. [관리자 전용] 대여자 검색
       if (renterFilter) {
         // 대여자가 없거나, 이름이 포함되지 않으면 제외
@@ -98,14 +99,14 @@ function DashboardTab({ games, loading, onReload }) {
       // 3. 카테고리, 상태, 난이도, 인원 필터 (App.js와 동일)
       if (selectedCategory !== "전체" && game.category !== selectedCategory) return false;
       if (onlyAvailable && game.status !== "대여가능") return false;
-      
+
       if (difficultyFilter !== "전체" && game.difficulty) {
         const score = parseFloat(game.difficulty);
         if (difficultyFilter === "입문" && score >= 2.0) return false;
         if (difficultyFilter === "초중급" && (score < 2.0 || score >= 3.0)) return false;
         if (difficultyFilter === "전략" && score < 3.0) return false;
       }
-      
+
       if (playerFilter !== "all" && game.players) {
         if (!checkPlayerCount(game.players, playerFilter)) return false;
       }
@@ -121,8 +122,8 @@ function DashboardTab({ games, loading, onReload }) {
     setPlayerFilter("all"); setOnlyAvailable(false);
   };
 
-// 여기까지 필터바 
-// ===================================
+  // 여기까지 필터바 
+  // ===================================
 
 
   // 카테고리 목록 추출
@@ -153,12 +154,12 @@ function DashboardTab({ games, loading, onReload }) {
   // 현장 대여 핸들러 추가
   const handleDirectRent = async (game) => {
     // 1. 대여자 이름 입력받기
-const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)을 입력하세요.\n예: 김철수(010-1234-5678)`);
+    const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)을 입력하세요.\n예: 김철수(010-1234-5678)`);
     if (!renterName || renterName.trim() === "") return;
 
     // 2. ID 찾기 시도
     const userId = findUserId(renterName);
-    
+
     // 찾았는지 못 찾았는지 확인 메시지 (테스트용)
     let confirmMsg = `[${game.name}] 대여 처리하시겠습니까?\n\n입력값: ${renterName}`;
     if (userId) {
@@ -171,13 +172,13 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
       try {
         // 3. API 호출
         const res = await adminUpdateGame(game.id, "대여중", renterName, userId);
-        
+
         // 응답 체크
         if (res && res.status === "success") {
-            alert("✅ 대여 처리되었습니다.");
-            onReload();
+          alert("✅ 대여 처리되었습니다.");
+          onReload();
         } else {
-            alert("오류 발생: " + (res.message || "응답 없음"));
+          alert("오류 발생: " + (res.message || "응답 없음"));
         }
       } catch (e) {
         console.error(e);
@@ -187,8 +188,8 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
   };
 
 
-  
- // 3. 단순 상태 변경 (분실, 대여취소 등)
+
+  // 3. 단순 상태 변경 (분실, 대여취소 등)
   const handleStatusChange = async (gameId, newStatus, gameName) => {
     let msg = `[${gameName}] 상태를 '${newStatus}'(으)로 변경하시겠습니까?`;
     if (newStatus === "대여중") msg = "현장 수령 확인하시겠습니까?";
@@ -274,7 +275,7 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
     setLogGameName(game.name);
     setGameLogs([]); // 초기화
     setIsLogModalOpen(true);
-    
+
     try {
       const res = await fetchGameLogs(game.id);
 
@@ -293,10 +294,10 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
         <h3>🚨 게임 관리 (총 {games.length}개)</h3>
-        <button onClick={onReload} style={{ padding: "5px 10px", cursor: "pointer", background:"#f8f9fa", border:"1px solid #ddd", borderRadius:"5px" }}>🔄 새로고침</button>
+        <button onClick={onReload} style={{ padding: "5px 10px", cursor: "pointer", background: "#f8f9fa", border: "1px solid #ddd", borderRadius: "5px" }}>🔄 새로고침</button>
       </div>
 
-      <FilterBar 
+      <FilterBar
         inputValue={inputValue} setInputValue={setInputValue}
         selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
         difficultyFilter={difficultyFilter} setDifficultyFilter={setDifficultyFilter}
@@ -317,7 +318,7 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
             <div key={game.id} style={styles.card}>
               <div style={{ flex: 1, minWidth: "200px" }}>
                 <div style={{ fontWeight: "bold", fontSize: "1.05em" }}>
-                  {game.name} 
+                  {game.name}
                   <span style={{ ...styles.statusBadge, background: getStatusColor(game.status) }}>
                     {game.status}
                   </span>
@@ -325,18 +326,18 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
                 <div style={{ fontSize: "0.85em", color: "#666", marginTop: "5px", lineHeight: "1.4" }}>
                   <span style={{ marginRight: "10px" }}>{game.renter ? `👤 ${game.renter}` : "대여자 없음"}</span>
                   <span style={{ color: "#e67e22", marginRight: "10px" }}>난이도: {game.difficulty || "-"}</span>
-                  <br/>
-                  태그: <span style={{color:"#3498db"}}>{game.tags || "(없음)"}</span>
+                  <br />
+                  태그: <span style={{ color: "#3498db" }}>{game.tags || "(없음)"}</span>
                 </div>
               </div>
 
               <div style={{ display: "flex", gap: "5px" }}>
-                <button onClick={() => handleShowLogs(game)} style={{...actionBtnStyle("#ecf0f1"), color:"#555", border:"1px solid #ddd"}} title="이력 조회">📜</button>
+                <button onClick={() => handleShowLogs(game)} style={{ ...actionBtnStyle("#ecf0f1"), color: "#555", border: "1px solid #ddd" }} title="이력 조회">📜</button>
                 <button onClick={() => openEditModal(game)} style={actionBtnStyle("#9b59b6")}>✏️ 수정</button>
-                <button onClick={() => handleDelete(game)} style={{...actionBtnStyle("#fff"), color:"#e74c3c", border:"1px solid #e74c3c", width:"30px", padding:0}}>🗑️</button>
-                
+                <button onClick={() => handleDelete(game)} style={{ ...actionBtnStyle("#fff"), color: "#e74c3c", border: "1px solid #e74c3c", width: "30px", padding: 0 }}>🗑️</button>
+
                 {/* 상태별 버튼 로직 유지 */}
-                 {game.status === "찜" ? (
+                {game.status === "찜" ? (
                   <>
                     <button onClick={() => handleReceive(game)} style={actionBtnStyle("#3498db")}>🤝 수령</button>
                     <button onClick={() => handleStatusChange(game.id, "대여가능", game.name)} style={actionBtnStyle("#e74c3c")}>🚫 취소</button>
@@ -346,8 +347,8 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
                     <button onClick={() => handleReturn(game)} style={actionBtnStyle("#2ecc71")}>↩️ 반납</button>
                     <button onClick={() => handleStatusChange(game.id, "분실", game.name)} style={actionBtnStyle("#95a5a6")}>⚠️ 분실</button>
                   </>
-                ) : 
-                <button onClick={() => handleDirectRent(game)} style={actionBtnStyle("#2c3e50")}>✋ 현장대여</button>}
+                ) :
+                  <button onClick={() => handleDirectRent(game)} style={actionBtnStyle("#2c3e50")}>✋ 현장대여</button>}
               </div>
             </div>
           ))}
@@ -355,7 +356,7 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
       )}
 
       {/* 공통 모달 사용 (수정용) */}
-      <GameFormModal 
+      <GameFormModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         initialData={targetGame}
@@ -363,14 +364,14 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
         title="✏️ 게임 정보 수정"
       />
 
-{isLogModalOpen && (
+      {isLogModalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
-            <h3 style={{ marginTop: 0, marginBottom: "15px", borderBottom:"1px solid #eee", paddingBottom:"10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h3 style={{ marginTop: 0, marginBottom: "15px", borderBottom: "1px solid #eee", paddingBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>📜 [{logGameName}] 대여 이력</span>
-              <button onClick={() => setIsLogModalOpen(false)} style={{ background:"none", border:"none", fontSize:"1.2em", cursor:"pointer" }}>✖️</button>
+              <button onClick={() => setIsLogModalOpen(false)} style={{ background: "none", border: "none", fontSize: "1.2em", cursor: "pointer" }}>✖️</button>
             </h3>
-            
+
             <div style={{ maxHeight: "500px", overflowY: "auto", fontSize: "0.9em" }}>
               {gameLogs.length === 0 ? (
                 <p style={{ textAlign: "center", color: "#999", padding: "20px" }}>기록이 없습니다.</p>
@@ -380,7 +381,7 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
                     <tr style={{ background: "#f8f9fa", textAlign: "left", borderBottom: "2px solid #ddd" }}>
                       {/* ⭐ [변경] 헤더를 4개로 확실히 나눕니다 */}
                       <th style={{ padding: "10px", width: "130px", color: "#555" }}>날짜</th>
-                      <th style={{ padding: "10px", width: "60px", color: "#555", textAlign:"center" }}>행동</th>
+                      <th style={{ padding: "10px", width: "60px", color: "#555", textAlign: "center" }}>행동</th>
                       <th style={{ padding: "10px", color: "#555" }}>내용</th>
                       <th style={{ padding: "10px", width: "150px", color: "#555" }}>대여자 정보</th>
                     </tr>
@@ -388,8 +389,8 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
                   <tbody>
                     {gameLogs.map((log, idx) => {
                       // 1. 데이터 안전 변환
-                      const valStr = String(log.value || ""); 
-                      
+                      const valStr = String(log.value || "");
+
                       let mainText = valStr;
                       let userInfo = null;
                       let isNonMember = false; // 디자인 구분용
@@ -399,7 +400,7 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
                         const parts = valStr.split("→ [");
                         mainText = parts[0].trim(); // 예: "대여중"
                         userInfo = parts[1].replace("]", "").trim(); // 예: "홍길동, 010..."
-                      } 
+                      }
                       // [CASE 2] 기호는 없지만 '대여(RENT)'인 경우 (수기 입력)
                       // 단, "일괄처리" 같은 시스템 메시지는 제외하고 싶다면 조건 추가 가능
                       else if (log.type === "RENT" && valStr.trim() !== "" && valStr !== "일괄처리") {
@@ -420,20 +421,20 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
                                   // 24시간제로 깔끔하게 변환 (예: 2025. 12. 12. 14:30)
                                   return date.toLocaleString('ko-KR', {
                                     year: 'numeric', month: '2-digit', day: '2-digit',
-                                    hour: '2-digit', minute: '2-digit', hour12: false 
+                                    hour: '2-digit', minute: '2-digit', hour12: false
                                   });
                                 }
-                              } catch (e) {}
+                              } catch (e) { }
                               // 파싱 실패 시: 원본에서 초(:ss) 단위만 떼고 보여줌
                               return dateStr.replace(/:[0-9]{2}$/, "").replace("AM", "").replace("PM", "").trim();
                             })()}
                           </td>
-                          
+
                           {/* 2. 행동 배지 */}
                           <td style={{ padding: "10px 5px", textAlign: "center" }}>
                             <span style={{
-                              padding: "4px 8px", 
-                              borderRadius: "4px", 
+                              padding: "4px 8px",
+                              borderRadius: "4px",
                               fontSize: "0.8em",
                               fontWeight: "bold",
                               color: "white",
@@ -447,16 +448,16 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
 
                           {/* 3. 내용 (Content) */}
                           <td style={{ padding: "10px 5px", color: "#333" }}>
-                             {mainText}
+                            {mainText}
                           </td>
 
                           {/* 4. 대여자 정보 (Renter Info) */}
                           <td style={{ padding: "10px 5px" }}>
                             {userInfo ? (
-                              <div style={{ 
-                                fontSize: "0.9em", 
+                              <div style={{
+                                fontSize: "0.9em",
                                 // 비회원(수기)이면 회색, 회원이면 파란색
-                                color: isNonMember ? "#555" : "#0984e3", 
+                                color: isNonMember ? "#555" : "#0984e3",
                                 fontWeight: "600",
                                 background: isNonMember ? "#eee" : "#e3f2fd",
                                 padding: "4px 8px",
@@ -487,24 +488,24 @@ const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)�
   );
 }
 
-const getStatusColor = (s) => (s==="대여가능"?"#2ecc71":s==="찜"?"#f1c40f":s==="대여중"?"#3498db":"#95a5a6");
+const getStatusColor = (s) => (s === "대여가능" ? "#2ecc71" : s === "찜" ? "#f1c40f" : s === "대여중" ? "#3498db" : "#95a5a6");
 const actionBtnStyle = (bgColor) => ({ padding: "6px 12px", border: "none", background: bgColor, color: "white", borderRadius: "6px", cursor: "pointer", fontSize: "0.85em", fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" });
 const styles = {
   card: { border: "1px solid #ddd", padding: "15px", borderRadius: "10px", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", boxShadow: "0 2px 5px rgba(0,0,0,0.03)" },
   statusBadge: { marginLeft: "8px", fontSize: "0.8em", padding: "2px 8px", borderRadius: "12px", color: "white" },
-  
-  modalOverlay: { 
+
+  modalOverlay: {
     position: "fixed",   // 모달 위치 강제 고정
-    top: 0, 
-    left: 0, 
+    top: 0,
+    left: 0,
     right: 0,   // 추가
     bottom: 0,  // 추가
-    width: "100%", 
-    height: "100%", 
-    background: "rgba(0,0,0,0.5)", 
-    display: "flex", 
-    alignItems: "center", 
-    justifyContent: "center", 
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.5)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 9999 // 매우 높은 값으로 설정
   },
   modalContent: { background: "white", padding: "25px", borderRadius: "15px", width: "90%", maxWidth: "800px", boxShadow: "0 5px 20px rgba(0,0,0,0.2)", maxHeight: "90vh", overflowY: "auto" },

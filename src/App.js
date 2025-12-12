@@ -6,14 +6,14 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import { fetchGames, fetchTrending, fetchConfig } from './api'; // API 함수들 임포트
 import Admin from './Admin';         // 관리자 페이지 컴포넌트
-import GameDetail from './GameDetail'; // 상세 페이지 컴포넌트
+import GameDetail from './components/GameDetail'; // 상세 페이지 컴포넌트
 import { TEXTS } from './constants'; // 텍스트 수집 
 import './App.css';
 import logo from './logo.png';
-import FilterBar from './FilterBar';            // 스타일시트
-import Login from './Login';   // 로그인 페이지
-import Signup from './Signup'; // 회원가입 페이지
-import MyPage from './mypage';
+import FilterBar from './components/FilterBar';            // 스타일시트
+import Login from './components/Login';   // 로그인 페이지
+import Signup from './components/Signup'; // 회원가입 페이지
+import MyPage from './components/MyPage';
 
 
 function Home({ user, onLogout, sessionUser, setSessionUser }) {
@@ -346,7 +346,7 @@ function Home({ user, onLogout, sessionUser, setSessionUser }) {
           </a>
         </div>
 
-        {/* Admin 링크 삭제됨 */}
+        <div><Link to="/admin-secret" style={{ fontSize: "0.8em", color: "#ccc", textDecoration: "none" }}>Admin</Link></div>
       </header>
 
 

@@ -1,7 +1,7 @@
 // src/Login.js
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { loginUser } from './api';
+import { loginUser } from '../api';
 
 function Login({ setUser }) { // App.js에서 setUser를 prop으로 받아야 함
   const navigate = useNavigate();

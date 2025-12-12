@@ -1,6 +1,6 @@
 // src/mypage.js
 import React, { useState, useEffect } from 'react';
-import { fetchMyRentals } from './api';
+import { fetchMyRentals } from '../api';
 import { Link } from 'react-router-dom';
 
 const MyPage = ({ user }) => {
