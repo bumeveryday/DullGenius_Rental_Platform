@@ -68,7 +68,7 @@ function GameDetail({ user, sessionUser, setSessionUser }) {
     try {
       // [수정] rentGame 함수에 학번, 비번, 이름, 전화번호를 모두 따로 넘깁니다.
       // 인원수는 일단 0으로 둠 (나중에 모달에서 입력받게 되면 변경).
-      await rentGame(game.id, studentId, password, name, phone, 0); 
+      await rentGame(game.id, game.name, studentId, password, name, phone, 0); 
       
       showToast("✅ 예약 완료! 30분 내에 수령해주세요.");
       setGame({ ...game, status: "찜" });

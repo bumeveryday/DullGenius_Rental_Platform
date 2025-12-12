@@ -20,17 +20,17 @@ function Login({ setUser }) { // App.js에서 setUser를 prop으로 받아야 �
     setLoading(true);
     try {
       const res = await loginUser(studentId, password);
-      
+
       if (res.success) {
         // ✅ [수정] 입력한 비밀번호(password)를 유저 정보에 포함시켜서 저장
         const userWithPassword = { ...res.user, password: password };
 
         // 1. 로컬 스토리지에 저장 (비밀번호 포함됨)
         localStorage.setItem("user", JSON.stringify(userWithPassword));
-        
+
         // 2. App.js 상태 업데이트
         if (setUser) setUser(userWithPassword);
-        
+
         alert(`${res.user.name}님 환영합니다!`);
         navigate("/");
       } else {
@@ -46,22 +46,25 @@ function Login({ setUser }) { // App.js에서 setUser를 prop으로 받아야 �
 
   return (
     <div style={styles.container}>
+      <div style={{ marginBottom: "20px" }}>
+        <Link to="/" style={{ textDecoration: "none", color: "#666", fontSize: "0.9em", fontWeight: "bold" }}>← 메인으로 돌아가기</Link>
+      </div>
       <h2 style={{ textAlign: "center", marginBottom: "30px" }}>🔐 로그인</h2>
       <form onSubmit={handleSubmit} style={styles.form}>
-        <input 
-          type="number" 
-          placeholder="학번" 
+        <input
+          type="number"
+          placeholder="학번"
           value={studentId}
           onChange={(e) => setStudentId(e.target.value)}
           style={styles.input}
           maxLength={8}
           onInput={(e) => {
             if (e.target.value.length > 8) e.target.value = e.target.value.slice(0, 8);
-    }}
+          }}
         />
-        <input 
-          type="password" 
-          placeholder="비밀번호" 
+        <input
+          type="password"
+          placeholder="비밀번호"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           style={styles.input}

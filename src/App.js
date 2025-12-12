@@ -13,6 +13,8 @@ import logo from './logo.png';
 import FilterBar from './FilterBar';            // 스타일시트
 import Login from './Login';   // 로그인 페이지
 import Signup from './Signup'; // 회원가입 페이지
+import MyPage from './mypage';
+
 
 function Home({ user, onLogout, sessionUser, setSessionUser }) {
   // ==========================================
@@ -251,6 +253,12 @@ return (
         {user ? (
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <span style={{ fontWeight: "bold", color: "#2c3e50" }}>👋 {user.name}님</span>
+            <Link to="/mypage"> 
+              <button style={{ padding: "5px 10px", border: "1px solid #ddd", background: "#f1f2f6", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", color: "#333" }}>
+                마이페이지
+              </button>
+            </Link>
+            
             <button 
               onClick={onLogout}
               style={{ padding: "5px 10px", border: "1px solid #ddd", background: "white", borderRadius: "5px", cursor: "pointer" }}
@@ -467,6 +475,7 @@ return (
         <Route 
           path="/" 
           element={
+            
             <Home 
               user={user} 
               onLogout={handleLogout} 
@@ -487,7 +496,10 @@ return (
             />
           } 
         />
-        
+        <Route path="/mypage" element={
+          user ? <MyPage user={user} /> : <Navigate to="/login" replace />
+          } 
+        />
         <Route path="/login" element={<Login setUser={setUser} />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/admin-secret" element={<Admin />} />

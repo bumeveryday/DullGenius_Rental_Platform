@@ -16,24 +16,25 @@ export const fetchGames = async () => {
 };
 
 // 2. 찜하기 (30분 뒤 만료 시간 자동 계산)
-export const rentGame = async (gameId, studentId, password, renterName, phone, playerCount) => {
+export const rentGame = async (gameId, gameName, studentId, password, renterName, phone, playerCount) => {
   // 1. 현재 시간 가져오기
   const now = new Date();
-  
+
   // 2. 30분 더하기
   const thirtyMinutesLater = new Date(now.getTime() + 30 * 60 * 1000);
-  
+
   const payload = {
     action: "rent",        // ⭐ [중요] 액션 이름을 'dibs'에서 'rent'로 변경 (서버 코드와 매칭 필요)
     game_id: gameId,
+    game_name: gameName,
     student_id: studentId, // ⭐ 학번 (Users 시트 조회용)
     password: password,    // ⭐ 비밀번호 (검증용)
     renter: renterName,    // 이름
     phone: phone,          // 전화번호 (연락용)
-    due_date: thirtyMinutesLater.toISOString(), 
+    due_date: thirtyMinutesLater.toISOString(),
     player_count: playerCount
   };
-  
+
   return fetch(API_BASE_URL, {
     method: "POST",
     body: JSON.stringify(payload),
@@ -181,7 +182,7 @@ export const approveDibsByRenter = async (renterName, userId) => {
     renter_name: renterName,
     user_id: userId,     // 👈 여기가 핵심!
   };
-  
+
   const response = await fetch(API_BASE_URL, {
     method: "POST",
     body: JSON.stringify(payload),
@@ -241,11 +242,11 @@ export const fetchGameLogs = async (gameId) => {
 // 23. 부원 로그인 (수정됨)
 export const loginUser = async (studentId, password) => {
   const payload = {
-    action: "loginUser", 
+    action: "loginUser",
     student_id: studentId, // 백엔드는 'student_id'를 원함
     password: password
   };
-  
+
   return fetch(API_BASE_URL, {
     method: "POST",
     body: JSON.stringify(payload),
@@ -273,4 +274,33 @@ export const signupUser = async (userData) => {
 export const fetchUsers = async () => {
   const response = await fetch(`${API_BASE_URL}?action=getUsers`);
   return response.json();
+};
+
+//26. 마이페이지 운영을 위한 api
+export const fetchMyRentals = async (studentId, userName) => {
+  try {
+    // GET 요청: URL 파라미터로 action과 userId, name 전달
+    const encodedName = encodeURIComponent(userName || "");
+    const url = `${API_BASE_URL}?action=getMyRentals&userId=${studentId}&name=${encodedName}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      // GAS 특성상 리다이렉트를 따라가야 함
+      redirect: "follow",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("네트워크 응답이 올바르지 않습니다.");
+    }
+
+    const json = await response.json();
+    return json; // { status: "success", data: [...] } 구조 반환
+
+  } catch (error) {
+    console.error("대여 목록 조회 실패:", error);
+    return { status: "error", message: error.message };
+  }
 };

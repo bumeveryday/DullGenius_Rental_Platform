@@ -1,6 +1,6 @@
 // src/Signup.js
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { signupUser } from './api';
 
 function Signup() {
@@ -33,7 +33,7 @@ function Signup() {
     setLoading(true);
     try {
       const res = await signupUser(formData);
-      
+
       if (res.success) {
         alert("회원가입 성공! 로그인해주세요.");
         navigate("/login"); // 로그인 페이지로 이동
@@ -50,14 +50,18 @@ function Signup() {
 
   return (
     <div style={styles.container}>
+      <div style={{ marginBottom: "20px" }}>
+        <Link to="/" style={{ textDecoration: "none", color: "#666", fontSize: "0.9em", fontWeight: "bold" }}>← 메인으로 돌아가기</Link>
+      </div>
       <h2 style={{ textAlign: "center", marginBottom: "30px" }}>📝 회원가입</h2>
       <form onSubmit={handleSubmit} style={styles.form}>
         <input name="name" placeholder="이름" value={formData.name} onChange={handleChange} style={styles.input} />
         <input name="studentId" type="number" placeholder="학번" value={formData.studentId} onChange={handleChange} style={styles.input} maxLength={8} onInput={(e) => {
-          if (e.target.value.length > 8) e.target.value = e.target.value.slice(0, 8);}}/>
+          if (e.target.value.length > 8) e.target.value = e.target.value.slice(0, 8);
+        }} />
         <input name="password" type="password" placeholder="비밀번호" value={formData.password} onChange={handleChange} style={styles.input} />
         <input name="phone" placeholder="전화번호" value={formData.phone} onChange={handleChange} style={styles.input} />
-        
+
         <button type="submit" style={styles.button} disabled={loading}>
           {loading ? "가입 처리 중..." : "가입하기"}
         </button>
