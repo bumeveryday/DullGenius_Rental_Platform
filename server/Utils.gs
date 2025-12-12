@@ -39,6 +39,24 @@ function logAction(sheet, gid, type, val, uid) {
   if(sheet) sheet.appendRow(["log_"+Date.now(), gid, type, val, new Date().toLocaleString(), uid]); 
 }
 
+// 4. 비밀번호 해싱 (SHA-256)
+function hashPassword(password) {
+  if (!password) return "";
+  const rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, password);
+  let txtHash = "";
+  for (let i = 0; i < rawHash.length; i++) {
+    let hashVal = rawHash[i];
+    if (hashVal < 0) {
+      hashVal += 256;
+    }
+    if (hashVal.toString(16).length == 1) {
+      txtHash += '0';
+    }
+    txtHash += hashVal.toString(16);
+  }
+  return txtHash;
+}
+
 function updateGameStatusSafe(sheet, gameId, status, renter, dueDate) {
   const data = sheet.getDataRange().getValues();
   const headers = data[0].map(h => String(h).toLowerCase().trim()); // ⭐ 헤더를 모두 소문자로 변환해서 비교

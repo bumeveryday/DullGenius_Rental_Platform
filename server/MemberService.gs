@@ -27,12 +27,38 @@ const MemberService = {
     }
 
     // 2) 중복 학번 체크 (B열 = Index 1)
+    // 2) 중복 학번 체크 (B열 = Index 1)
     if (this._checkDuplicateId(sheet, data.student_id)) {
-      return responseJSON({ success: false, message: "이미 가입된 학번입니다." });
+      try {
+        // [Auto-Login] 이미 가입된 학번이라면, 비밀번호 확인 후 로그인 처리
+        Logger.log(`[Signup] Duplicate ID found: ${data.student_id}. Attempting Auto-Login.`);
+        
+        const authResult = this._authenticate(sheet, data.student_id, data.password);
+        
+        if (authResult.success) {
+           return responseJSON({
+               success: true,
+               message: "기존 계정으로 확인되었습니다. (자동 로그인)",
+               user: {
+                  name: authResult.row[0],
+                  student_id: authResult.row[1],
+                  phone: authResult.row[3],
+                  is_paid: authResult.row[4],
+                  penalty: authResult.row[5],
+                  role: authResult.row[7]
+               }
+           });
+        } else {
+           return responseJSON({ success: false, message: "이미 가입된 학번입니다. (비밀번호 불일치)" });
+        }
+      } catch (e) {
+        Logger.log(`[Signup Error] ${e}`);
+        return responseJSON({ success: false, message: "서버 오류: " + e.toString() });
+      }
     }
 
     var phoneToStore = "'" + data.phone; 
-    var passwordToStore = "'" + data.password; // 첫자리 0 해결
+    var passwordToStore = "'" + this._hashPassword(data.password); // [Secure] 해시 저장
 
     // 3) 초기 변수 설정 및 저장 (8개 컬럼)
     // 순서: name, student_id, password, phone, is_paid, penalty, last_login, role
@@ -59,21 +85,15 @@ const MemberService = {
       return responseJSON({ success: false, message: "회원 데이터가 없습니다." });
     }
 
-    const values = sheet.getDataRange().getValues();
-    const inputId = data.student_id; // 프론트엔드는 student_id를 보냄
-    const inputPw = data.password;
+    const authResult = this._authenticate(sheet, data.student_id, data.password);
 
-    // 헤더(Row 1) 제외하고 탐색
-    // 행 번호(rowIndex)가 필요해서 find 대신 for문 사용
-    for (let i = 1; i < values.length; i++) {
-      const row = values[i];
-      // B열: student_id (Index 1), C열: password (Index 2)
-      if (row[1] == inputId && row[2] == inputPw) {
-        
+    if (authResult.success) {
+        const row = authResult.row; // 전체 행 데이터
+        const rowIndex = authResult.rowIndex; // 실제 행 번호 (1-based)
+
         // 로그인 시간 업데이트 (G열 = Index 6 = 7번째 열)
-        // 실제 행 번호는 i + 1
         const now = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
-        sheet.getRange(i + 1, 7).setValue(now);
+        sheet.getRange(rowIndex, 7).setValue(now);
 
         return responseJSON({
           success: true,
@@ -88,7 +108,6 @@ const MemberService = {
             role: row[7]
           }
         });
-      }
     }
 
     return responseJSON({ success: false, message: "학번 또는 비밀번호가 일치하지 않습니다." });
@@ -97,9 +116,7 @@ const MemberService = {
   // 내부 헬퍼 함수: 중복 ID(학번) 확인
   _checkDuplicateId: function(sheet, targetId) {
     const values = sheet.getDataRange().getValues();
-    // 헤더 제외하고 검사
     for (let i = 1; i < values.length; i++) {
-      // B열(Index 1)이 학번
       if (values[i][1] == targetId) {
         return true;
       }
@@ -107,13 +124,66 @@ const MemberService = {
     return false;
   },
 
+  // [Refactor] 인증 로직 분리 (순수 검증만 수행)
+  _authenticate: function(sheet, inputId, inputPw) {
+    const values = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < values.length; i++) {
+      const row = values[i];
+      // B열: student_id (Index 1), C열: password (Index 2)
+      if (row[1] != inputId) continue;
+
+      const storedPw = String(row[2]);
+      const hashedInput = this._hashPassword(inputPw);
+      let isMatch = false;
+
+      // Case 1: Legacy (평문 일치)
+      if (storedPw === inputPw) {
+        isMatch = true;
+        // Migration: 비밀번호 해시로 업데이트
+        sheet.getRange(i + 1, 3).setValue("'" + hashedInput);
+        Logger.log(`[Security] Upgraded password for user: ${row[0]}`);
+      }
+      // Case 2: Secure (해시 일치)
+      else if (storedPw === hashedInput) {
+        isMatch = true;
+      }
+
+      // [DEBUG]
+      Logger.log(`[Auth] ID: ${inputId}, Match: ${isMatch}`);
+
+      if (isMatch) {
+        return { success: true, row: row, rowIndex: i + 1 };
+      }
+    }
+    return { success: false };
+  },
+
   // 내부 헬퍼 함수: 사용자 찾기 (로그인 등에서 활용)
   _findUserRowIndex: function(sheet, studentId) {
     const values = sheet.getDataRange().getValues();
     for (let i = 1; i < values.length; i++) {
-      if (values[i][1] == studentId) return i + 1; // 실제 행 번호 반환
+      if (values[i][1] == studentId) return i + 1; 
     }
     return -1;
+  },
+
+  // 내부 헬퍼 함수: 비밀번호 해싱 (SHA-256)
+  _hashPassword: function(password) {
+    if (!password) return "";
+    const rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, password);
+    let txtHash = "";
+    for (let i = 0; i < rawHash.length; i++) {
+      let hashVal = rawHash[i];
+      if (hashVal < 0) {
+        hashVal += 256;
+      }
+      if (hashVal.toString(16).length == 1) {
+        txtHash += '0';
+      }
+      txtHash += hashVal.toString(16);
+    }
+    return txtHash;
   }
 };
 
@@ -127,8 +197,9 @@ function responseJSON(data) {
 
 // 대여 처리
 function handleRent(userId, gameId, gameName) {
-  const rentalsSheet = getSheet("Rentals");
-  const logsSheet = getSheet("Logs"); // 기존 logs 시트 이름 확인 필요
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const rentalsSheet = ss.getSheetByName("Rentals");
+  const logsSheet = ss.getSheetByName("Logs"); // 기존 logs 시트 이름 확인 필요
   
   const now = new Date();
   
@@ -167,8 +238,9 @@ function handleRent(userId, gameId, gameName) {
 
 // 반납 처리
 function handleReturn(userId, gameId) {
-  const rentalsSheet = getSheet("Rentals");
-  const logsSheet = getSheet("Logs");
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const rentalsSheet = ss.getSheetByName("Rentals");
+  const logsSheet = ss.getSheetByName("Logs");
   
   const data = rentalsSheet.getDataRange().getValues();
   const now = new Date();
@@ -180,7 +252,7 @@ function handleReturn(userId, gameId) {
 
   for (let i = 1; i < data.length; i++) {
     // data[i][1] -> user_id, data[i][2] -> game_id 라고 가정
-    if (data[i][1] == userId && data[i][2] == game_id) {
+    if (data[i][1] == userId && data[i][2] == gameId) {
       rowIndexToDelete = i + 1; // 실제 행 번호는 인덱스 + 1
       rentalId = data[i][0];    // rental_id 백업
       break;

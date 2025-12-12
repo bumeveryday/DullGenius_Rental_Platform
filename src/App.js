@@ -527,6 +527,7 @@ function App() {
           element={
             <GameDetail
               user={user}
+              setUser={setUser} // ✅ setUser 전달
               sessionUser={sessionUser}
               setSessionUser={setSessionUser}
             />

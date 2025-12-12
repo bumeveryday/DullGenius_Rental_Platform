@@ -98,41 +98,21 @@ function rentGameDibs(payload) {
 function handleGameRent(params) {
   // 1. [검증] 회원 여부 및 비밀번호 확인
   const userSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Users");
-  const userData = userSheet.getDataRange().getValues();
-  const headers = userData[0];
   
-  const colId = headers.indexOf("student_id");
-  const colPw = headers.indexOf("password");
-  const colName = headers.indexOf("name");
-
-  if (colId === -1 || colPw === -1) return responseJSON({ result: "error", message: "Users 시트 설정 오류" });
+  if (!userSheet) return responseJSON({ result: "error", message: "Users 시트가 없습니다." });
 
   const targetId = String(params.student_id);
   const targetPw = String(params.password || "");
 
-  let isMember = false;
-  let isPasswordMatch = false;
-  let memberName = "";
-
-  // 유저 탐색
-  for (let i = 1; i < userData.length; i++) {
-    if (String(userData[i][colId]) === targetId) {
-      isMember = true;
-      memberName = userData[i][colName]; // 이름 가져오기
-      if (String(userData[i][colPw]) === targetPw) {
-        isPasswordMatch = true;
-      }
-      break;
-    }
-  }
+  // [Secure] MemberService의 인증 로직 사용 (해시 검증 지원)
+  const authResult = MemberService._authenticate(userSheet, targetId, targetPw);
 
   // 2. [예외 처리] 검증 실패 시 즉시 리턴
-  if (!isMember) {
-    return responseJSON({ result: "error", message: "존재하지 않는 회원입니다." });
+  if (!authResult.success) {
+     return responseJSON({ result: "error", message: "학번 또는 비밀번호가 일치하지 않습니다." });
   }
-  if (!isPasswordMatch) {
-    return responseJSON({ result: "error", message: "비밀번호가 일치하지 않습니다." });
-  }
+
+  const memberName = authResult.row[0]; // 이름 가져오기
 
   // 3. [실행] 검증 통과 후, "찜" 상태로 업데이트 (Rentals 시트 기록 X)
   // ---------------------------------------------------------

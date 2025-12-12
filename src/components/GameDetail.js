@@ -4,7 +4,7 @@ import { fetchGames, rentGame, sendMiss, fetchReviews, addReview, deleteReview, 
 import { TEXTS } from '../constants';
 import LoginModal from './LoginModal';
 
-function GameDetail({ user, sessionUser, setSessionUser }) {
+function GameDetail({ user, setUser, sessionUser, setSessionUser }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -12,8 +12,10 @@ function GameDetail({ user, sessionUser, setSessionUser }) {
 
   const [game, setGame] = useState(location.state?.game || null);
   const [reviews, setReviews] = useState([]);
+  const [isReviewsLoading, setIsReviewsLoading] = useState(true); // [New] 리뷰 로딩 상태
   const [loading, setLoading] = useState(!game);
-  const [newReview, setNewReview] = useState({ user_name: "", password: "", rating: "5", comment: "" });
+  const [newReview, setNewReview] = useState({ rating: "5", comment: "" }); // 이름/비번 제거
+  const [cooldown, setCooldown] = useState(0); // [New] 도배 방지 쿨타임
 
   // 모달 상태
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // 로그인모달
@@ -51,11 +53,19 @@ function GameDetail({ user, sessionUser, setSessionUser }) {
           setGame(foundGame);
         }
       }
+
+
+      // 리뷰 로딩 시작
+      setIsReviewsLoading(true);
       const reviewsData = await fetchReviews();
       if (Array.isArray(reviewsData)) {
         const filteredReviews = reviewsData.filter(r => String(r.game_id) === String(id));
-        setReviews(filteredReviews.reverse());
+        // [New] 최신순 정렬 (날짜 객체 변환 후 비교)
+        filteredReviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        setReviews(filteredReviews);
       }
+      setIsReviewsLoading(false); // 리뷰 로딩 끝
+
       setLoading(false);
     };
     loadData();
@@ -87,18 +97,42 @@ function GameDetail({ user, sessionUser, setSessionUser }) {
   };
   // ⭐ 리뷰 작성 핸들러
   const handleSubmitReview = async () => {
-    if (!newReview.user_name || !newReview.password || !newReview.comment) return alert("모두 입력해주세요.");
+    if (!currentUser) return alert("로그인이 필요합니다.");
+    if (!newReview.comment) return alert("내용을 입력해주세요.");
+    if (cooldown > 0) return alert(`조금만 기다려주세요 (${cooldown}초)`);
+
+    setIsReviewSubmitting(true);
 
     try {
-      await addReview({ ...newReview, game_id: game.id });
+      // 로그인 유저 정보로 리뷰 전송
+      await addReview({
+        ...newReview,
+        game_id: game.id,
+        user_name: currentUser.name,
+        password: currentUser.password // 본인 확인용 (삭제 시 필요)
+      });
+
       showToast(TEXTS.ALERT_REVIEW_SUCCESS);
-      setNewReview({ user_name: "", password: "", rating: "5", comment: "" });
+      setNewReview({ rating: "5", comment: "" }); // 초기화
+
+      // [New] 쿨타임 설정 (10초)
+      setCooldown(10);
+      const timer = setInterval(() => {
+        setCooldown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
       // 목록 새로고침
       const reviewsData = await fetchReviews();
       if (Array.isArray(reviewsData)) {
         const filteredReviews = reviewsData.filter(r => String(r.game_id) === String(id));
-        setReviews(filteredReviews.reverse());
+        filteredReviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        setReviews(filteredReviews);
       }
     } catch (e) {
       alert("리뷰 등록 중 오류가 발생했습니다.");
@@ -119,7 +153,8 @@ function GameDetail({ user, sessionUser, setSessionUser }) {
         const reviewsData = await fetchReviews();
         if (Array.isArray(reviewsData)) {
           const filteredReviews = reviewsData.filter(r => String(r.game_id) === String(id));
-          setReviews(filteredReviews.reverse());
+          filteredReviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          setReviews(filteredReviews);
         }
       } else {
         alert("실패: " + (res.message || "비밀번호가 틀렸거나 오류가 발생했습니다."));
@@ -172,64 +207,71 @@ function GameDetail({ user, sessionUser, setSessionUser }) {
 
       {/* 리뷰 섹션 */}
       {/* 입력 폼 */}
+      {/* 입력 폼 (로그인 체크) */}
       <div className="review-form-box">
         <h3>리뷰 남기기</h3>
-        {/* 상단: 닉네임, 비번, 별점 */}
-        <div className="review-row top-row">
-          <input
-            className="review-input"
-            placeholder="닉네임"
-            value={newReview.user_name}
-            onChange={e => setNewReview({ ...newReview, user_name: e.target.value })}
-          />
-          <input
-            type="password"
-            className="review-input"
-            placeholder="비밀번호 (삭제용)"
-            value={newReview.password}
-            onChange={e => setNewReview({ ...newReview, password: e.target.value })}
-          />
-          <select
-            className="review-input"
-            value={newReview.rating}
-            onChange={e => setNewReview({ ...newReview, rating: e.target.value })}
-          >
-            <option value="5">⭐⭐⭐⭐⭐ (5점)</option>
-            <option value="4">⭐⭐⭐⭐ (4점)</option>
-            <option value="3">⭐⭐⭐ (3점)</option>
-            <option value="2">⭐⭐ (2점)</option>
-            <option value="1">⭐ (1점)</option>
-          </select>
-        </div>
 
-        {/* 하단: 코멘트, 등록버튼 */}
-        <div className="review-row bottom-row">
-          <input
-            className="review-input"
-            placeholder="솔직한 후기를 남겨주세요 (최대 50자)"
-            value={newReview.comment}
-            onChange={e => setNewReview({ ...newReview, comment: e.target.value })}
-          />
-          <button
-            onClick={handleSubmitReview}
-            disabled={isReviewSubmitting}
-            className="review-submit-btn"
-          >
-            {isReviewSubmitting ? "..." : "등록"}
-          </button>
-        </div>
+        {!currentUser ? (
+          <div style={{ textAlign: "center", padding: "20px", color: "#888" }}>
+            <p style={{ marginBottom: "10px" }}>로그인 후 리뷰를 남길 수 있습니다.</p>
+            <button onClick={() => navigate("/login")} style={{ padding: "8px 16px", borderRadius: "5px", border: "1px solid #ddd", background: "white", cursor: "pointer" }}>로그인하기</button>
+          </div>
+        ) : (
+          <>
+            {/* 상단: 닉네임(자동), 별점 */}
+            <div className="review-row top-row">
+              <div style={{ padding: "10px", fontWeight: "bold", color: "#555" }}>
+                작성자: {currentUser.name}
+              </div>
+              <select
+                className="review-input"
+                value={newReview.rating}
+                onChange={e => setNewReview({ ...newReview, rating: e.target.value })}
+              >
+                <option value="5">⭐⭐⭐⭐⭐ (5점)</option>
+                <option value="4">⭐⭐⭐⭐ (4점)</option>
+                <option value="3">⭐⭐⭐ (3점)</option>
+                <option value="2">⭐⭐ (2점)</option>
+                <option value="1">⭐ (1점)</option>
+              </select>
+            </div>
+
+            {/* 하단: 코멘트, 등록버튼 */}
+            <div className="review-row bottom-row">
+              <input
+                className="review-input"
+                placeholder="솔직한 후기를 남겨주세요 (최대 50자)"
+                value={newReview.comment}
+                onChange={e => setNewReview({ ...newReview, comment: e.target.value })}
+              />
+              <button
+                onClick={handleSubmitReview}
+                disabled={isReviewSubmitting || cooldown > 0}
+                className="review-submit-btn"
+                style={{ background: cooldown > 0 ? "#bdc3c7" : "#3498db" }}
+              >
+                {cooldown > 0 ? `${cooldown}s` : (isReviewSubmitting ? "등록중..." : "등록")}
+              </button>
+            </div>
+            {cooldown > 0 && <div style={{ fontSize: "0.8em", color: "#e74c3c", marginTop: "5px", textAlign: "right" }}>도배 방지를 위해 10초 쿨타임이 적용됩니다.</div>}
+          </>
+        )}
       </div>
 
-      {reviews.length === 0 ? <p style={{ color: "#999", textAlign: "center" }}>아직 리뷰가 없습니다.</p> : (
+      {isReviewsLoading ? (
+        <div style={{ textAlign: "center", padding: "20px", color: "#888" }}>리뷰를 불러오는 중입니다...</div>
+      ) : reviews.length === 0 ? (
+        <p style={{ color: "#999", textAlign: "center" }}>아직 리뷰가 없습니다.</p>
+      ) : (
         <div>
           {reviews.map(r => (
-            <div key={r.review_id} style={{ borderBottom: "1px solid #eee", padding: "15px 0" }}>
+            <div key={r.id || r.review_id} style={{ borderBottom: "1px solid #eee", padding: "15px 0" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
                 <strong>{r.user_name} <span style={{ color: "#f1c40f", fontSize: "0.9em" }}>{"★".repeat(r.rating)}</span></strong>
                 <span style={{ fontSize: "0.8em", color: "#aaa" }}>{r.created_at}</span>
               </div>
               <p style={{ margin: "0", color: "#444" }}>{r.comment}</p>
-              <div style={{ textAlign: "right" }}><button onClick={() => handleDeleteReview(r.review_id)} style={{ fontSize: "0.8em", background: "none", border: "none", color: "#e74c3c", cursor: "pointer", textDecoration: "underline" }}>삭제</button></div>
+              <div style={{ textAlign: "right" }}><button onClick={() => handleDeleteReview(r.id || r.review_id)} style={{ fontSize: "0.8em", background: "none", border: "none", color: "#e74c3c", cursor: "pointer", textDecoration: "underline" }}>삭제</button></div>
             </div>
           ))}
         </div>
@@ -243,6 +285,7 @@ function GameDetail({ user, sessionUser, setSessionUser }) {
         onConfirm={handleRentConfirm}
         gameName={game.name}
         currentUser={currentUser}    // 로그인 유저 (영구)
+        setUser={setUser}            // ✅ [Fix] App.js에서 받은 setUser 전달
         sessionUser={sessionUser}    // ✅ 임시 유저 (휘발성) 전달
         setSessionUser={setSessionUser} // ✅ 상태 저장 함수 전달
       />

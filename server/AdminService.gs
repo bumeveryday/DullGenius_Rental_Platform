@@ -68,8 +68,9 @@ function updateGameStatusOrTags(payload) {
     if (payload.status === "대여중" && userIdForLog && userIdForLog !== "ExistingUser" && userIdForLog !== "Admin") {
        // 게임 이름 찾기
        const gameName = getGameNameById(gameSheet, payload.game_id);
+       // 중복 방지를 위해 Rental이 없는 경우에만 추가하는 로직이 있으면 좋지만, 간단히 추가
        addRentalRow(userIdForLog, payload.game_id, gameName);
-    
+    }
 
     // 2️⃣ 상태 업데이트 실행 (반납이면 여기서 시트의 대여자 정보가 지워짐)
     // updateGameStatusSafe(sheet, gameId, status, renter, dueDate, renterId)
@@ -78,15 +79,6 @@ function updateGameStatusOrTags(payload) {
     // 3️⃣ 로그 남기기 (위에서 만든 logValue 사용)
     logAction(ss.getSheetByName(SHEET_NAMES.LOGS), payload.game_id, logType, logValue, userIdForLog || "Admin");
     
-    // [NEW] 만약 어드민이 강제로 "대여중"으로 상태를 바꿨다면, Rentals에도 추가해줘야 함
-    // ID가 없으면 이름(renterDisplay)이라도 저장해서 Rentals 시트가 비지 않게 함
-    if (payload.status === "대여중" && userIdForLog !== "ExistingUser") {
-       const gameName = getGameNameById(gameSheet, payload.game_id);
-       // ID가 있으면 ID, 없으면 이름 사용
-       const finalRenterId = userIdForLog || renterDisplay || "Unknown";
-       addRentalRow(finalRenterId, payload.game_id, gameName);
-    }
-
     // 반납인 경우 대여자 정보 삭제 (순서 중요: 로그 남긴 뒤 삭제는 Utils의 updateGameStatusSafe에서 이미 처리될 수도 있으나, 안전하게 여기서도 체크)
     if (payload.status === "대여가능") clearRenterInfo(gameSheet, payload.game_id);
   }
@@ -96,6 +88,7 @@ function updateGameStatusOrTags(payload) {
   }
   return responseJSON({ status: "success" });
 }
+
 
 // 3. 일괄 수령 (이름 기준 매칭 유지하되 로그 강화)
 function batchApproveDibs(payload) {
@@ -157,14 +150,17 @@ function addUserReview(payload) {
   return responseJSON({ status: "success" }); 
 }
 
-// ⭐ [변경] 관리자용 리뷰 삭제 (비번 체크 제거)
+// 5. ⭐ [변경] 관리자용 리뷰 삭제 (비번 체크 포함)
 function removeUserReview(payload) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.REVIEWS);
   const data = sheet.getDataRange().getValues();
   
   const reqId = String(payload.review_id).trim();
+  const reqPw = String(payload.password || "").trim();
+
   let targetGameId = null; 
-  let found = false;
+  let foundIndex = -1;
+  let storedPw = "";
 
   // 헤더 제외하고 검색
   for (let i = 1; i < data.length; i++) {
@@ -172,15 +168,21 @@ function removeUserReview(payload) {
 
     if (sheetId === reqId) {
        targetGameId = data[i][1]; // Game ID 저장 (통계 갱신용)
-       sheet.deleteRow(i + 1); 
-       found = true;
+       storedPw = String(data[i][3]).trim();
+       foundIndex = i;
        break;
     }
   }
 
-  if (found) {
-    if (targetGameId) updateGameRatingStats(targetGameId);
-    return responseJSON({status: "success"});
+  if (foundIndex !== -1) {
+    // 비번 체크 (일치해야 삭제)
+    if (storedPw === reqPw) {
+      sheet.deleteRow(foundIndex + 1);
+      if (targetGameId) updateGameRatingStats(targetGameId);
+      return responseJSON({status: "success"});
+    } else {
+      return responseJSON({status: "error", message: "비밀번호가 일치하지 않습니다."});
+    }
   }
   
   return responseJSON({status: "error", message: "삭제할 리뷰를 찾을 수 없습니다."});
