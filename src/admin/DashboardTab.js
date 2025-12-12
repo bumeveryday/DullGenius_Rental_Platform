@@ -154,18 +154,21 @@ function DashboardTab({ games, loading, onReload }) {
   // 현장 대여 핸들러 추가
   const handleDirectRent = async (game) => {
     // 1. 대여자 이름 입력받기
-    const renterName = prompt(`[${game.name}] 현장 대여자 이름(전화번호)을 입력하세요.\n예: 김철수(010-1234-5678)`);
+    const promptMsg = TEXTS.ADMIN_RENT_PROMPT.replace("{gameName}", game.name);
+    const renterName = prompt(promptMsg);
     if (!renterName || renterName.trim() === "") return;
 
     // 2. ID 찾기 시도
     const userId = findUserId(renterName);
 
     // 찾았는지 못 찾았는지 확인 메시지 (테스트용)
-    let confirmMsg = `[${game.name}] 대여 처리하시겠습니까?\n\n입력값: ${renterName}`;
+    let confirmMsg = TEXTS.ADMIN_RENT_CONFIRM_HeadsUp
+      .replace("{gameName}", game.name)
+      .replace("{renterName}", renterName);
     if (userId) {
-      confirmMsg += `\n✅ 회원 매칭 성공! (ID: ${userId})`;
+      confirmMsg += TEXTS.ADMIN_RENT_CONFIRM_SUCCESS.replace("{userId}", userId);
     } else {
-      confirmMsg += `\n❌ 회원 매칭 실패 (단순 텍스트로 기록됩니다)`;
+      confirmMsg += TEXTS.ADMIN_RENT_CONFIRM_FAIL;
     }
 
     if (window.confirm(confirmMsg)) {
@@ -175,7 +178,7 @@ function DashboardTab({ games, loading, onReload }) {
 
         // 응답 체크
         if (res && res.status === "success") {
-          alert("✅ 대여 처리되었습니다.");
+          alert(TEXTS.ADMIN_RENT_SUCCESS);
           onReload();
         } else {
           alert("오류 발생: " + (res.message || "응답 없음"));
