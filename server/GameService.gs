@@ -9,13 +9,17 @@ function getGamesList() {
 }
 
 // 2. 게임 추가 (장르, BGG 연동 포함)
+// [Refactor] 헤더를 읽어서 동적으로 매핑 (컬럼 순서 변경 대응)
 function addNewGame(payload) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const gameSheet = ss.getSheetByName(SHEET_NAMES.GAMES);
   
+  // 헤더 로드
+  const headers = gameSheet.getDataRange().getValues()[0];
+  const newRow = new Array(headers.length).fill(""); // 빈 행 생성
+
+  // BGG 데이터 로드
   let diff = "", gen = "";
-  
-  // BGG ID가 있으면 데이터 가져오기 시도
   if (payload.bgg_id) {
     const bggData = fetchBggDataSafe(payload.bgg_id);
     if (bggData) {
@@ -23,20 +27,39 @@ function addNewGame(payload) {
       gen = bggData.genre;
     }
   }
-
-  // 사용자가 입력한 장르가 있으면 우선 사용, 없으면 BGG 데이터 사용
   const finalGenre = payload.genre || gen;
 
-  const newRow = [
-    payload.id, payload.name, payload.category, payload.image, payload.naver_id, payload.bgg_id,
-    "대여가능", 
-    payload.difficulty || diff, // 난이도 (입력값 우선)
-    finalGenre,                 // 장르 (입력값 우선)
-    payload.players || "", 
-    payload.tags || "", 
-    "", "", "", 0, 0, 0, 0, 0
-  ];
+  // 컬럼 매핑 헬퍼
+  const setVal = (key, val) => {
+    const idx = headers.indexOf(key);
+    if (idx !== -1) newRow[idx] = val;
+  };
+
+  // 데이터 채우기 (헤더 이름 기준)
+  setVal("id", payload.id);
+  setVal("name", payload.name);
+  setVal("category", payload.category);
+  setVal("image", payload.image);
+  setVal("naver_id", payload.naver_id);
+  setVal("bgg_id", payload.bgg_id);
   
+  setVal("status", "대여가능");
+  setVal("difficulty", payload.difficulty || diff);
+  setVal("genre", finalGenre);
+  setVal("players", payload.players || "");
+  setVal("tags", payload.tags || "");
+  
+  // 초기값 0 설정 (순서 무관하게 이름으로 찾음)
+  setVal("total_views", 0);
+  setVal("dibs_count", 0);
+  setVal("review_count", 0);
+  setVal("avg_rating", 0);
+  
+  // 명시적 빈값 (필수는 아님, fill("")로 처리됨)
+  // setVal("renter", ""); 
+  // setVal("due_date", "");
+  // setVal("renter_id", ""); 
+
   gameSheet.appendRow(newRow);
   return responseJSON({ status: "success" });
 }
