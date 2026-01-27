@@ -296,6 +296,18 @@ function autoReleaseDibs() {
       if(col.due !== -1) sheet.getRange(i + 1, col.due + 1).setValue("");
       
       logAction(logSheet, gameId, "AUTO_CANCEL", "시간만료", "System");
+      
+      // ✅ [Fix] Rentals 시트에서도 찜 내역 삭제 (MyPage 동기화)
+      // deleteRentalByGameId는 MemberService.gs에 정의된 전역 함수
+      try {
+        if (typeof deleteRentalByGameId === 'function') {
+           deleteRentalByGameId(gameId); 
+        } else {
+           Logger.log("⚠️ deleteRentalByGameId function not found");
+        }
+      } catch (e) {
+        Logger.log("Rentals cleanup failed: " + e.toString());
+      }
     }
   }
 }
