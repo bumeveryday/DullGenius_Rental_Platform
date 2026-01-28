@@ -1,4 +1,36 @@
 // src/constants.js
+// 최종 수정일: 2026.01.28
+// 설명: 앱 전역에서 사용되는 상수 정의 (텍스트, 설정, 상태 코드 등)
+
+// ==========================================
+// [NEW] 상태 코드 ENUM
+// ==========================================
+export const STATUS = {
+  AVAILABLE: { ko: '대여가능', en: 'AVAILABLE', color: '#2ecc71' },
+  RENTED: { ko: '대여중', en: 'RENTED', color: '#3498db' },
+  RESERVED: { ko: '찜', en: 'RESERVED', color: '#f1c40f' },
+  LOST: { ko: '분실', en: 'LOST', color: '#95a5a6' },
+  MAINTENANCE: { ko: '수리중', en: 'MAINTENANCE', color: '#95a5a6' }
+};
+
+// 헬퍼 함수: 영문 -> 한글
+export const statusToKorean = (enStatus) => {
+  const found = Object.values(STATUS).find(s => s.en === enStatus);
+  return found ? found.ko : enStatus;
+};
+
+// 헬퍼 함수: 한글 -> 영문
+export const koreanToStatus = (koStatus) => {
+  const found = Object.values(STATUS).find(s => s.ko === koStatus);
+  return found ? found.en : koStatus;
+};
+
+// 헬퍼 함수: 상태 색상 가져오기
+export const getStatusColor = (status) => {
+  // 한글이든 영문이든 매칭
+  const found = Object.values(STATUS).find(s => s.ko === status || s.en === status);
+  return found ? found.color : '#95a5a6';
+};
 
 export const TEXTS = {
 

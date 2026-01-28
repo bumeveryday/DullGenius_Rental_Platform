@@ -31,6 +31,7 @@ a {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -42,48 +43,61 @@ a {
    ========================================= */
 .trending-wrapper {
   /* 기본 상태 (활성) */
-  max-height: 2000px; /* 넉넉하게 */
+  max-height: 2000px;
+  /* 넉넉하게 */
   opacity: 1;
   margin-bottom: 50px;
   transform: translateY(0);
   visibility: visible;
-  overflow: hidden; /* 접힐 때 내용 자르기 */
+  overflow: hidden;
+  /* 접힐 때 내용 자르기 */
 
   /* ⭐ [핵심 1] 처음 로딩될 때 '스르륵' 내려오게 함 */
   animation: slideDownFade 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 
   /* ⭐ [핵심 2] 검색해서 숨겨질 때 '부드럽게' 접히게 함 */
-  transition: 
+  transition:
     max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1),
     opacity 0.4s ease-in-out,
     margin-bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.4s ease-in-out,
-    visibility 0.6s; /* visibility도 transition이 먹힙니다 (끝날 때 적용됨) */
+    visibility 0.6s;
+  /* visibility도 transition이 먹힙니다 (끝날 때 적용됨) */
 }
 
 /* 3. 숨김 상태 (클래스가 붙으면 적용됨) */
 .trending-wrapper.hidden {
-  max-height: 0;        /* 높이 0으로 압축 */
-  opacity: 0;           /* 투명하게 */
-  margin-bottom: 0;     /* 여백 제거 */
-  transform: translateY(-20px); /* 살짝 위로 올라가며 사라짐 */
-  visibility: hidden;   /* 클릭 방지 */
+  max-height: 0;
+  /* 높이 0으로 압축 */
+  opacity: 0;
+  /* 투명하게 */
+  margin-bottom: 0;
+  /* 여백 제거 */
+  transform: translateY(-20px);
+  /* 살짝 위로 올라가며 사라짐 */
+  visibility: hidden;
+  /* 클릭 방지 */
   pointer-events: none;
 }
 
 /* 내부 그리드 레이아웃 (좌우 배치) */
 .dashboard-container {
   display: flex;
-  flex-wrap: wrap; /* 모바일에서 줄바꿈 허용 */
-  gap: 40px;       /* 좌우 간격 */
+  flex-wrap: wrap;
+  /* 모바일에서 줄바꿈 허용 */
+  gap: 40px;
+  /* 좌우 간격 */
   align-items: flex-start;
 }
 
 /* 왼쪽 (테마 추천) & 오른쪽 (급상승) 비율 1:1 */
-.dashboard-left, .dashboard-right {
+.dashboard-left,
+.dashboard-right {
   flex: 1;
-  min-width: 300px; /* 너무 좁아지면 줄바꿈 유도 */
-  min-width: 0;     /* Flex 자식의 가로 스크롤 버그 방지 (중요!) */
+  min-width: 300px;
+  /* 너무 좁아지면 줄바꿈 유도 */
+  min-width: 0;
+  /* Flex 자식의 가로 스크롤 버그 방지 (중요!) */
 }
 
 /* =========================================
@@ -91,7 +105,8 @@ a {
    ========================================= */
 .theme-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* 2열 */
+  grid-template-columns: 1fr 1fr;
+  /* 2열 */
   gap: 15px;
 }
 
@@ -100,7 +115,7 @@ a {
   border: none;
   border-radius: 16px;
   background: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   font-size: 1rem;
   font-weight: bold;
   color: #555;
@@ -113,7 +128,7 @@ a {
 
 .theme-btn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 .theme-btn:active {
@@ -128,19 +143,22 @@ a {
   display: flex;
   gap: 15px;
   overflow-x: auto;
-  padding: 10px 5px 25px 5px; /* 그림자 잘림 방지 */
+  padding: 10px 5px 25px 5px;
+  /* 그림자 잘림 방지 */
   scroll-behavior: smooth;
 }
 
 /* 급상승 카드 디자인 */
 .trend-card {
-  position: relative; /* 뱃지 기준점 */
+  position: relative;
+  /* 뱃지 기준점 */
   width: 150px;
-  min-width: 150px;   /* 너비 고정 */
+  min-width: 150px;
+  /* 너비 고정 */
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid #eee;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   background: white;
   transition: transform 0.2s;
 }
@@ -161,7 +179,7 @@ a {
   border-bottom-right-radius: 10px;
   font-weight: bold;
   font-size: 0.85rem;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 /* =========================================
@@ -186,14 +204,17 @@ a {
    7. 모바일 반응형 (Mobile Media Query)
    ========================================= */
 @media (max-width: 768px) {
+
   /* 대시보드 레이아웃 변경 */
   .dashboard-container {
-    flex-direction: column; /* 위아래로 쌓기 */
+    flex-direction: column;
+    /* 위아래로 쌓기 */
     gap: 40px;
   }
-  
+
   /* 섹션 너비 꽉 채우기 */
-  .dashboard-left, .dashboard-right {
+  .dashboard-left,
+  .dashboard-right {
     width: 100%;
     flex: none;
   }
@@ -216,22 +237,30 @@ a {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 80vh; /* 화면 중앙 배치 */
+  height: 80vh;
+  /* 화면 중앙 배치 */
 }
 
 /* 스피너 (빙글빙글) */
 .spinner {
   width: 50px;
   height: 50px;
-  border: 5px solid #f3f3f3; /* 회색 테두리 */
-  border-top: 5px solid #3498db; /* 파란색 포인트 */
+  border: 5px solid #f3f3f3;
+  /* 회색 테두리 */
+  border-top: 5px solid #3498db;
+  /* 파란색 포인트 */
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .section-loading {
@@ -261,9 +290,17 @@ a {
 
 /* 깜빡이는 스켈레톤 애니메이션 (고급 효과) */
 @keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
+  0% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.6;
+  }
 }
 
 .skeleton-box {
@@ -272,41 +309,111 @@ a {
   animation: pulse 1.5s infinite;
 }
 
-/* 토스트 알림 (Toast Notification) */
-.toast-notification {
+/* =========================================
+   Toast 알림 시스템
+   ========================================= */
+
+/* Toast 컨테이너 - 여러 toast를 쌓아서 표시 */
+.toast-container {
   position: fixed;
-  bottom: 30px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(33, 37, 41, 0.95); /* 진한 검회색 */
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse;
+  /* 아래에서 위로 쌓임 */
+  gap: 12px;
+  pointer-events: none;
+  /* 배경 클릭 허용 */
+  max-width: 90vw;
+}
+
+/* Toast 개별 알림 */
+.toast-notification {
+  background: rgba(33, 37, 41, 0.95);
   color: white;
-  padding: 14px 28px;
-  border-radius: 50px;
+  padding: 15px 25px;
+  border-radius: 12px;
   font-size: 1rem;
   font-weight: 500;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-  z-index: 9999;
-  
-  /* 애니메이션: 떠오르기 */
-  animation: toastFadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+  /* toast는 클릭 가능 */
+
+  /* 애니메이션: 부드럽게 위로 떠오르기 */
+  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
+  min-width: 300px;
+  max-width: 400px;
 }
 
-/* 토스트 사라질 때 (나중에 JS로 클래스 추가) */
-.toast-notification.fade-out {
-  animation: toastFadeOut 0.4s ease-in forwards;
+/* Toast 타입별 배경색 (Context에서 inline으로 적용되지만 fallback) */
+.toast-success {
+  background: rgba(39, 174, 96, 0.95) !important;
 }
 
+.toast-error {
+  background: rgba(231, 76, 60, 0.95) !important;
+}
+
+.toast-warning {
+  background: rgba(243, 156, 18, 0.95) !important;
+}
+
+.toast-info {
+  background: rgba(52, 152, 219, 0.95) !important;
+}
+
+/* slideUp 애니메이션 (GameDetail.js에서 참조) */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* toastFadeIn (기존 호환성) */
 @keyframes toastFadeIn {
-  from { opacity: 0; transform: translate(-50%, 20px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
+/* toastFadeOut */
 @keyframes toastFadeOut {
-  from { opacity: 1; transform: translate(-50%, 0); }
-  to { opacity: 0; transform: translate(-50%, 20px); }
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+/* 모바일 최적화 */
+@media (max-width: 768px) {
+  .toast-notification {
+    min-width: 280px;
+    max-width: 90vw;
+    font-size: 0.95rem;
+  }
 }
 
 /* --- 리뷰 작성 폼 스타일 --- */
@@ -322,22 +429,22 @@ a {
   display: flex;
   gap: 10px;
   margin-bottom: 10px;
-  
-  flex-wrap: wrap; 
+
+  flex-wrap: wrap;
 }
 
 /* 입력창 공통 스타일 */
 .review-input {
   flex: 1;
-  
-  min-width: 120px; 
+
+  min-width: 120px;
   padding: 12px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 0.95rem;
   outline: none;
   transition: border 0.2s;
-  background: white; 
+  background: white;
 }
 
 .review-input:focus {
@@ -348,7 +455,7 @@ a {
 select.review-input {
   cursor: pointer;
   /* 텍스트가 너무 길면 말줄임표 처리 */
-  text-overflow: ellipsis; 
+  text-overflow: ellipsis;
 }
 
 /* 등록 버튼 */
@@ -373,17 +480,18 @@ select.review-input {
 /* ⭐ [모바일 최적화] 화면이 좁을 때 세로로 쌓기 */
 @media (max-width: 768px) {
   .review-row.top-row {
-    flex-direction: column; /* 닉네임/비번/별점을 세로로 */
+    flex-direction: column;
+    /* 닉네임/비번/별점을 세로로 */
     gap: 12px;
   }
 
   /* 모바일에서는 버튼을 꽉 채우기 */
   .review-submit-btn {
-    width: 100%; 
+    width: 100%;
     padding: 15px;
     margin-top: 5px;
   }
-  
+
   /* 댓글 입력창과 버튼도 분리 (선택사항: 여기선 냅둠) */
   .review-row.bottom-row {
     flex-direction: column;
@@ -399,7 +507,7 @@ select.review-input {
   overflow: hidden;
   border: 1px solid #ddd;
   background: white;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
 }
 
 /* 토글 버튼 (헤더) */
@@ -428,11 +536,15 @@ select.review-input {
   background: #ffffff;
   color: #555;
   font-size: 1rem;
-  line-height: 1.8;       /* 줄 간격을 넓게 해서 읽기 편하게 */
-  white-space: pre-wrap;  /* ⭐ 핵심: 코드상의 줄바꿈과 띄어쓰기를 그대로 표현 */
-  word-break: break-all;  /* 긴 단어 줄바꿈 */
+  line-height: 1.8;
+  /* 줄 간격을 넓게 해서 읽기 편하게 */
+  white-space: pre-wrap;
+  /* ⭐ 핵심: 코드상의 줄바꿈과 띄어쓰기를 그대로 표현 */
+  word-break: break-all;
+  /* 긴 단어 줄바꿈 */
   border-top: 1px solid #eee;
-  font-family: inherit;   /* 폰트 상속 */
+  font-family: inherit;
+  /* 폰트 상속 */
 }
 
 /* 모바일에서는 좌우 여백을 조금 줄임 */

@@ -3,43 +3,35 @@
 // 설명: 관리자 페이지 메인 (인증 및 탭 컨테이너)
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { verifyAdminPassword, fetchGames, fetchConfig } from './api';
+import { Link, useNavigate } from 'react-router-dom';
+import { fetchGames, fetchConfig } from './api';
+import { useAuth } from './contexts/AuthContext'; // [SECURITY] Supabase 권한 기반 인증
+import { useToast } from './contexts/ToastContext';
 
 // 분리된 컴포넌트 임포트 (admin 폴더 생성 필요)
 import DashboardTab from './admin/DashboardTab';
 import AddGameTab from './admin/AddGameTab';
 import ConfigTab from './admin/ConfigTab';
+import PointsTab from './admin/PointsTab';
 
 function Admin() {
-  // --- 1. 인증 상태 관리 ---
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    sessionStorage.getItem("admin_auth") === "true"
-  );
-  const [inputPassword, setInputPassword] = useState("");
+  const { user, hasRole, logout, loading: authLoading } = useAuth(); // [FIX] logout 추가
+  const { showToast } = useToast();
+  const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    if (!inputPassword) return alert("암호를 입력하세요.");
-    try {
-      const res = await verifyAdminPassword(inputPassword);
-      if (res.status === "success") {
-        setIsAuthenticated(true);
-        sessionStorage.setItem("admin_auth", "true");
-      } else {
-        alert("암호가 틀렸습니다.");
-        setInputPassword("");
-      }
-    } catch (error) {
-      alert("로그인 서버 오류: " + error);
+  // --- 1. 권한 체크: 관리자 권한이 있는지 확인 ---
+  const isAdmin = hasRole('admin') || hasRole('executive');
+
+  // 비로그인 또는 권한 없음 처리
+  useEffect(() => {
+    if (!authLoading && !user) {
+      showToast("관리자 로그인이 필요합니다.", { type: "warning" });
+      navigate("/login");
+    } else if (!authLoading && user && !isAdmin) {
+      showToast("접근 권한이 없습니다.", { type: "error" });
+      navigate("/");
     }
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem("admin_auth");
-    alert("로그아웃 되었습니다.");
-  };
+  }, [user, isAdmin, authLoading, navigate, showToast]);
 
   // --- 2. 데이터 상태 관리 (하위 탭들과 공유) ---
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -47,33 +39,33 @@ function Admin() {
   const [config, setConfig] = useState([]);
   const [loading, setLoading] = useState(false);
 
-// --- 데이터 로딩 (SWR 패턴 적용) ---
+  // --- 데이터 로딩 (SWR 패턴 적용) ---
   const loadData = async () => {
     // 1. (배경) 로딩 표시 시작
-    setLoading(true); 
+    setLoading(true);
     try {
       const [gamesData, configData] = await Promise.all([fetchGames(), fetchConfig()]);
-      
+
       // 정렬 로직 (우선순위: 찜 > 대여중 > 분실 > 대여가능)
       const priority = { "찜": 1, "대여중": 2, "분실": 3, "대여가능": 4 };
       const sortedGames = gamesData.sort((a, b) => (priority[a.status] || 4) - (priority[b.status] || 4));
-      
+
       setGames(sortedGames);
       if (configData?.length) setConfig(configData);
 
       // ⭐ [핵심] 최신 데이터를 받으면 로컬 스토리지도 갱신한다! (유저 페이지와 공유)
       localStorage.setItem('games_cache', JSON.stringify(sortedGames));
 
-    } catch (e) { 
-      alert("데이터 로딩 실패 (인터넷 연결 확인)"); 
-    } finally { 
-      setLoading(false); 
+    } catch (e) {
+      showToast("데이터 로딩 실패 (인터넷 연결 확인)", { type: "error" });
+    } finally {
+      setLoading(false);
     }
   };
 
   // 인증 성공 시 데이터 최초 로드
-useEffect(() => {
-    if (isAuthenticated) {
+  useEffect(() => {
+    if (user && isAdmin) {
       // 캐시가 있으면 먼저 보여준다! (0초 로딩)
       const cachedGames = localStorage.getItem('games_cache');
       if (cachedGames) {
@@ -81,27 +73,25 @@ useEffect(() => {
       }
       loadData();
     }
-  }, [isAuthenticated]);
-  
+  }, [user, isAdmin]);
 
-  // --- 3. 렌더링: 잠금 화면 ---
-  if (!isAuthenticated) {
+
+  // --- 3. 로딩 및 권한 체크 ---
+  if (authLoading) {
     return (
       <div style={styles.authContainer}>
-        <h2 style={{ fontSize: "2em", marginBottom: "20px" }}>🔒 관리자 접근 제한</h2>
-        <p style={{ color: "#666", marginBottom: "30px" }}>관리자 암호를 입력해주세요.</p>
-        <form onSubmit={handleLogin} style={{ display: "flex", gap: "10px" }}>
-          <input 
-            type="password" 
-            value={inputPassword} 
-            onChange={(e) => setInputPassword(e.target.value)} 
-            placeholder="암호 입력" 
-            style={styles.input}
-            autoFocus
-          />
-          <button type="submit" style={styles.loginBtn}>확인</button>
-        </form>
-        <Link to="/" style={styles.backLink}>← 메인으로 돌아가기</Link>
+        <div className="spinner"></div>
+        <p style={{ marginTop: "20px", color: "#666" }}>권한 확인 중...</p>
+      </div>
+    );
+  }
+
+  // 로그인하지 않았거나 권한이 없으면 useEffect에서 리다이렉트
+  if (!user || !isAdmin) {
+    return (
+      <div style={styles.authContainer}>
+        <h2 style={{ fontSize: "2em", marginBottom: "20px" }}>🔒 관리자 전용</h2>
+        <p style={{ color: "#666" }}>접근 권한을 확인하고 있습니다...</p>
       </div>
     );
   }
@@ -113,7 +103,7 @@ useEffect(() => {
       <div style={styles.header}>
         <h2 style={{ margin: 0 }}>🔓 관리자 페이지</h2>
         <div style={{ display: "flex", gap: "10px" }}>
-          <button onClick={handleLogout} style={styles.logoutBtn}>로그아웃</button>
+          <button onClick={logout} style={styles.logoutBtn}>로그아웃</button>
           <Link to="/" style={styles.homeBtn}>🏠 메인으로</Link>
         </div>
       </div>
@@ -123,29 +113,34 @@ useEffect(() => {
         <TabButton label="📋 대여 현황 / 태그" id="dashboard" activeTab={activeTab} onClick={setActiveTab} />
         <TabButton label="➕ 게임 추가" id="add" activeTab={activeTab} onClick={setActiveTab} />
         <TabButton label="🎨 홈페이지 설정" id="config" activeTab={activeTab} onClick={setActiveTab} />
+        <TabButton label="💰 포인트 시스템" id="points" activeTab={activeTab} onClick={setActiveTab} />
       </div>
 
       {/* 탭 컨텐츠 영역 */}
       <div style={styles.content}>
         {activeTab === "dashboard" && (
-          <DashboardTab 
-            games={games} 
-            loading={loading} 
-            onReload={loadData} 
+          <DashboardTab
+            games={games}
+            loading={loading}
+            onReload={loadData}
           />
         )}
 
         {activeTab === "add" && (
-          <AddGameTab 
+          <AddGameTab
             onGameAdded={loadData} // 게임 추가 후 목록 갱신을 위해 전달
           />
         )}
 
         {activeTab === "config" && (
-          <ConfigTab 
-            config={config} 
+          <ConfigTab
+            config={config}
             onReload={loadData} // 설정 저장 후 갱신을 위해 전달
           />
+        )}
+
+        {activeTab === "points" && (
+          <PointsTab />
         )}
       </div>
     </div>
@@ -156,19 +151,19 @@ useEffect(() => {
 
 // 탭 버튼 컴포넌트 (중복 제거)
 const TabButton = ({ label, id, activeTab, onClick }) => (
-  <button 
-    onClick={() => onClick(id)} 
+  <button
+    onClick={() => onClick(id)}
     style={{
-      padding: "10px 20px", 
-      border: "none", 
-      background: activeTab === id ? "#333" : "white", 
-      color: activeTab === id ? "white" : "#555", 
-      borderRadius: "25px", 
-      cursor: "pointer", 
-      fontWeight: "bold", 
-      fontSize: "0.95rem", 
-      whiteSpace: "nowrap", 
-      boxShadow: activeTab === id ? "0 2px 5px rgba(0,0,0,0.2)" : "none", 
+      padding: "10px 20px",
+      border: "none",
+      background: activeTab === id ? "#333" : "white",
+      color: activeTab === id ? "white" : "#555",
+      borderRadius: "25px",
+      cursor: "pointer",
+      fontWeight: "bold",
+      fontSize: "0.95rem",
+      whiteSpace: "nowrap",
+      boxShadow: activeTab === id ? "0 2px 5px rgba(0,0,0,0.2)" : "none",
       transition: "all 0.2s"
     }}
   >

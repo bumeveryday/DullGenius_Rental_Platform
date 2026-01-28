@@ -2,16 +2,18 @@
 // 설명: 게임 정보 입력/수정용 공통 모달
 
 import { useState, useEffect } from 'react';
+import { useToast } from '../contexts/ToastContext'; // [NEW]
 
 function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
+  const { showToast } = useToast(); // [NEW]
   const [formData, setFormData] = useState({
-    name: "", 
-    category: "보드게임", 
-    difficulty: "", 
+    name: "",
+    category: "보드게임",
+    difficulty: "",
     genre: "",
-    players: "", 
-    tags: "", 
-    image: "", 
+    players: "",
+    tags: "",
+    image: "",
     ...initialData
   });
 
@@ -28,12 +30,12 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
   if (!isOpen) return null;
 
   const handleSubmit = () => {
-    if (!formData.name) return alert("이름은 필수입니다.");
+    if (!formData.name) return showToast("이름은 필수입니다.", { type: "warning" });
     onSubmit(formData); // 부모 컴포넌트에게 입력된 데이터 전달
   };
 
   const openBGGSearch = () => {
-    if (!formData.name) return alert("게임 이름을 먼저 입력해주세요.");
+    if (!formData.name) return showToast("게임 이름을 먼저 입력해주세요.", { type: "warning" });
     // 영문 이름 검색이 정확하므로, 사용자가 한글로 입력했더라도 일단 검색창을 띄워줌
     const url = `https://boardgamegeek.com/geeksearch.php?action=search&objecttype=boardgame&q=${encodeURIComponent(formData.name)}`;
     window.open(url, '_blank');
@@ -43,29 +45,29 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
     <div style={styles.modalOverlay}>
       <div style={styles.modalContent}>
         <h3 style={{ marginTop: 0, marginBottom: "20px" }}>{title}</h3>
-        
+
         <div style={styles.formGroup}>
           <label style={styles.label}>이름</label>
-          <input 
-            value={formData.name} 
-            onChange={e => setFormData({...formData, name: e.target.value})} 
-            style={styles.input} 
+          <input
+            value={formData.name}
+            onChange={e => setFormData({ ...formData, name: e.target.value })}
+            style={styles.input}
           />
-          <button 
-              onClick={openBGGSearch} 
-              style={{ ...styles.cancelBtn, flex: "0 0 auto", background: "#2c3e50", color: "white", fontSize: "0.8em" }}
-              title="BGG에서 검색하여 난이도 확인"
-            >
-              🔍 BGG 검색
-            </button>
+          <button
+            onClick={openBGGSearch}
+            style={{ ...styles.cancelBtn, flex: "0 0 auto", background: "#2c3e50", color: "white", fontSize: "0.8em" }}
+            title="BGG에서 검색하여 난이도 확인"
+          >
+            🔍 BGG 검색
+          </button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
           <div style={styles.formGroup}>
             <label style={styles.label}>카테고리</label>
-            <select 
-              value={formData.category} 
-              onChange={e => setFormData({...formData, category: e.target.value})} 
+            <select
+              value={formData.category}
+              onChange={e => setFormData({ ...formData, category: e.target.value })}
               style={styles.input}
             >
               <option>보드게임</option>
@@ -74,55 +76,55 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
               <option>TCG</option>
             </select>
           </div>
-          
+
           <div style={styles.formGroup}>
             <label style={styles.label}>난이도 (0.0~5.0)</label>
-            <input 
+            <input
               type="number" step="0.1" min="0" max="5"
-              value={formData.difficulty} 
-              onChange={e => setFormData({...formData, difficulty: e.target.value})} 
+              value={formData.difficulty}
+              onChange={e => setFormData({ ...formData, difficulty: e.target.value })}
               placeholder="예: 2.5"
-              style={styles.input} 
+              style={styles.input}
             />
           </div>
         </div>
 
         <div style={styles.formGroup}>
           <label style={styles.label}>장르</label>
-          <input 
-            value={formData.genre} 
-            onChange={e => setFormData({...formData, genre: e.target.value})} 
+          <input
+            value={formData.genre}
+            onChange={e => setFormData({ ...formData, genre: e.target.value })}
             placeholder="예: 전략, 추리, 파티"
-            style={styles.input} 
+            style={styles.input}
           />
         </div>
 
         <div style={styles.formGroup}>
           <label style={styles.label}>인원</label>
-          <input 
-            value={formData.players} 
-            onChange={e => setFormData({...formData, players: e.target.value})} 
+          <input
+            value={formData.players}
+            onChange={e => setFormData({ ...formData, players: e.target.value })}
             placeholder="예: 2~4인"
-            style={styles.input} 
+            style={styles.input}
           />
         </div>
-        
+
         <div style={styles.formGroup}>
           <label style={styles.label}>태그 (#으로 구분)</label>
-          <input 
-            value={formData.tags} 
-            onChange={e => setFormData({...formData, tags: e.target.value})} 
+          <input
+            value={formData.tags}
+            onChange={e => setFormData({ ...formData, tags: e.target.value })}
             placeholder="#전략 #파티"
-            style={styles.input} 
+            style={styles.input}
           />
         </div>
 
         <div style={styles.formGroup}>
           <label style={styles.label}>이미지 URL</label>
-          <input 
-            value={formData.image} 
-            onChange={e => setFormData({...formData, image: e.target.value})} 
-            style={styles.input} 
+          <input
+            value={formData.image}
+            onChange={e => setFormData({ ...formData, image: e.target.value })}
+            style={styles.input}
           />
         </div>
 

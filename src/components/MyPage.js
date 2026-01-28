@@ -1,26 +1,40 @@
-// src/mypage.js
 import React, { useState, useEffect } from 'react';
 import { fetchMyRentals } from '../api';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext'; // [NEW] Context 사용
+import { useToast } from '../contexts/ToastContext'; // [NEW]
 
-const MyPage = ({ user }) => {
+const MyPage = () => {
+  const { user, profile, loading: authLoading } = useAuth(); // [NEW]
+  const navigate = useNavigate();
+  const { showToast } = useToast(); // [NEW]
+
   const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // user props에서 정보 추출 (안전하게 옵셔널 체이닝 사용)
-  // [Fix] camelCase(studentId)와 snake_case(student_id) 모두 지원
-  const studentId = user?.studentId || user?.student_id;
-  const userName = user?.name;
-  const userPhone = user?.phone;
+  // Profile 정보 사용 (Smart Fallback)
+  const userName = profile?.name || "로딩 중...";
+  const studentId = profile?.student_id || user?.email?.split('@')[0] || "-";
+  const userPhone = profile?.phone || "-";
+  const activityPoint = profile?.activity_point ?? 0;
+
+  useEffect(() => {
+    // 비로그인 시 리다이렉트
+    if (!authLoading && !user) {
+      showToast("로그인이 필요합니다.", { type: "warning" });
+      navigate("/login");
+    }
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     const loadRentals = async () => {
-      if (!studentId) return;
-      console.log("🔍 [MyPage] Searching rentals for:", { studentId, userName });
+      // 로그인이 안 되어 있거나 user 객체가 없으면 중단
+      if (!user) return;
+
       setLoading(true);
       try {
-        const result = await fetchMyRentals(studentId, userName);
-        console.log("📨 [MyPage] API Response:", result);
+        // [FIX] user.id (UUID)를 사용
+        const result = await fetchMyRentals(user.id);
 
         if (result.status === "success") {
           setRentals(result.data);
@@ -32,8 +46,14 @@ const MyPage = ({ user }) => {
       }
       setLoading(false);
     };
-    loadRentals();
-  }, [studentId, userName]);
+
+    if (user) {
+      loadRentals();
+    }
+  }, [user]);
+
+  // 로딩 중일 때
+  if (authLoading) return <div style={{ padding: "50px", textAlign: "center" }}>인증 정보 확인 중...</div>;
 
   return (
     <div style={styles.container}>
@@ -51,6 +71,7 @@ const MyPage = ({ user }) => {
           <InfoItem label="이름" value={userName} />
           <InfoItem label="학번" value={studentId} />
           <InfoItem label="연락처" value={userPhone} />
+          <InfoItem label="활동 포인트" value={`${activityPoint.toLocaleString()} P`} />
         </div>
         <div style={styles.infoNote}>
           * 정보 수정이 필요한 경우 덜지니어스 임원진에게 문의해주세요.
@@ -59,7 +80,7 @@ const MyPage = ({ user }) => {
 
       {/* 2. 대여 현황 섹션 */}
       <section style={{ ...styles.card, marginTop: "20px" }}>
-        <h3 style={styles.sectionTitle}>🎲 빌려둔 보드게임</h3>
+        <h3 style={styles.sectionTitle}>🎲 빌려둔 보드게임 (현재 대여중)</h3>
 
         {loading ? (
           <div style={{ padding: "20px", textAlign: "center", color: "#888" }}>로딩 중...</div>
@@ -73,28 +94,38 @@ const MyPage = ({ user }) => {
         ) : (
           <div style={styles.rentalList}>
             {rentals.map((item) => {
-              const dDayStr = getDDayString(item.dueDate);
-              const isOverdue = dDayStr.includes("연체");
-              const isToday = dDayStr === "오늘 반납";
-              const isDibs = dDayStr === "곧 찜 만료";
+              // 1. D-Day / 시간 계산 logic
+              const dDayStr = getDDayString(item.dueDate, item.type);
 
-              // 상태에 따른 뱃지 색상
-              let badgeColor = "#2ecc71"; // 초록 (여유)
-              if (isToday) badgeColor = "#f39c12"; // 주황 (당일)
-              if (isOverdue || isDibs) badgeColor = "#e74c3c"; // 빨강 (연체/임박)
+              // 2. 뱃지 색상 및 텍스트 결정
+              let badgeColor = "#2ecc71"; // 기본 초록
+              let typeLabel = "대여중";
+
+              if (item.type === 'DIBS') {
+                typeLabel = "⚡ 찜 (수령대기)";
+                badgeColor = "#F39C12"; // 찜은 항상 주황
+                if (dDayStr.includes("만료")) badgeColor = "#e74c3c"; // 시간 초과시 빨강
+              } else {
+                // RENT
+                if (dDayStr === "오늘 반납") badgeColor = "#f39c12";
+                if (dDayStr.includes("연체")) badgeColor = "#e74c3c";
+              }
 
               return (
                 <div key={item.rentalId} style={styles.rentalItem}>
                   <div style={styles.rentalInfo}>
-                    <div style={styles.gameName}>{item.gameName}</div>
-                    <div style={styles.rentalDate}>대여일: {formatDate(item.borrowedAt)}</div>
+                    <div style={styles.gameName}>
+                      {item.gameName}
+                      {item.type === 'DIBS' && <span style={{ fontSize: '0.8em', color: '#F39C12', marginLeft: '5px' }}>⚡</span>}
+                    </div>
+                    <div style={styles.rentalDate}>{item.type === 'DIBS' ? '찜한 시각' : '대여일'}: {formatDate(item.borrowedAt)}</div>
                   </div>
                   <div style={styles.rentalStatus}>
                     <div style={{ ...styles.dDayBadge, backgroundColor: badgeColor }}>
-                      {dDayStr}
+                      {typeLabel}
                     </div>
                     <div style={styles.dueDateText}>
-                      ~ {formatDate(item.dueDate)} 까지
+                      {dDayStr}
                     </div>
                   </div>
                 </div>
@@ -116,34 +147,44 @@ const InfoItem = ({ label, value }) => (
 );
 
 // 날짜 계산 헬퍼 함수들
-const getDDayString = (dueDateString) => {
+// 날짜 계산 헬퍼 함수들
+const getDDayString = (dueDateString, type = 'RENT') => {
   if (!dueDateString) return "-";
   const now = new Date();
   const due = new Date(dueDateString);
+  const diffTime = due - now;
 
-  // 날짜 차이 계산 (일 단위)
+  // [DIBS] 분 단위 카운트다운
+  if (type === 'DIBS') {
+    const diffMinutes = Math.ceil(diffTime / (1000 * 60));
+    if (diffMinutes < 0) return "시간 만료 (자동취소)";
+    return `${diffMinutes}분 남음`;
+  }
+
+  // [RENT] 일 단위 D-Day
+  // 날짜 차이 계산 (시간 무시, 날짜만 비교)
   const todayZero = new Date(now); todayZero.setHours(0, 0, 0, 0);
   const dueZero = new Date(due); dueZero.setHours(0, 0, 0, 0);
-  const diffTime = dueZero - todayZero;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  // (대여 기한은 '내일 23:59:59' 이므로, 날짜 차이만 보면 됨)
+  const dayDiffTime = dueZero - todayZero;
+  const diffDays = Math.ceil(dayDiffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays < 0) return `연체 ${Math.abs(diffDays)}일`;
-  if (diffDays === 0) {
-    // [Fix] 당일 반납인데, 만약 시간이 1시간 이내로 남았다면 "찜(예약)"으로 간주
-    // (물론 당일치기 대여일 수도 있지만, 정책상 1시간 미만이면 급한 건으로 표시해도 무방)
-    const diffHours = (due - now) / (1000 * 60 * 60);
-    if (diffHours < 1 && diffHours > -1) { // 1시간 전후면
-      return "곧 찜 만료";
-    }
-    return "오늘 반납";
-  }
-  return `D-${diffDays}`;
+  if (diffDays === 0) return "오늘 반납";
+  return `반납까지 D-${diffDays}`;
 };
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
-  return `${date.getFullYear()}. ${date.getMonth() + 1}. ${date.getDate()}`;
+  // 오늘 날짜면 시간만 표시? 아니면 그냥 날짜+시간
+  // 심플하게: "1. 28. (18:30)" 포맷
+  const Month = date.getMonth() + 1;
+  const Day = date.getDate();
+  const Hour = String(date.getHours()).padStart(2, '0');
+  const Min = String(date.getMinutes()).padStart(2, '0');
+  return `${Month}. ${Day}. (${Hour}:${Min})`;
 };
 
 // 스타일 객체
@@ -155,7 +196,7 @@ const styles = {
   card: { background: "white", padding: "25px", borderRadius: "15px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", border: "1px solid #eee" },
   sectionTitle: { margin: "0 0 20px 0", fontSize: "1.2em", color: "#34495e", borderBottom: "2px solid #f1f2f6", paddingBottom: "10px" },
 
-  infoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "15px" },
+  infoGrid: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "15px" },
   infoNote: { marginTop: "20px", fontSize: "0.8em", color: "#bdc3c7", textAlign: "right" },
 
   emptyState: { textAlign: "center", padding: "30px 0", color: "#95a5a6" },

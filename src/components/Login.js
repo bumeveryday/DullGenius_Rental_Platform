@@ -1,44 +1,35 @@
 // src/Login.js
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { loginUser } from '../api';
+import { useAuth } from '../contexts/AuthContext'; // [NEW] Context 사용
+import { useToast } from '../contexts/ToastContext'; // [NEW]
 
-function Login({ setUser }) { // App.js에서 setUser를 prop으로 받아야 함
+function Login() {
   const navigate = useNavigate();
-  const [studentId, setStudentId] = useState("");
+  const { login } = useAuth(); // [NEW] login 함수 가져오기
+  const { showToast } = useToast(); // [NEW]
+
+  const [studentId, setStudentId] = useState(""); // [CHANGE] 이메일 -> 학번
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!studentId || !password) return alert("학번과 비밀번호를 입력해주세요.");
-    if (studentId.length !== 8) {
-      return alert("학번은 8자리여야 합니다.");
-    }
-
+    if (!studentId || !password) return showToast("학번과 비밀번호를 입력해주세요.", { type: "warning" });
 
     setLoading(true);
     try {
-      const res = await loginUser(studentId, password);
+      // [Magic] 학번을 이메일 형식으로 변환하여 로그인
+      const email = `${studentId}@handong.ac.kr`;
+      await login(email, password);
 
-      if (res.success) {
-        // ✅ [수정] 입력한 비밀번호(password)를 유저 정보에 포함시켜서 저장
-        const userWithPassword = { ...res.user, password: password };
+      showToast(`환영합니다!`, { type: "success" });
+      navigate("/");
 
-        // 1. 로컬 스토리지에 저장 (비밀번호 포함됨)
-        localStorage.setItem("user", JSON.stringify(userWithPassword));
-
-        // 2. App.js 상태 업데이트
-        if (setUser) setUser(userWithPassword);
-
-        alert(`${res.user.name}님 환영합니다!`);
-        navigate("/");
-      } else {
-        alert(res.message); // "학번 또는 비밀번호 불일치" 등
-      }
     } catch (error) {
       console.error("Login Error:", error);
-      alert("로그인 중 오류가 발생했습니다.");
+      // 구체적인 에러 메시지 표시 (디버깅용)
+      showToast(`로그인 실패: ${error.message}`, { type: "error" });
     } finally {
       setLoading(false);
     }
@@ -52,15 +43,13 @@ function Login({ setUser }) { // App.js에서 setUser를 prop으로 받아야 �
       <h2 style={{ textAlign: "center", marginBottom: "30px" }}>🔐 로그인</h2>
       <form onSubmit={handleSubmit} style={styles.form}>
         <input
-          type="number"
-          placeholder="학번"
+          type="text"
+          inputMode="numeric"
+          placeholder="학번 (예: 21500000)"
           value={studentId}
           onChange={(e) => setStudentId(e.target.value)}
           style={styles.input}
-          maxLength={8}
-          onInput={(e) => {
-            if (e.target.value.length > 8) e.target.value = e.target.value.slice(0, 8);
-          }}
+          required
         />
         <input
           type="password"
@@ -68,6 +57,7 @@ function Login({ setUser }) { // App.js에서 setUser를 prop으로 받아야 �
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           style={styles.input}
+          required
         />
         <button type="submit" style={styles.button} disabled={loading}>
           {loading ? "로그인 중..." : "로그인"}

@@ -1,11 +1,14 @@
 // src/admin/DashboardTab.js
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react'; // [CHANGE] useMemo 제거
 import { adminUpdateGame, deleteGame, approveDibsByRenter, returnGamesByRenter, editGame, fetchGameLogs, fetchUsers } from '../api';
-import GameFormModal from './GameFormModal'; // 공통 모달 임포트
+import GameFormModal from './GameFormModal';
 import FilterBar from '../components/FilterBar';
-import { TEXTS } from '../constants';
+import { TEXTS, getStatusColor } from '../constants';
+import { useToast } from '../contexts/ToastContext';
+import { useGameFilter } from '../hooks/useGameFilter'; // [NEW] Custom Hook
 
 function DashboardTab({ games, loading, onReload }) {
+  const { showToast } = useToast(); // [NEW]
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [targetGame, setTargetGame] = useState(null);
@@ -66,54 +69,15 @@ function DashboardTab({ games, loading, onReload }) {
   }, [inputValue]);
 
   // --- 필터링 로직 (App.js에서 가져옴 + 대여자 필터 추가) ---
-  // (인원수 체크 헬퍼 함수)
-  const checkPlayerCount = (rangeStr, targetFilter) => {
-    if (!rangeStr) return false;
-    try {
-      const parts = rangeStr.split('~');
-      const min = parseInt(parts[0]);
-      const max = parts.length > 1 ? parseInt(parts[1]) : min;
-      if (targetFilter === "6+") return max >= 6;
-      else {
-        const target = parseInt(targetFilter);
-        return target >= min && target <= max;
-      }
-    } catch (e) { return false; }
-  };
-
-  const filteredGames = useMemo(() => {
-    return games.filter(game => {
-      // 1. 검색어 필터 (#태그 or 이름)
-      if (searchTerm.startsWith("#")) {
-        if (!game.tags || !game.tags.includes(searchTerm)) return false;
-      } else {
-        if (searchTerm && !game.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-      }
-
-      // 2. [관리자 전용] 대여자 검색
-      if (renterFilter) {
-        // 대여자가 없거나, 이름이 포함되지 않으면 제외
-        if (!game.renter || !game.renter.includes(renterFilter)) return false;
-      }
-
-      // 3. 카테고리, 상태, 난이도, 인원 필터 (App.js와 동일)
-      if (selectedCategory !== "전체" && game.category !== selectedCategory) return false;
-      if (onlyAvailable && game.status !== "대여가능") return false;
-
-      if (difficultyFilter !== "전체" && game.difficulty) {
-        const score = parseFloat(game.difficulty);
-        if (difficultyFilter === "입문" && score >= 2.0) return false;
-        if (difficultyFilter === "초중급" && (score < 2.0 || score >= 3.0)) return false;
-        if (difficultyFilter === "전략" && score < 3.0) return false;
-      }
-
-      if (playerFilter !== "all" && game.players) {
-        if (!checkPlayerCount(game.players, playerFilter)) return false;
-      }
-
-      return true;
-    });
-  }, [games, searchTerm, renterFilter, selectedCategory, onlyAvailable, difficultyFilter, playerFilter]);
+  // [개선] Custom Hook 사용
+  const filteredGames = useGameFilter(games, {
+    searchTerm,
+    renterFilter, // Admin 전용
+    selectedCategory,
+    onlyAvailable,
+    difficultyFilter,
+    playerFilter
+  });
 
   // 필터 초기화 함수
   const resetFilters = () => {
@@ -142,11 +106,11 @@ function DashboardTab({ games, loading, onReload }) {
       try {
         // 기존 ID는 유지하고 폼 데이터로 덮어쓰기
         await editGame({ game_id: targetGame.id, ...formData });
-        alert("✅ 수정되었습니다.");
+        showToast("✅ 수정되었습니다.", { type: "success" });
         setIsEditModalOpen(false);
         onReload();
       } catch (e) {
-        alert("수정 실패: " + e);
+        showToast("수정 실패: " + e, { type: "error" });
       }
     }
   };
@@ -178,14 +142,14 @@ function DashboardTab({ games, loading, onReload }) {
 
         // 응답 체크
         if (res && res.status === "success") {
-          alert(TEXTS.ADMIN_RENT_SUCCESS);
+          showToast(TEXTS.ADMIN_RENT_SUCCESS, { type: "success" });
           onReload();
         } else {
-          alert("오류 발생: " + (res.message || "응답 없음"));
+          showToast("오류 발생: " + (res.message || "응늵 없음"), { type: "error" });
         }
       } catch (e) {
         console.error(e);
-        alert("처리 실패 (콘솔 확인): " + e);
+        showToast("처리 실패 (콘솔 확인): " + e, { type: "error" });
       }
     }
   };
@@ -202,10 +166,10 @@ function DashboardTab({ games, loading, onReload }) {
 
     try {
       await adminUpdateGame(gameId, newStatus);
-      alert("처리되었습니다.");
+      showToast("처리되었습니다.", { type: "success" });
       onReload();
     } catch (e) {
-      alert("오류 발생: " + e);
+      showToast("오류 발생: " + e, { type: "error" });
     }
   };
 
@@ -218,7 +182,7 @@ function DashboardTab({ games, loading, onReload }) {
     if (count <= 1) {
       if (window.confirm(`[${game.name}] 반납 처리하시겠습니까?`)) {
         await adminUpdateGame(game.id, "대여가능");
-        alert("반납되었습니다.");
+        showToast("반납되었습니다.", { type: "success" });
         onReload();
       }
       return;
@@ -226,11 +190,11 @@ function DashboardTab({ games, loading, onReload }) {
 
     if (window.confirm(`💡 [${renterName}] 님이 현재 빌려간 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '반납' 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 반납합니다)`)) {
       await returnGamesByRenter(renterName);
-      alert(`${count}건이 일괄 반납되었습니다.`);
+      showToast(`${count}건이 일괄 반납되었습니다.`, { type: "success" });
       onReload();
     } else {
       await adminUpdateGame(game.id, "대여가능");
-      alert("반납되었습니다.");
+      showToast("반납되었습니다.", { type: "success" });
       onReload();
     }
   };
@@ -244,7 +208,7 @@ function DashboardTab({ games, loading, onReload }) {
     if (count <= 1) {
       if (window.confirm(`[${game.name}] 현장 수령 확인하시겠습니까?`)) {
         await adminUpdateGame(game.id, "대여중", renterName, userId);
-        alert("처리되었습니다.");
+        showToast("처리되었습니다.", { type: "success" });
         onReload();
       }
       return;
@@ -252,11 +216,11 @@ function DashboardTab({ games, loading, onReload }) {
 
     if (window.confirm(`💡 [${renterName}] 님이 예약한 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '대여중'으로 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 처리합니다)`)) {
       await approveDibsByRenter(renterName, userId);
-      alert(`${count}건이 일괄 수령 처리되었습니다.`);
+      showToast(`${count}건이 일괄 수령 처리되었습니다.`, { type: "success" });
       onReload();
     } else {
       await adminUpdateGame(game.id, "대여중", renterName, userId);
-      alert("처리되었습니다.");
+      showToast("처리되었습니다.", { type: "success" });
       onReload();
     }
   };
@@ -266,10 +230,10 @@ function DashboardTab({ games, loading, onReload }) {
     if (!window.confirm(`[${game.name}] 정말 삭제합니까?\n되돌릴 수 없습니다.`)) return;
     try {
       await deleteGame(game.id);
-      alert("삭제되었습니다.");
+      showToast("삭제되었습니다.", { type: "success" });
       onReload();
     } catch (e) {
-      alert("삭제 실패");
+      showToast("삭제 실패", { type: "error" });
     }
   };
 
@@ -286,10 +250,10 @@ function DashboardTab({ games, loading, onReload }) {
       if (res.status === "success") {
         setGameLogs(res.logs);
       } else {
-        alert("로그를 불러오지 못했습니다.");
+        showToast("로그를 불러오지 못했습니다.", { type: "error" });
       }
     } catch (e) {
-      alert("로그 로딩 에러");
+      showToast("로그 로딩 에러", { type: "error" });
     }
   };
 
@@ -491,7 +455,6 @@ function DashboardTab({ games, loading, onReload }) {
   );
 }
 
-const getStatusColor = (s) => (s === "대여가능" ? "#2ecc71" : s === "찜" ? "#f1c40f" : s === "대여중" ? "#3498db" : "#95a5a6");
 const actionBtnStyle = (bgColor) => ({ padding: "6px 12px", border: "none", background: bgColor, color: "white", borderRadius: "6px", cursor: "pointer", fontSize: "0.85em", fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" });
 const styles = {
   card: { border: "1px solid #ddd", padding: "15px", borderRadius: "10px", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", boxShadow: "0 2px 5px rgba(0,0,0,0.03)" },

@@ -1,35 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { fetchGames, rentGame, sendMiss, fetchReviews, addReview, deleteReview, increaseViewCount } from '../api';
+import { fetchGames, rentGame, sendMiss, fetchReviews, addReview, deleteReview, increaseViewCount, dibsGame } from '../api';
 import { TEXTS } from '../constants';
-import LoginModal from './LoginModal';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext'; // [NEW] 전역 Toast
 
-function GameDetail({ user, setUser, sessionUser, setSessionUser }) {
+function GameDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const currentUser = user;
+  const { user, profile } = useAuth();
+  const { showToast } = useToast(); // [NEW] 전역 toast 함수
 
   const [game, setGame] = useState(location.state?.game || null);
   const [reviews, setReviews] = useState([]);
-  const [isReviewsLoading, setIsReviewsLoading] = useState(true); // [New] 리뷰 로딩 상태
+  const [isReviewsLoading, setIsReviewsLoading] = useState(true);
   const [loading, setLoading] = useState(!game);
-  const [newReview, setNewReview] = useState({ rating: "5", comment: "" }); // 이름/비번 제거
-  const [cooldown, setCooldown] = useState(0); // [New] 도배 방지 쿨타임
+  const [newReview, setNewReview] = useState({ rating: "5", comment: "" });
+  const [cooldown, setCooldown] = useState(0);
+  const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
 
-  // 모달 상태
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // 로그인모달
-  const [isReviewSubmitting, setIsReviewSubmitting] = useState(false); // 리뷰 버튼용
-
-  const [toast, setToast] = useState(null);
-
-
-  const showToast = (message) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  // ✅ [추가] 페이지 진입 시 스크롤을 맨 위로 강제 이동 (0.1초 딜레이 없이 즉시)
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -38,7 +28,7 @@ function GameDetail({ user, setUser, sessionUser, setSessionUser }) {
   useEffect(() => {
     if (id) increaseViewCount(id);
     const loadData = async () => {
-      /* ... 데이터 로딩 로직 (기존과 동일) ... */
+      // 1. 캐시/API로 게임 정보 찾기
       if (!game) {
         setLoading(true);
         const cachedGames = localStorage.getItem('games_cache');
@@ -54,130 +44,95 @@ function GameDetail({ user, setUser, sessionUser, setSessionUser }) {
         }
       }
 
-
-      // 리뷰 로딩 시작
+      // 2. 리뷰 로딩
       setIsReviewsLoading(true);
       const reviewsData = await fetchReviews();
       if (Array.isArray(reviewsData)) {
         const filteredReviews = reviewsData.filter(r => String(r.game_id) === String(id));
-        // [New] 최신순 정렬 (날짜 객체 변환 후 비교)
         filteredReviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         setReviews(filteredReviews);
       }
-      setIsReviewsLoading(false); // 리뷰 로딩 끝
-
+      setIsReviewsLoading(false);
       setLoading(false);
     };
     loadData();
   }, [id]);
 
-  // ✅ [신규] LoginModal에서 '대여확정'을 눌렀을 때 실행되는 함수
-  const handleRentConfirm = async (userInfo) => {
-    const { name, phone, studentId, password } = userInfo;
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
+
+  // 대여 처리 함수
+  // [FIX] User Flow: 사용자는 '찜하기'만 가능 (대여는 관리자/키오스크)
+  const handleRent = async () => {
+    if (!user) {
+      if (window.confirm("로그인이 필요합니다. 로그인 페이지로 이동할까요?")) {
+        navigate("/login");
+      }
+      return;
+    }
+
+    if (!window.confirm(`'${game.name}'을(를) 찜하시겠습니까?\n30분 내로 동아리방에서 수령해야 합니다.`)) return;
 
     try {
-      // [수정] rentGame 함수에 학번, 비번, 이름, 전화번호를 모두 따로 넘깁니다.
-      // 인원수는 일단 0으로 둠 (나중에 모달에서 입력받게 되면 변경).
-      await rentGame(game.id, game.name, studentId, password, name, phone, 0);
+      const result = await dibsGame(game.id, user.id); // [Changed] rentGame -> dibsGame
 
-      showToast(TEXTS.ALERT_RENT_SUCCESS);
-      setGame({ ...game, status: "찜" });
-      setIsLoginModalOpen(false); // 모달 닫기
-    } catch (e) {
-      const errMsg = e.message || "오류가 발생했습니다.";
-
-      // [Fix] 로그인된 상태에서 "비밀번호 불일치"가 뜨면 세션이 꼬인 것이므로 로그아웃 처리
-      if (errMsg.includes("비밀번호") || errMsg.includes("일치하지")) {
-        alert("로그인 정보가 변경되거나 만료되었습니다.\n다시 로그인해주세요.");
-
-        // 강제 로그아웃
-        localStorage.removeItem("user");
-        if (setUser) setUser(null);
-
-        // 다시 모달 열기 (비로그인 상태로)
-        setIsLoginModalOpen(true);
+      if (result.success) {
+        showToast("⚡ 찜 완료! 30분 내에 수령해주세요.", {
+          showButton: true,
+          buttonText: "마이페이지로 가기",
+          onButtonClick: () => navigate('/mypage')
+        });
+        setGame({ ...game, status: "찜" }); // [UI 업데이트]
       } else {
-        alert("대여 실패: " + errMsg);
+        showToast(result.message || "찜하기 실패", { type: "error" });
       }
+    } catch (e) {
+      showToast("오류 발생: " + (e.message || "알 수 없는 오류"), { type: "error" });
     }
   };
 
-  // (나머지 핸들러들은 기존과 동일, 생략 없이 사용)
   const handleMiss = async () => {
     if (window.confirm(TEXTS.ALERT_MISS_CONFIRM)) {
       await sendMiss(game.id);
       showToast(TEXTS.ALERT_MISS_SUCCESS);
     }
   };
-  // ⭐ 리뷰 작성 핸들러
+
   const handleSubmitReview = async () => {
-    if (!currentUser) return alert("로그인이 필요합니다.");
-    if (!newReview.comment) return alert("내용을 입력해주세요.");
-    if (cooldown > 0) return alert(`조금만 기다려주세요 (${cooldown}초)`);
+    if (!user) return showToast("로그인이 필요합니다.", { type: "warning" });
+    if (!newReview.comment) return showToast("내용을 입력해주세요.", { type: "warning" });
+    if (cooldown > 0) return showToast(`조금만 기다려주세요 (${cooldown}초)`, { type: "info" });
 
     setIsReviewSubmitting(true);
-
     try {
-      // 로그인 유저 정보로 리뷰 전송
       await addReview({
         ...newReview,
         game_id: game.id,
-        user_name: currentUser.name,
-        password: currentUser.password // 본인 확인용 (삭제 시 필요)
+        user_name: profile?.name || user.email?.split('@')[0] || "익명", // [CHANGE] 실명 우선 사용
       });
 
       showToast(TEXTS.ALERT_REVIEW_SUCCESS);
-      setNewReview({ rating: "5", comment: "" }); // 초기화
-
-      // [New] 쿨타임 설정 (10초)
+      setNewReview({ rating: "5", comment: "" });
       setCooldown(10);
-      const timer = setInterval(() => {
-        setCooldown(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
 
-      // 목록 새로고침
+      // 리뷰 목록 리로드 (간단히)
       const reviewsData = await fetchReviews();
       if (Array.isArray(reviewsData)) {
         const filteredReviews = reviewsData.filter(r => String(r.game_id) === String(id));
         filteredReviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         setReviews(filteredReviews);
       }
+
     } catch (e) {
-      alert("리뷰 등록 중 오류가 발생했습니다.");
+      showToast("리뷰 등록 실패: " + e.message, { type: "error" });
     } finally {
-      setIsReviewSubmitting(false); // 로딩 끝
+      setIsReviewSubmitting(false);
     }
   };
-
-  // ⭐ 리뷰 삭제 핸들러
-  const handleDeleteReview = async (reviewId) => {
-    const pw = prompt("리뷰 작성 시 입력한 비밀번호를 입력하세요.");
-    if (!pw) return;
-
-    try {
-      const res = await deleteReview(reviewId, pw);
-      if (res.status === "success") {
-        showToast(TEXTS.ALERT_REVIEW_DELETE_SUCCESS);
-        const reviewsData = await fetchReviews();
-        if (Array.isArray(reviewsData)) {
-          const filteredReviews = reviewsData.filter(r => String(r.game_id) === String(id));
-          filteredReviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-          setReviews(filteredReviews);
-        }
-      } else {
-        alert("실패: " + (res.message || "비밀번호가 틀렸거나 오류가 발생했습니다."));
-      }
-    } catch (e) {
-      alert("삭제 중 통신 오류가 발생했습니다.");
-    }
-  };
-
 
   if (loading && !game) return <div style={{ padding: "20px", textAlign: "center" }}>로딩 중...</div>;
   if (!game) return <div style={{ padding: "20px", textAlign: "center" }}>게임을 찾을 수 없습니다.</div>;
@@ -207,9 +162,8 @@ function GameDetail({ user, setUser, sessionUser, setSessionUser }) {
 
         <div style={{ marginTop: "20px" }}>
           {game.status === "대여가능" ? (
-            // ✅ [변경] 버튼 클릭 시 setIsLoginModalOpen(true)
-            <button onClick={() => setIsLoginModalOpen(true)} style={{ width: "100%", padding: "15px", background: "#2ecc71", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight: "bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(46, 204, 113, 0.3)" }}>
-              📅 방문 수령 예약 (30분)
+            <button onClick={handleRent} style={{ width: "100%", padding: "15px", background: "#F39C12", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight: "bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(243, 156, 18, 0.3)" }}>
+              ⚡ 찜하기 (30분)
             </button>
           ) : (
             <button onClick={handleMiss} style={{ width: "100%", padding: "15px", background: "#95a5a6", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight: "bold", cursor: "pointer" }}>
@@ -220,28 +174,20 @@ function GameDetail({ user, setUser, sessionUser, setSessionUser }) {
       </div>
 
       {/* 리뷰 섹션 */}
-      {/* 입력 폼 */}
-      {/* 입력 폼 (로그인 체크) */}
-      <div className="review-form-box">
+      <div className="review-form-box" style={{ marginTop: "30px", borderTop: "1px solid #eee", paddingTop: "20px" }}>
         <h3>리뷰 남기기</h3>
-
-        {!currentUser ? (
+        {!user ? (
           <div style={{ textAlign: "center", padding: "20px", color: "#888" }}>
             <p style={{ marginBottom: "10px" }}>로그인 후 리뷰를 남길 수 있습니다.</p>
             <button onClick={() => navigate("/login")} style={{ padding: "8px 16px", borderRadius: "5px", border: "1px solid #ddd", background: "white", cursor: "pointer" }}>로그인하기</button>
           </div>
         ) : (
-          <>
-            {/* 상단: 닉네임(자동), 별점 */}
-            <div className="review-row top-row">
-              <div style={{ padding: "10px", fontWeight: "bold", color: "#555" }}>
-                작성자: {currentUser.name}
+          <div style={{ background: "#f8f9fa", padding: "15px", borderRadius: "10px" }}>
+            <div className="review-row top-row" style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", alignItems: "center" }}>
+              <div style={{ fontWeight: "bold", color: "#555" }}>
+                작성자: <span style={{ color: "#2c3e50" }}>{profile?.name || "익명"}</span>
               </div>
-              <select
-                className="review-input"
-                value={newReview.rating}
-                onChange={e => setNewReview({ ...newReview, rating: e.target.value })}
-              >
+              <select className="review-input" value={newReview.rating} onChange={e => setNewReview({ ...newReview, rating: e.target.value })} style={{ padding: "5px", borderRadius: "5px", border: "1px solid #ddd" }}>
                 <option value="5">⭐⭐⭐⭐⭐ (5점)</option>
                 <option value="4">⭐⭐⭐⭐ (4점)</option>
                 <option value="3">⭐⭐⭐ (3점)</option>
@@ -249,66 +195,56 @@ function GameDetail({ user, setUser, sessionUser, setSessionUser }) {
                 <option value="1">⭐ (1점)</option>
               </select>
             </div>
-
-            {/* 하단: 코멘트, 등록버튼 */}
-            <div className="review-row bottom-row">
+            <div className="review-row bottom-row" style={{ display: "flex", gap: "10px" }}>
               <input
                 className="review-input"
-                placeholder="솔직한 후기를 남겨주세요 (최대 50자)"
+                placeholder="후기를 남겨주세요"
                 value={newReview.comment}
                 onChange={e => setNewReview({ ...newReview, comment: e.target.value })}
+                style={{ flex: 1, padding: "10px", borderRadius: "5px", border: "1px solid #ddd" }}
               />
               <button
                 onClick={handleSubmitReview}
                 disabled={isReviewSubmitting || cooldown > 0}
                 className="review-submit-btn"
-                style={{ background: cooldown > 0 ? "#bdc3c7" : "#3498db" }}
+                style={{
+                  background: cooldown > 0 ? "#bdc3c7" : "#3498db",
+                  color: "white",
+                  border: "none",
+                  padding: "0 20px",
+                  borderRadius: "5px",
+                  cursor: cooldown > 0 ? "not-allowed" : "pointer",
+                  fontWeight: "bold"
+                }}
               >
-                {cooldown > 0 ? `${cooldown}s` : (isReviewSubmitting ? "등록중..." : "등록")}
+                {cooldown > 0 ? `${cooldown}s` : "등록"}
               </button>
             </div>
-            {cooldown > 0 && <div style={{ fontSize: "0.8em", color: "#e74c3c", marginTop: "5px", textAlign: "right" }}>도배 방지를 위해 10초 쿨타임이 적용됩니다.</div>}
-          </>
+          </div>
         )}
       </div>
 
-      {isReviewsLoading ? (
-        <div style={{ textAlign: "center", padding: "20px", color: "#888" }}>리뷰를 불러오는 중입니다...</div>
-      ) : reviews.length === 0 ? (
-        <p style={{ color: "#999", textAlign: "center" }}>아직 리뷰가 없습니다.</p>
-      ) : (
-        <div>
-          {reviews.map(r => (
-            <div key={r.id || r.review_id} style={{ borderBottom: "1px solid #eee", padding: "15px 0" }}>
+      {/* 리뷰 목록 */}
+      <div style={{ marginTop: "30px" }}>
+        <h4 style={{ marginBottom: "15px", borderBottom: "2px solid #333", paddingBottom: "10px" }}>
+          📝 리뷰 ({reviews.length})
+        </h4>
+        {isReviewsLoading ? <div>리뷰 불러오는 중...</div> : (
+          (reviews || []).map(r => (
+            <div key={r.review_id || Math.random()} style={{ borderBottom: "1px solid #eee", padding: "15px 0" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
-                <strong>{r.user_name} <span style={{ color: "#f1c40f", fontSize: "0.9em" }}>{"★".repeat(r.rating)}</span></strong>
-                <span style={{ fontSize: "0.8em", color: "#aaa" }}>{r.created_at}</span>
+                <strong>{r.author_name || r.user_name || "익명"}</strong>
+                <span style={{ color: "#f1c40f" }}>{"⭐".repeat(r.rating)}</span>
               </div>
-              <p style={{ margin: "0", color: "#444" }}>{r.comment}</p>
-              <div style={{ textAlign: "right" }}><button onClick={() => handleDeleteReview(r.id || r.review_id)} style={{ fontSize: "0.8em", background: "none", border: "none", color: "#e74c3c", cursor: "pointer", textDecoration: "underline" }}>삭제</button></div>
+              <div style={{ color: "#333" }}>{r.content}</div>
+              <div style={{ fontSize: "0.8em", color: "#999", marginTop: "5px" }}>
+                {new Date(r.created_at).toLocaleDateString()}
+              </div>
             </div>
-          ))}
-        </div>
-      )}
-
-
-      {/* ✅ [변경] 기존의 긴 모달 코드를 LoginModal 컴포넌트로 교체 */}
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onConfirm={handleRentConfirm}
-        gameName={game.name}
-        currentUser={currentUser}    // 로그인 유저 (영구)
-        setUser={setUser}            // ✅ [Fix] App.js에서 받은 setUser 전달
-        sessionUser={sessionUser}    // ✅ 임시 유저 (휘발성) 전달
-        setSessionUser={setSessionUser} // ✅ 상태 저장 함수 전달
-      />
-
-      {toast && (
-        <div className="toast-notification">
-          {toast}
-        </div>
-      )}
+          ))
+        )}
+        {reviews.length === 0 && !isReviewsLoading && <div style={{ color: "#999", textAlign: "center", padding: "20px" }}>아직 리뷰가 없습니다. 첫 리뷰를 남겨주세요!</div>}
+      </div>
     </div>
   );
 }

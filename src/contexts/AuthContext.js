@@ -89,6 +89,7 @@ export const AuthProvider = ({ children }) => {
                 data: {
                     student_id: additionalData.student_id,
                     name: additionalData.name,
+                    phone: additionalData.phone
                 }
             }
         });

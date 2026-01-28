@@ -1,11 +1,16 @@
 // src/Signup.js
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signupUser } from '../api';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext'; // [NEW]
 
 function Signup() {
   const navigate = useNavigate();
+  const { signup } = useAuth();
+  const { showToast } = useToast(); // [NEW]
+
   const [formData, setFormData] = useState({
+    // email 제거 (학번으로 자동 생성)
     name: '',
     studentId: '',
     password: '',
@@ -23,26 +28,29 @@ function Signup() {
     const { name, studentId, password, phone } = formData;
 
     if (!name || !studentId || !password || !phone) {
-      return alert("모든 정보를 입력해주세요.");
+      return showToast("모든 정보를 입력해주세요.", { type: "warning" });
     }
 
     if (studentId.length !== 8) {
-      return alert("학번은 정확히 8자리여야 합니다.");
+      return showToast("학번은 정확히 8자리여야 합니다.", { type: "warning" });
     }
 
     setLoading(true);
     try {
-      const res = await signupUser(formData);
+      // [Magic] 학번 -> 이메일 자동 변환
+      const email = `${studentId}@handong.ac.kr`;
 
-      if (res.success) {
-        alert("회원가입 성공! 로그인해주세요.");
-        navigate("/login"); // 로그인 페이지로 이동
-      } else {
-        alert(`가입 실패: ${res.message}`);
-      }
+      await signup(email, password, {
+        name,
+        student_id: studentId,
+        phone
+      });
+
+      showToast("가입 성공! 이제 학번으로 로그인하세요.", { type: "success" });
+      navigate("/");
     } catch (error) {
       console.error("Signup Error:", error);
-      alert("서버 통신 오류가 발생했습니다.");
+      showToast(`가입 실패: ${error.message}`, { type: "error" });
     } finally {
       setLoading(false);
     }
@@ -55,12 +63,13 @@ function Signup() {
       </div>
       <h2 style={{ textAlign: "center", marginBottom: "30px" }}>📝 회원가입</h2>
       <form onSubmit={handleSubmit} style={styles.form}>
-        <input name="name" placeholder="이름" value={formData.name} onChange={handleChange} style={styles.input} />
-        <input name="studentId" type="number" placeholder="학번" value={formData.studentId} onChange={handleChange} style={styles.input} maxLength={8} onInput={(e) => {
+        {/* 이메일 입력 칸 제거 */}
+        <input name="name" placeholder="이름" value={formData.name} onChange={handleChange} style={styles.input} required />
+        <input name="studentId" type="number" placeholder="학번 (8자리)" value={formData.studentId} onChange={handleChange} style={styles.input} maxLength={8} onInput={(e) => {
           if (e.target.value.length > 8) e.target.value = e.target.value.slice(0, 8);
-        }} />
-        <input name="password" type="password" placeholder="비밀번호" value={formData.password} onChange={handleChange} style={styles.input} />
-        <input name="phone" placeholder="전화번호" value={formData.phone} onChange={handleChange} style={styles.input} />
+        }} required />
+        <input name="password" type="password" placeholder="비밀번호" value={formData.password} onChange={handleChange} style={styles.input} required />
+        <input name="phone" placeholder="전화번호" value={formData.phone} onChange={handleChange} style={styles.input} required />
 
         <button type="submit" style={styles.button} disabled={loading}>
           {loading ? "가입 처리 중..." : "가입하기"}

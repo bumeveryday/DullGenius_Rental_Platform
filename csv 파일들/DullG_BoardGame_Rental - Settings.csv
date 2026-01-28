@@ -1,4 +1,0 @@
-Key,Value,Description
-SYSTEM_MODE,OPEN,"운영 모드 (OPEN, TRANSITION, PRIVATE)"
-CURRENT_WEEK,1,현재 학기 주차 (숫자)
-NOTICE_TEXT,환영합니다!,메인 배너 공지사항 텍스트

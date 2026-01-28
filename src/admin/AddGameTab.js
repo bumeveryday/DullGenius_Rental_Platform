@@ -2,12 +2,14 @@
 import { useState } from 'react';
 import { searchNaver, addGame } from '../api';
 import GameFormModal from './GameFormModal'; // 공통 모달 임포트
+import { useToast } from '../contexts/ToastContext'; // [NEW]
 
 function AddGameTab({ onGameAdded }) {
+  const { showToast } = useToast(); // [NEW]
   const [keyword, setKeyword] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+
   // 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
@@ -18,8 +20,8 @@ function AddGameTab({ onGameAdded }) {
     try {
       const data = await searchNaver(keyword);
       if (data.items) setResults(data.items);
-      else { alert("결과 없음"); setResults([]); }
-    } catch (e) { alert("오류"); } finally { setLoading(false); }
+      else { showToast("결과 없음", { type: "info" }); setResults([]); }
+    } catch (e) { showToast("오류", { type: "error" }); } finally { setLoading(false); }
   };
 
   // 검색 결과 선택 시 모달 열기
@@ -30,7 +32,7 @@ function AddGameTab({ onGameAdded }) {
       category: "보드게임",
       players: "2~4인",
       tags: "",
-      difficulty: "", 
+      difficulty: "",
       genre: "",
       image: item.image,
       naverId: item.productId
@@ -44,13 +46,13 @@ function AddGameTab({ onGameAdded }) {
     if (window.confirm(`[${formData.name}] 추가하시겠습니까?`)) {
       try {
         await addGame({ id: Date.now(), ...formData, location: "" });
-        alert("✅ 추가되었습니다!");
+        showToast("✅ 추가되었습니다!", { type: "success" });
         setIsModalOpen(false);
         setResults([]);
         setKeyword("");
         if (onGameAdded) onGameAdded();
       } catch (e) {
-        alert("추가 실패: " + e);
+        showToast("추가 실패: " + e, { type: "error" });
       }
     }
   };
@@ -58,16 +60,16 @@ function AddGameTab({ onGameAdded }) {
   return (
     <div>
       <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-        <input 
-          value={keyword} onChange={(e) => setKeyword(e.target.value)} 
-          onKeyPress={(e) => e.key === 'Enter' && handleSearch()} 
-          placeholder="네이버 검색 (예: 스플렌더)" style={styles.input} 
+        <input
+          value={keyword} onChange={(e) => setKeyword(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          placeholder="네이버 검색 (예: 스플렌더)" style={styles.input}
         />
         <button onClick={handleSearch} style={styles.searchBtn}>검색</button>
       </div>
 
       {loading && <div>검색 중... ⏳</div>}
-      
+
       <div style={styles.gridContainer}>
         {results.map((item) => (
           <div key={item.productId} style={styles.card}>
@@ -79,7 +81,7 @@ function AddGameTab({ onGameAdded }) {
       </div>
 
       {/* 공통 모달 사용 */}
-      <GameFormModal 
+      <GameFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         initialData={selectedGame}

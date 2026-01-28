@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { TEXTS } from '../constants';
 import { signupUser, loginUser } from '../api';
+import { useToast } from '../contexts/ToastContext'; // [NEW]
 
 function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, sessionUser, setSessionUser, setUser }) {
+  const { showToast } = useToast(); // [NEW]
   // 공통상태
   const [isLoading, setIsLoading] = useState(false);
 
@@ -47,7 +49,7 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
 
     if (!currentUser.password) {
       // GameDetail.js 에서도 처리하지만, 여기서도 한번 더 방어
-      alert("보안을 위해 다시 로그인이 필요합니다.\n(비밀번호 정보가 만료되었습니다)");
+      showToast("보안을 위해 다시 로그인이 필요합니다.\n(비밀번호 정보가 만료되었습니다)", { type: "warning" });
       onClose();
       return;
     }
@@ -65,7 +67,7 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
       });
       // 성공하면 부모가 모달을 닫음
     } catch (e) {
-      alert(e.message || TEXTS.ALERT_AUTH_ERROR);
+      showToast(e.message || TEXTS.ALERT_AUTH_ERROR, { type: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +80,7 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
   const handleGuestRent = async () => {
     // 유효성 검사
     if (!guestId || !guestPw) {
-      return alert(TEXTS.ALERT_PASSWORD_REQUIRED);
+      return showToast(TEXTS.ALERT_PASSWORD_REQUIRED, { type: "warning" });
     }
 
     if (isLoading) return;
@@ -123,7 +125,7 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
       if (setUser) setUser(userToSave);
 
     } catch (e) {
-      alert(e.message || TEXTS.ALERT_AUTH_ERROR);
+      showToast(e.message || TEXTS.ALERT_AUTH_ERROR, { type: "error" });
     } finally {
       setIsLoading(false);
     }
