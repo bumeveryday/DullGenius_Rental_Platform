@@ -2,7 +2,7 @@
 // 최종 수정일: 2025.12.05
 // 설명: 관리자 페이지 메인 (인증 및 탭 컨테이너)
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchGames, fetchConfig } from './api';
 import { useAuth } from './contexts/AuthContext'; // [SECURITY] Supabase 권한 기반 인증
@@ -40,7 +40,7 @@ function Admin() {
   const [loading, setLoading] = useState(false);
 
   // --- 데이터 로딩 (SWR 패턴 적용) ---
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     // 1. (배경) 로딩 표시 시작
     setLoading(true);
     try {
@@ -61,7 +61,7 @@ function Admin() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   // 인증 성공 시 데이터 최초 로드
   useEffect(() => {
@@ -73,7 +73,7 @@ function Admin() {
       }
       loadData();
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, loadData]);
 
 
   // --- 3. 로딩 및 권한 체크 ---

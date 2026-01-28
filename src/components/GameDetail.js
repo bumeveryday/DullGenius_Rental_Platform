@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { fetchGames, rentGame, sendMiss, fetchReviews, addReview, deleteReview, increaseViewCount, dibsGame } from '../api';
+import { fetchGames, sendMiss, fetchReviews, addReview, increaseViewCount, dibsGame } from '../api';
 import { TEXTS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext'; // [NEW] 전역 Toast
@@ -75,7 +75,7 @@ function GameDetail() {
       return;
     }
 
-    if (!window.confirm(`'${game.name}'을(를) 찜하시겠습니까?\n30분 내로 동아리방에서 수령해야 합니다.`)) return;
+    if (!window.confirm(`'${game.name}'을(를) 찜하시겠습니까 ?\n30분 내로 동아리방에서 수령해야 합니다.`)) return;
 
     try {
       const result = await dibsGame(game.id, user.id); // [Changed] rentGame -> dibsGame
@@ -105,7 +105,7 @@ function GameDetail() {
   const handleSubmitReview = async () => {
     if (!user) return showToast("로그인이 필요합니다.", { type: "warning" });
     if (!newReview.comment) return showToast("내용을 입력해주세요.", { type: "warning" });
-    if (cooldown > 0) return showToast(`조금만 기다려주세요 (${cooldown}초)`, { type: "info" });
+    if (cooldown > 0) return showToast(`조금만 기다려주세요(${cooldown}초)`, { type: "info" });
 
     setIsReviewSubmitting(true);
     try {
@@ -217,7 +217,7 @@ function GameDetail() {
                   fontWeight: "bold"
                 }}
               >
-                {cooldown > 0 ? `${cooldown}s` : "등록"}
+                {cooldown > 0 ? `${cooldown} s` : "등록"}
               </button>
             </div>
           </div>

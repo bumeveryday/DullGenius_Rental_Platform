@@ -24,7 +24,7 @@ const MyPage = () => {
       showToast("로그인이 필요합니다.", { type: "warning" });
       navigate("/login");
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, showToast]);
 
   useEffect(() => {
     const loadRentals = async () => {
