@@ -47,7 +47,24 @@ export const fetchGames = async () => {
 
       // 2. 대여자 정보 추출 (현재 대여중이거나 찜 상태이고, 반납되지 않은 기록 찾기)
       let renterName = null;
-      if ((copyStatus === 'RENTED' || copyStatus === 'RESERVED') && copy?.rentals) {
+
+      // [FIX] 만료된 찜인지 확인
+      let isExpiredDibs = false;
+
+      if (copyStatus === 'RESERVED' && copy?.rentals) {
+        const activeRental = copy.rentals.find(r => !r.returned_at);
+        if (activeRental && activeRental.due_date) {
+          const dueDate = new Date(activeRental.due_date);
+          const now = new Date();
+          // 만료되었다면? 프론트에서는 '대여가능'처럼 보여준다 (CleanUp 전이라도)
+          if (now > dueDate) {
+            isExpiredDibs = true;
+            copyStatus = 'AVAILABLE';
+          }
+        }
+      }
+
+      if (!isExpiredDibs && (copyStatus === 'RENTED' || copyStatus === 'RESERVED') && copy?.rentals) {
         // returned_at이 없는 최신 렌탈
         const activeRental = copy.rentals.find(r => !r.returned_at);
         if (activeRental) {
@@ -174,39 +191,39 @@ export const fetchTrending = async () => {
   }
 };
 
-// [IMPROVED] 설정값 가져오기 (캐시 만료 전략 추가)
+// [IMPROVED] 설정값 가져오기 (영구 저장소: 로컬 스토리지)
 export const fetchConfig = async () => {
-  const CACHE_KEY = 'dullg_config';
-  const CACHE_DURATION = 5 * 60 * 1000; // 5분
+  // DB가 없으므로 로컬 스토리지를 DB처럼 사용
+  // 다른 컴포넌트(App.js)와 키를 맞춤 ('config_cache')
+  const STORAGE_KEY = 'config_cache';
 
-  // 1. 캐시 확인
-  const cached = localStorage.getItem(CACHE_KEY);
+  // 1. 저장된 설정 확인
+  const cached = localStorage.getItem(STORAGE_KEY);
   if (cached) {
     try {
-      const { data, timestamp } = JSON.parse(cached);
-      const age = Date.now() - timestamp;
-
-      if (age < CACHE_DURATION) {
-        return data; // 캐시 유효
+      const parsed = JSON.parse(cached);
+      // 포맷 호환성 체크: { data, timestamp } 형태이거나 배열 자체일 수 있음
+      if (parsed.data && Array.isArray(parsed.data)) {
+        return parsed.data;
+      } else if (Array.isArray(parsed)) {
+        return parsed;
       }
     } catch (e) {
-      console.warn('캐시 파싱 실패, 새로 로드합니다.');
+      console.warn('설정 파싱 실패, 기본값으로 복구합니다.');
     }
   }
 
-  // 2. 기본값 (하드코딩)
+  // 2. 없으면 기본값 (하드코딩)
   const defaultConfig = [
-    { label: "#입문\\n추천", value: "#입문", color: "#f1c40f" },
-    { label: "#파티\\n게임", value: "#파티", color: "#e67e22" },
-    { label: "#전략\\n게임", value: "#전략", color: "#e74c3c" },
-    { label: "#2인\\n추천", value: "#2인", color: "#9b59b6" }
+    { label: "#입문\\n추천", value: "#입문", color: "#f1c40f", key: "default_1" },
+    { label: "#파티\\n게임", value: "#파티", color: "#e67e22", key: "default_2" },
+    { label: "#전략\\n게임", value: "#전략", color: "#e74c3c", key: "default_3" },
+    { label: "#2인\\n추천", value: "#2인", color: "#9b59b6", key: "default_4" }
   ];
 
-  // TODO: 추후 Supabase config 테이블 추가 시 여기서 조회
-  // const { data } = await supabase.from('config').select('*');
-
-  // 3. 캐시 저장 (타임스탬프 포함)
-  localStorage.setItem(CACHE_KEY, JSON.stringify({
+  // 3. 초기값 저장 (포맷: { data, timestamp })
+  // timestamp는 App.js 등에서 캐시 검증용으로 쓰일 수 있으므로 최신화
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
     data: defaultConfig,
     timestamp: Date.now()
   }));
@@ -216,23 +233,36 @@ export const fetchConfig = async () => {
 
 // 5. 아쉬워요 (수요조사)
 export const sendMiss = async (gameId) => {
-  // logs 테이블에 기록
   const { data: { user } } = await supabase.auth.getUser();
   await supabase.from('logs').insert([{
     game_id: gameId,
-    user_id: user?.id || null, // 비로그인도 가능? 일단 null 허용
+    user_id: user?.id || null,
     action_type: 'MISS',
     details: '입고 요청'
   }]);
   return { result: "success" };
 };
 
-// [Admin] Legacy placeholders (빌드 에러 방지용)
+// [Admin] Legacy placeholders
 export const loginUser = async () => { throw new Error("useAuth().login을 사용하세요."); };
 export const signupUser = async () => { throw new Error("useAuth().signup을 사용하세요."); };
+
 // [Admin] 검색용 네이버 API (Mock)
-export const searchNaver = async () => ({ items: [] });
-// [Admin] 게임 추가 (Mock)
+export const searchNaver = async (query) => {
+  await new Promise(r => setTimeout(r, 600));
+  if (!query) return { items: [] };
+  return {
+    items: [
+      {
+        title: `<b>${query}</b> (검색 결과 예시)`,
+        image: "https://via.placeholder.com/300x300?text=BoardGame",
+        productId: `mock-${Date.now()}-1`,
+        description: "실제 네이버 API 연동이 필요합니다."
+      }
+    ]
+  };
+};
+
 // [Admin] 게임 추가
 export const addGame = async (gameData) => {
   // 1. Games 테이블 추가
@@ -265,7 +295,11 @@ export const addGame = async (gameData) => {
 
 // [Admin] 설정 저장 (LocalStorage)
 export const saveConfig = async (newConfig) => {
-  localStorage.setItem('dullg_config', JSON.stringify(newConfig));
+  const STORAGE_KEY = 'config_cache';
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    data: newConfig,
+    timestamp: Date.now()
+  }));
   return { status: "success" };
 };
 
@@ -526,7 +560,20 @@ export const fetchMyRentals = async (userId) => {
     gameName: r.game_copies?.games?.name || "알 수 없는 게임",
     status: r.returned_at ? "반납완료" : "대여중",
     type: r.type || 'RENT' // 기본값 RENT
-  })).filter(r => !r.returnedAt); // 현재 대여중인 것만 보여줄지 결정 (일단 미반납만 표시)
+  }))
+    .filter(r => {
+      // 1. 이미 반납된 것은 제외 (여긴 원래 같음)
+      if (r.returnedAt) return false;
+
+      // [FIX] 2. 찜(DIBS)인데 만료된 것은 숨김
+      if (r.type === 'DIBS' && r.dueDate) {
+        const due = new Date(r.dueDate);
+        const now = new Date();
+        if (now > due) return false; // 만료됨 -> 안보여줌
+      }
+
+      return true; // 그 외에는 표시
+    });
 
   return { status: "success", data: formatted };
 };

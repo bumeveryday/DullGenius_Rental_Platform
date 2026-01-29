@@ -1,11 +1,12 @@
 // src/admin/AddGameTab.js
 import { useState } from 'react';
 import { searchNaver, addGame } from '../api';
-import GameFormModal from './GameFormModal'; // 공통 모달 임포트
-import { useToast } from '../contexts/ToastContext'; // [NEW]
+import GameFormModal from './GameFormModal';
+import ConfirmModal from '../components/ConfirmModal'; // [NEW]
+import { useToast } from '../contexts/ToastContext';
 
 function AddGameTab({ onGameAdded }) {
-  const { showToast } = useToast(); // [NEW]
+  const { showToast } = useToast();
   const [keyword, setKeyword] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -13,6 +14,23 @@ function AddGameTab({ onGameAdded }) {
   // 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
+
+  // 컨펌 모달 상태
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    type: "info"
+  });
+
+  const showConfirmModal = (title, message, onConfirm, type = "info") => {
+    setConfirmModal({ isOpen: true, title, message, onConfirm, type });
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+  };
 
   const handleSearch = async () => {
     if (!keyword) return;
@@ -26,7 +44,6 @@ function AddGameTab({ onGameAdded }) {
 
   // 검색 결과 선택 시 모달 열기
   const openAddModal = (item) => {
-    // 네이버 데이터 -> 우리 포맷으로 변환
     const initialData = {
       name: item.title.replace(/<[^>]*>?/g, ''),
       category: "보드게임",
@@ -42,19 +59,26 @@ function AddGameTab({ onGameAdded }) {
   };
 
   // 모달에서 '저장' 버튼 눌렀을 때 실행
-  const handleSaveGame = async (formData) => {
-    if (window.confirm(`[${formData.name}] 추가하시겠습니까?`)) {
-      try {
-        await addGame({ id: Date.now(), ...formData, location: "" });
-        showToast("✅ 추가되었습니다!", { type: "success" });
-        setIsModalOpen(false);
-        setResults([]);
-        setKeyword("");
-        if (onGameAdded) onGameAdded();
-      } catch (e) {
-        showToast("추가 실패: " + e, { type: "error" });
+  const handleSaveGame = (formData) => {
+    showConfirmModal(
+      "게임 추가",
+      `[${formData.name}] 추가하시겠습니까?`,
+      async () => {
+        try {
+          // id는 DB에서 생성되므로 제거하고 보냄
+          const { id, ...rest } = formData;
+          await addGame({ ...rest, location: "" });
+          showToast("✅ 추가되었습니다!", { type: "success" });
+          setIsModalOpen(false);
+          setResults([]);
+          setKeyword("");
+          if (onGameAdded) onGameAdded();
+        } catch (e) {
+          console.error("게임 추가 실패:", e);
+          showToast("추가 실패: " + (e.message || e), { type: "error" });
+        }
       }
-    }
+    );
   };
 
   return (
@@ -66,9 +90,21 @@ function AddGameTab({ onGameAdded }) {
           placeholder="네이버 검색 (예: 스플렌더)" style={styles.input}
         />
         <button onClick={handleSearch} style={styles.searchBtn}>검색</button>
+        <button
+          onClick={() => openAddModal({ title: "새 게임", image: "", productId: "manual" })}
+          style={{ ...styles.searchBtn, background: "#2ecc71", marginLeft: "auto" }}
+        >
+          ➕ 직접 추가
+        </button>
       </div>
 
-      {loading && <div>검색 중... ⏳</div>}
+      {loading && <div style={{ textAlign: "center", padding: "20px" }}>네이버에서 검색 중... ⏳</div>}
+
+      {!loading && results.length === 0 && keyword && (
+        <div style={{ textAlign: "center", color: "#999", padding: "20px" }}>
+          검색 결과가 없습니다. '직접 추가' 버튼을 사용해보세요.
+        </div>
+      )}
 
       <div style={styles.gridContainer}>
         {results.map((item) => (
@@ -87,6 +123,16 @@ function AddGameTab({ onGameAdded }) {
         initialData={selectedGame}
         onSubmit={handleSaveGame}
         title="📝 새 게임 추가"
+      />
+
+      {/* Confirm 모달 */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={closeConfirmModal}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
       />
     </div>
   );

@@ -20,7 +20,8 @@ function Admin() {
   const navigate = useNavigate();
 
   // --- 1. 권한 체크: 관리자 권한이 있는지 확인 ---
-  const isAdmin = hasRole('admin') || hasRole('executive');
+  const isDevBypass = process.env.NODE_ENV === 'development' && sessionStorage.getItem('dev_admin_bypass') === 'true';
+  const isAdmin = hasRole('admin') || hasRole('executive') || isDevBypass;
 
   // 비로그인 또는 권한 없음 처리
   useEffect(() => {
@@ -46,15 +47,36 @@ function Admin() {
     try {
       const [gamesData, configData] = await Promise.all([fetchGames(), fetchConfig()]);
 
-      // 정렬 로직 (우선순위: 찜 > 대여중 > 분실 > 대여가능)
-      const priority = { "찜": 1, "대여중": 2, "분실": 3, "대여가능": 4 };
-      const sortedGames = gamesData.sort((a, b) => (priority[a.status] || 4) - (priority[b.status] || 4));
+      // [FIX] gamesData가 배열인지 확인 (에러 객체 반환 가능성 대응)
+      let validGames = [];
+      if (Array.isArray(gamesData)) {
+        validGames = gamesData;
+      } else if (gamesData?.error) {
+        showToast(gamesData.message, { type: "error" });
+        return; // 에러 시 중단
+      }
+
+      // 정렬 로직 (우선순위: 찜 > 대여중 > 대여가능 > 분실) [FIX] 반납 처리를 위해 '대여중'을 상위로 이동
+      const priority = { "찜": 1, "대여중": 2, "대여가능": 3, "분실": 4, "수리중": 5 };
+
+      const sortedGames = validGames.sort((a, b) => {
+        // 1. 상태 우선순위 비교
+        const priorityA = priority[a.status] || 99;
+        const priorityB = priority[b.status] || 99;
+        if (priorityA !== priorityB) return priorityA - priorityB;
+
+        // 2. 같은 상태면 이름순 정렬
+        return a.name.localeCompare(b.name, 'ko');
+      });
 
       setGames(sortedGames);
       if (configData?.length) setConfig(configData);
 
-      // ⭐ [핵심] 최신 데이터를 받으면 로컬 스토리지도 갱신한다! (유저 페이지와 공유)
-      localStorage.setItem('games_cache', JSON.stringify(sortedGames));
+      // ⭐ [핵심] 최신 데이터를 받으면 로컬 스토리지도 갱신한다! (타임스탬프 포함)
+      localStorage.setItem('games_cache', JSON.stringify({
+        data: sortedGames,
+        timestamp: Date.now()
+      }));
 
     } catch (e) {
       showToast("데이터 로딩 실패 (인터넷 연결 확인)", { type: "error" });
@@ -67,9 +89,21 @@ function Admin() {
   useEffect(() => {
     if (user && isAdmin) {
       // 캐시가 있으면 먼저 보여준다! (0초 로딩)
+      // 캐시가 있으면 먼저 보여준다! (0초 로딩)
       const cachedGames = localStorage.getItem('games_cache');
       if (cachedGames) {
-        setGames(JSON.parse(cachedGames));
+        try {
+          const parsedCache = JSON.parse(cachedGames);
+          // [FIX] 변경된 캐시 구조 ({ data, timestamp }) 대응
+          if (parsedCache.data && Array.isArray(parsedCache.data)) {
+            setGames(parsedCache.data);
+          } else if (Array.isArray(parsedCache)) {
+            // 구버전 캐시 대응 (혹시 모를 하위 호환성)
+            setGames(parsedCache);
+          }
+        } catch (e) {
+          console.warn("캐시 파싱 실패");
+        }
       }
       loadData();
     }

@@ -32,6 +32,8 @@ export const useGameFilter = (games, filters) => {
     };
 
     const filteredGames = useMemo(() => {
+        if (!Array.isArray(games)) return []; // [FIX] 안전장치 추가
+
         return games.filter(game => {
             // 이름 필터 (빈 게임 제외)
             if (!game.name || game.name.trim() === "") return false;
@@ -71,8 +73,12 @@ export const useGameFilter = (games, filters) => {
             }
 
             return true;
-        }).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-    }, [games, searchTerm, selectedCategory, onlyAvailable, difficultyFilter, playerFilter, renterFilter]);
+        }).sort((a, b) => {
+            // [FIX] 옵션에 따라 정렬 방식 결정
+            if (filters.sortByName === false) return 0; // 정렬 안 함 (원본 순서 유지)
+            return a.name.localeCompare(b.name, 'ko');
+        });
+    }, [games, searchTerm, selectedCategory, onlyAvailable, difficultyFilter, playerFilter, renterFilter, filters.sortByName]);
 
     return filteredGames;
 };

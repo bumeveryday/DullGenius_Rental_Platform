@@ -38,6 +38,30 @@ a {
   }
 }
 
+/* 페이드 인 (모달 오버레이용) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* 아래에서 위로 슬라이드 (모달 콘텐츠용) */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* =========================================
    3. 레이아웃 & 대시보드 (Layout)
    ========================================= */

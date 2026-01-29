@@ -1,20 +1,39 @@
 // src/admin/DashboardTab.js
-import { useState, useEffect } from 'react'; // [CHANGE] useMemo 제거
+import { useState, useEffect } from 'react';
 import { adminUpdateGame, deleteGame, approveDibsByRenter, returnGamesByRenter, editGame, fetchGameLogs, fetchUsers } from '../api';
 import GameFormModal from './GameFormModal';
+import ConfirmModal from '../components/ConfirmModal'; // [NEW]
 import FilterBar from '../components/FilterBar';
 import { TEXTS, getStatusColor } from '../constants';
 import { useToast } from '../contexts/ToastContext';
-import { useGameFilter } from '../hooks/useGameFilter'; // [NEW] Custom Hook
+import { useGameFilter } from '../hooks/useGameFilter';
 
 function DashboardTab({ games, loading, onReload }) {
-  const { showToast } = useToast(); // [NEW]
+  const { showToast } = useToast();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [targetGame, setTargetGame] = useState(null);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [gameLogs, setGameLogs] = useState([]);
   const [logGameName, setLogGameName] = useState("");
+
+  // [NEW] Confirm 모달 상태
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    type: "info"
+  });
+
+  // [NEW] Confirm 모달 헬퍼 함수
+  const showConfirmModal = (title, message, onConfirm, type = "info") => {
+    setConfirmModal({ isOpen: true, title, message, onConfirm, type });
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModal({ isOpen: false, title: "", message: "", onConfirm: null, type: "info" });
+  };
 
   const [allUsers, setAllUsers] = useState([]);
   // 필터 관련 변수
@@ -76,7 +95,8 @@ function DashboardTab({ games, loading, onReload }) {
     selectedCategory,
     onlyAvailable,
     difficultyFilter,
-    playerFilter
+    playerFilter,
+    sortByName: false // [FIX] Admin.js에서 정한 중요도 순서(찜>대여가능)를 유지하기 위해 이름 정렬 끔
   });
 
   // 필터 초기화 함수
@@ -102,17 +122,20 @@ function DashboardTab({ games, loading, onReload }) {
 
   // 모달에서 '저장' 버튼 클릭 시
   const handleEditSubmit = async (formData) => {
-    if (window.confirm(`[${formData.name}] 정보를 수정하시겠습니까?`)) {
-      try {
-        // 기존 ID는 유지하고 폼 데이터로 덮어쓰기
-        await editGame({ game_id: targetGame.id, ...formData });
-        showToast("✅ 수정되었습니다.", { type: "success" });
-        setIsEditModalOpen(false);
-        onReload();
-      } catch (e) {
-        showToast("수정 실패: " + e, { type: "error" });
+    showConfirmModal(
+      "게임 정보 수정",
+      `[${formData.name}] 정보를 수정하시겠습니까?`,
+      async () => {
+        try {
+          await editGame({ game_id: targetGame.id, ...formData });
+          showToast("✅ 수정되었습니다.", { type: "success" });
+          setIsEditModalOpen(false);
+          onReload();
+        } catch (e) {
+          showToast("수정 실패: " + e, { type: "error" });
+        }
       }
-    }
+    );
   };
 
   // 현장 대여 핸들러 추가
@@ -135,42 +158,47 @@ function DashboardTab({ games, loading, onReload }) {
       confirmMsg += TEXTS.ADMIN_RENT_CONFIRM_FAIL;
     }
 
-    if (window.confirm(confirmMsg)) {
-      try {
-        // 3. API 호출
-        const res = await adminUpdateGame(game.id, "대여중", renterName, userId);
-
-        // 응답 체크
-        if (res && res.status === "success") {
-          showToast(TEXTS.ADMIN_RENT_SUCCESS, { type: "success" });
-          onReload();
-        } else {
-          showToast("오류 발생: " + (res.message || "응늵 없음"), { type: "error" });
+    showConfirmModal(
+      "현장 대여 확인",
+      confirmMsg,
+      async () => {
+        try {
+          const res = await adminUpdateGame(game.id, "대여중", renterName, userId);
+          if (res && res.status === "success") {
+            showToast(TEXTS.ADMIN_RENT_SUCCESS, { type: "success" });
+            onReload();
+          } else {
+            showToast("오류 발생: " + (res.message || "응답 없음"), { type: "error" });
+          }
+        } catch (e) {
+          console.error(e);
+          showToast("처리 실패 (콘솔 확인): " + e, { type: "error" });
         }
-      } catch (e) {
-        console.error(e);
-        showToast("처리 실패 (콘솔 확인): " + e, { type: "error" });
-      }
-    }
+      },
+      "warning"
+    );
   };
 
 
 
-  // 3. 단순 상태 변경 (분실, 대여취소 등)
   const handleStatusChange = async (gameId, newStatus, gameName) => {
     let msg = `[${gameName}] 상태를 '${newStatus}'(으)로 변경하시겠습니까?`;
     if (newStatus === "대여중") msg = "현장 수령 확인하시겠습니까?";
     if (newStatus === "대여가능") msg = "반납 처리하시겠습니까?";
 
-    if (!window.confirm(msg)) return;
-
-    try {
-      await adminUpdateGame(gameId, newStatus);
-      showToast("처리되었습니다.", { type: "success" });
-      onReload();
-    } catch (e) {
-      showToast("오류 발생: " + e, { type: "error" });
-    }
+    showConfirmModal(
+      "상태 변경",
+      msg,
+      async () => {
+        try {
+          await adminUpdateGame(gameId, newStatus);
+          showToast("처리되었습니다.", { type: "success" });
+          onReload();
+        } catch (e) {
+          showToast("오류 발생: " + e, { type: "error" });
+        }
+      }
+    );
   };
 
   // 4. 스마트 반납 (일괄 처리 로직)
@@ -180,23 +208,29 @@ function DashboardTab({ games, loading, onReload }) {
     const count = sameUserRentals.length;
 
     if (count <= 1) {
-      if (window.confirm(`[${game.name}] 반납 처리하시겠습니까?`)) {
-        await adminUpdateGame(game.id, "대여가능");
-        showToast("반납되었습니다.", { type: "success" });
-        onReload();
-      }
+      showConfirmModal(
+        "반납 확인",
+        `[${game.name}] 반납 처리하시겠습니까?`,
+        async () => {
+          await adminUpdateGame(game.id, "대여가능");
+          showToast("반납되었습니다.", { type: "success" });
+          onReload();
+        }
+      );
       return;
     }
 
-    if (window.confirm(`💡 [${renterName}] 님이 현재 빌려간 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '반납' 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 반납합니다)`)) {
-      await returnGamesByRenter(renterName);
-      showToast(`${count}건이 일괄 반납되었습니다.`, { type: "success" });
-      onReload();
-    } else {
-      await adminUpdateGame(game.id, "대여가능");
-      showToast("반납되었습니다.", { type: "success" });
-      onReload();
-    }
+    showConfirmModal(
+      "일괄 반납 처리",
+      `💡 [${renterName}] 님이 현재 빌려간 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '반납' 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 반납합니다)`,
+      async () => {
+        await returnGamesByRenter(renterName);
+        showToast(`${count}건이 일괄 반납되었습니다.`, { type: "success" });
+        onReload();
+      },
+      "warning"
+    );
+    // 취소 시 단일 반납은 모달의 취소 버튼으로 처리됨
   };
 
   // 5. 스마트 수령 (일괄 찜 처리 로직)
@@ -206,35 +240,45 @@ function DashboardTab({ games, loading, onReload }) {
     const count = sameUserDibs.length;
     const userId = findUserId(renterName);
     if (count <= 1) {
-      if (window.confirm(`[${game.name}] 현장 수령 확인하시겠습니까?`)) {
-        await adminUpdateGame(game.id, "대여중", renterName, userId);
-        showToast("처리되었습니다.", { type: "success" });
-        onReload();
-      }
+      showConfirmModal(
+        "수령 확인",
+        `[${game.name}] 현장 수령 확인하시겠습니까?`,
+        async () => {
+          await adminUpdateGame(game.id, "대여중", renterName, userId);
+          showToast("처리되었습니다.", { type: "success" });
+          onReload();
+        }
+      );
       return;
     }
 
-    if (window.confirm(`💡 [${renterName}] 님이 예약한 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '대여중'으로 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 처리합니다)`)) {
-      await approveDibsByRenter(renterName, userId);
-      showToast(`${count}건이 일괄 수령 처리되었습니다.`, { type: "success" });
-      onReload();
-    } else {
-      await adminUpdateGame(game.id, "대여중", renterName, userId);
-      showToast("처리되었습니다.", { type: "success" });
-      onReload();
-    }
+    showConfirmModal(
+      "일괄 수령 처리",
+      `💡 [${renterName}] 님이 예약한 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '대여중'으로 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 처리합니다)`,
+      async () => {
+        await approveDibsByRenter(renterName, userId);
+        showToast(`${count}건이 일괄 수령 처리되었습니다.`, { type: "success" });
+        onReload();
+      },
+      "warning"
+    );
   };
 
-  // 6. 게임 삭제
   const handleDelete = async (game) => {
-    if (!window.confirm(`[${game.name}] 정말 삭제합니까?\n되돌릴 수 없습니다.`)) return;
-    try {
-      await deleteGame(game.id);
-      showToast("삭제되었습니다.", { type: "success" });
-      onReload();
-    } catch (e) {
-      showToast("삭제 실패", { type: "error" });
-    }
+    showConfirmModal(
+      "게임 삭제",
+      `[${game.name}] 정말 삭제합니까?\n되돌릴 수 없습니다.`,
+      async () => {
+        try {
+          await deleteGame(game.id);
+          showToast("삭제되었습니다.", { type: "success" });
+          onReload();
+        } catch (e) {
+          showToast("삭제 실패", { type: "error" });
+        }
+      },
+      "danger"
+    );
   };
 
   // ⭐ [추가] 로그 보기 핸들러
@@ -451,6 +495,16 @@ function DashboardTab({ games, loading, onReload }) {
           </div>
         </div>
       )}
+
+      {/* [NEW] Confirm 모달 */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={closeConfirmModal}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+      />
     </div>
   );
 }

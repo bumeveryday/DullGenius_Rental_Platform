@@ -3,12 +3,30 @@
 
 import { useState, useEffect } from 'react';
 import { saveConfig } from '../api';
-import { useToast } from '../contexts/ToastContext'; // [NEW]
+import ConfirmModal from '../components/ConfirmModal'; // [NEW]
+import { useToast } from '../contexts/ToastContext';
 
 function ConfigTab({ config, onReload }) {
-  const { showToast } = useToast(); // [NEW]
+  const { showToast } = useToast();
   // 로컬에서 편집 중인 설정 상태
   const [items, setItems] = useState([]);
+
+  // [NEW] Confirm 모달 상태
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    type: "info"
+  });
+
+  const showConfirmModal = (title, message, onConfirm, type = "info") => {
+    setConfirmModal({ isOpen: true, title, message, onConfirm, type });
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+  };
 
   // 부모로부터 초기 데이터(config)를 받으면 로컬 상태에 동기화
   useEffect(() => {
@@ -41,22 +59,34 @@ function ConfigTab({ config, onReload }) {
       showToast("최소 1개의 버튼은 있어야 합니다.", { type: "warning" });
       return;
     }
-    if (!window.confirm("이 추천 버튼을 삭제하시겠습니까?")) return;
 
-    const newItems = items.filter((_, i) => i !== idx);
-    setItems(newItems);
+    showConfirmModal(
+      "버튼 삭제",
+      "이 추천 버튼을 삭제하시겠습니까?",
+      () => {
+        const newItems = items.filter((_, i) => i !== idx);
+        setItems(newItems);
+      },
+      "danger"
+    );
   };
 
   // 4. 최종 저장 (서버 전송)
   const handleSave = async () => {
-    if (!window.confirm("현재 설정을 저장하고 적용하시겠습니까?")) return;
-    try {
-      await saveConfig(items);
-      showToast("✅ 저장되었습니다.", { type: "success" });
-      if (onReload) onReload(); // 부모 컴포넌트 데이터 갱신
-    } catch (e) {
-      showToast("저장 실패: " + e, { type: "error" });
-    }
+    showConfirmModal(
+      "설정 저장",
+      "현재 설정을 저장하고 적용하시겠습니까?",
+      async () => {
+        try {
+          await saveConfig(items);
+          showToast("✅ 저장되었습니다.", { type: "success" });
+          if (onReload) onReload(); // 부모 컴포넌트 데이터 갱신
+        } catch (e) {
+          showToast("저장 실패: " + e, { type: "error" });
+        }
+      },
+      "info"
+    );
   };
 
   return (
@@ -127,6 +157,16 @@ function ConfigTab({ config, onReload }) {
           💾 설정 저장하고 적용하기
         </button>
       </div>
+
+      {/* Confirm 모달 */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={closeConfirmModal}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+      />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 // 설명: 메인 화면(Home) 및 라우터 설정, 데이터 로딩, 필터링 로직 포함
 
 import React, { useEffect, useState, useRef } from 'react';
-import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { fetchGames, fetchTrending, fetchConfig } from './api'; // API 함수들 임포트
 import { useGameFilter } from './hooks/useGameFilter'; // [NEW] Custom Hook
 import Admin from './Admin';         // 관리자 페이지 컴포넌트
@@ -21,6 +21,7 @@ import { ToastProvider } from './contexts/ToastContext'; // [NEW] Toast 시스�
 
 function Home() {
   const navigate = useNavigate();
+  const location = useLocation(); // [FIX] useLocation 훅 사용
   const { user, profile, logout } = useAuth(); // [NEW] useAuth 훅 사용
 
   // ==========================================
@@ -278,8 +279,34 @@ function Home() {
             src={logo}
             alt="덜지니어스 로고"
             onClick={(e) => {
-              e.stopPropagation();
-              handleSecretClick();
+              // 1. 기본 동작: 메인으로 이동
+              if (location.pathname !== "/") {
+                navigate("/");
+              } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+
+              // 2. [DEV] 이스터에그: 5번 연속 클릭 시 관리자 페이지 이동
+              if (process.env.NODE_ENV === 'development') {
+                const now = Date.now();
+                const lastClick = window.lastLogoClickTime || 0;
+
+                if (now - lastClick < 500) { // 0.5초 이내 클릭
+                  window.logoClickCount = (window.logoClickCount || 0) + 1;
+                } else {
+                  window.logoClickCount = 1;
+                }
+                window.lastLogoClickTime = now;
+
+                if (window.logoClickCount >= 5) {
+                  const confirmDev = window.confirm("🛠️ 개발자 모드로 관리자 페이지에 접속하시겠습니까?");
+                  if (confirmDev) {
+                    sessionStorage.setItem('dev_admin_bypass', 'true'); // 우회 플래그 설정
+                    navigate("/admin-secret");
+                    window.logoClickCount = 0;
+                  }
+                }
+              }
             }}
             style={{
               height: "1.2em",
@@ -386,7 +413,7 @@ function Home() {
       <div className="game-list" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "20px" }}>
         {filteredGames.map((game) => (
           <div key={game.id} style={{ border: "1px solid #eee", borderRadius: "10px", overflow: "hidden", boxShadow: "0 2px 5px rgba(0,0,0,0.05)", background: "white" }}>
-            <Link to={`/ game / ${game.id} `} state={{ game }} style={{ textDecoration: 'none', color: 'inherit', display: "block" }}>
+            <Link to={`/game/${game.id}`} state={{ game }} style={{ textDecoration: 'none', color: 'inherit', display: "block" }}>
               <div style={{ width: "100%", height: "200px", overflow: "hidden", background: "#f9f9f9", position: "relative" }}>
                 {game.image ? (
                   <img src={game.image} alt={game.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
