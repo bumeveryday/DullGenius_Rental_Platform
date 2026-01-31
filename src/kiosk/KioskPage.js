@@ -174,6 +174,7 @@ function KioskPage() {
             window.removeEventListener('mousemove', resetTimer);
             if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // isIdle 제거 - 한 번만 설정
 
     // [Handlers]
