@@ -9,7 +9,7 @@ import RentalModal from './RentalModal';
 
 // [Constants]
 // [Constants]
-const MASTER_KEY = process.env.REACT_APP_KIOSK_MASTER_KEY || "dullgenius_2024";
+const MASTER_KEY = process.env.REACT_APP_KIOSK_MASTER_KEY || "";
 const IDLE_TIMEOUT_MS = 180000; // 3분 (번인 방지)
 const REFRESH_HOUR = 4; // 새벽 4시 자동 새로고침
 

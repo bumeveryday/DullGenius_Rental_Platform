@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { TEXTS } from '../constants';
-import { signupUser, loginUser } from '../api';
-import { useToast } from '../contexts/ToastContext'; // [NEW]
+import { TEXTS, getAuthErrorMessage } from '../constants'; // [UPDATED]
+import { useAuth } from '../contexts/AuthContext'; // [NEW]
+import { useToast } from '../contexts/ToastContext';
 
 function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, sessionUser, setSessionUser, setUser }) {
-  const { showToast } = useToast(); // [NEW]
+  const { login, signup } = useAuth(); // [NEW]
+  const { showToast } = useToast();
   // 공통상태
   const [isLoading, setIsLoading] = useState(false);
 
@@ -87,35 +88,39 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
     setIsLoading(true);
 
     try {
-      let res;
+      let userObj;
+      const email = `${guestId}@handong.ac.kr`;
+
       // 이름/폰 유무에 따라 로그인 vs 회원가입 분기
       if (!guestName || !guestPhone) {
-        res = await loginUser(guestId, guestPw);
+        // [LOGIN]
+        const { user } = await login(email, guestPw);
+        userObj = user;
       } else {
-        res = await signupUser({
+        // [SIGNUP]
+        const { user } = await signup(email, guestPw, {
           name: guestName,
-          studentId: guestId,
-          password: guestPw,
+          student_id: guestId,
           phone: guestPhone
         });
-      }
-
-      if (!res.success) {
-        throw new Error(TEXTS.ALERT_AUTH_FAIL + res.message);
+        userObj = user;
       }
 
       // 로그인/가입 성공. 대여 요청 준비
-      const userToSave = res.user || {
-        name: guestName,
-        studentId: guestId,
-        phone: guestPhone
+      // Supabase user 객체에서 메타데이터 추출 혹은 입력값 사용
+      const md = userObj?.user_metadata || {};
+
+      const userToSave = {
+        name: md.name || guestName,
+        studentId: md.student_id || guestId,
+        phone: md.phone || guestPhone,
+        password: guestPw // 편의성 로컬 저장용
       };
-      userToSave.password = guestPw; // 입력한 비밀번호 저장
 
       // 1. 대여 요청 먼저 수행 (실패하면 상태 업데이트 안 함)
       await onConfirm({
         name: userToSave.name,
-        studentId: userToSave.studentId || userToSave.student_id,
+        studentId: userToSave.studentId,
         phone: userToSave.phone,
         password: userToSave.password
       });
@@ -125,7 +130,7 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
       if (setUser) setUser(userToSave);
 
     } catch (e) {
-      showToast(e.message || TEXTS.ALERT_AUTH_ERROR, { type: "error" });
+      showToast(getAuthErrorMessage(e), { type: "error" });
     } finally {
       setIsLoading(false);
     }

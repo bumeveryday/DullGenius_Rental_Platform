@@ -33,7 +33,7 @@ function Admin() {
   const navigate = useNavigate();
 
   // --- 1. 권한 체크: 관리자 권한이 있는지 확인 ---
-  const isDevBypass = process.env.NODE_ENV === 'development' && sessionStorage.getItem('dev_admin_bypass') === 'true';
+  const isDevBypass = sessionStorage.getItem('dev_admin_bypass') === 'true'; // [CHANGED] 배포 환경에서도 허용
   const isAdmin = hasRole('admin') || hasRole('executive') || isDevBypass;
 
   // 비로그인 또는 권한 없음 처리

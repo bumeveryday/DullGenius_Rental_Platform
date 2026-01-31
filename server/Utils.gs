@@ -5,8 +5,8 @@
 /* Utils.gs */
 
 // ⭐ API 설정
-const NAVER_CLIENT_ID = "3UG_Is4dQd_xF9HYCJky";
-const NAVER_CLIENT_SECRET = "5irhDbQewe";
+const NAVER_CLIENT_ID = "YOUR_NAVER_CLIENT_ID";
+const NAVER_CLIENT_SECRET = "YOUR_NAVER_CLIENT_SECRET";
 const SHEET_NAMES = { 
   GAMES: "Games", 
   REVIEWS: "Reviews", 

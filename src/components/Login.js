@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext'; // [NEW] Context 사용
 import { useToast } from '../contexts/ToastContext'; // [NEW]
+import { getAuthErrorMessage } from '../constants'; // [NEW] 에러 메시지 헬퍼
 
 function Login() {
   const navigate = useNavigate();
@@ -28,8 +29,8 @@ function Login() {
 
     } catch (error) {
       console.error("Login Error:", error);
-      // 구체적인 에러 메시지 표시 (디버깅용)
-      showToast(`로그인 실패: ${error.message}`, { type: "error" });
+      // 구체적인 에러 메시지 표시 (디버깅용 -> 사용자 친화적 문구로 변경)
+      showToast(getAuthErrorMessage(error), { type: "error" });
     } finally {
       setLoading(false);
     }

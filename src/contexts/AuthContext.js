@@ -1,21 +1,57 @@
 
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { useToast } from './ToastContext';
 
 const AuthContext = createContext({});
 
 export const useAuth = () => useContext(AuthContext);
+
+
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
     const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { showToast } = useToast();
     // useRef를 사용하여 마운트 상태 추적 (비동기 콜백에서의 상태 업데이트 방지)
     const isMounted = useRef(true);
 
     useEffect(() => {
         isMounted.current = true;
+
+        const fetchProfileAndRoles = async (userId) => {
+            try {
+                const { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+
+                if (profileError) throw profileError;
+                if (isMounted.current) setProfile(profileData);
+
+                const { data: roleData, error: roleError } = await supabase
+                    .from('user_roles')
+                    .select(`
+                      role_key,
+                      roles (display_name, permissions)
+                    `)
+                    .eq('user_id', userId);
+
+                if (roleError) throw roleError;
+
+                const roleKeys = roleData.map(r => r.role_key);
+                if (isMounted.current) setRoles(roleKeys);
+
+            } catch (error) {
+                console.error('Error fetching user data:', error.message);
+                showToast("사용자 정보를 불러오는데 실패했습니다.", { type: "error" });
+            } finally {
+                if (isMounted.current) setLoading(false);
+            }
+        };
 
         const initSession = async () => {
             try {
@@ -49,6 +85,8 @@ export const AuthProvider = ({ children }) => {
 
             setUser(session?.user ?? null);
             if (session?.user) {
+                // [FIX] 권한 및 프로필 정보를 가져오는 동안 로딩 상태 유지
+                setLoading(true);
                 fetchProfileAndRoles(session.user.id);
             } else {
                 setProfile(null);
@@ -61,38 +99,7 @@ export const AuthProvider = ({ children }) => {
             isMounted.current = false;
             subscription.unsubscribe();
         };
-    }, []);
-
-    const fetchProfileAndRoles = async (userId) => {
-        try {
-            const { data: profileData, error: profileError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (profileError) throw profileError;
-            if (isMounted.current) setProfile(profileData);
-
-            const { data: roleData, error: roleError } = await supabase
-                .from('user_roles')
-                .select(`
-                  role_key,
-                  roles (display_name, permissions)
-                `)
-                .eq('user_id', userId);
-
-            if (roleError) throw roleError;
-
-            const roleKeys = roleData.map(r => r.role_key);
-            if (isMounted.current) setRoles(roleKeys);
-
-        } catch (error) {
-            console.error('Error fetching user data:', error.message);
-        } finally {
-            if (isMounted.current) setLoading(false);
-        }
-    };
+    }, [showToast]);
 
     const login = async (email, password) => {
         const { data, error } = await supabase.auth.signInWithPassword({

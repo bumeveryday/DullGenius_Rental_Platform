@@ -39,7 +39,7 @@ function Home() {
   const [games, setGames] = useState([]);
   const [showGuide, setShowGuide] = useState(false);
   const [trending, setTrending] = useState([]);
-  const [config, setConfig] = useState([]);
+  const [config, setConfig] = useState(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -129,7 +129,7 @@ function Home() {
           console.error('게임 데이터 로딩 에러:', gamesData.message);
         }
 
-        if (configData?.length) {
+        if (configData) {
           setConfig(configData);
         }
 
@@ -272,26 +272,27 @@ function Home() {
               }
 
               // 2. [DEV] 이스터에그: 5번 연속 클릭 시 관리자 페이지 이동
-              if (process.env.NODE_ENV === 'development') {
-                const now = Date.now();
-                const lastClick = window.lastLogoClickTime || 0;
+              // 2. [DEV] 이스터에그: 5번 연속 클릭 시 관리자 페이지 이동
+              // if (process.env.NODE_ENV === 'development') { // [CHANGED] 배포 환경에서도 허용
+              const now = Date.now();
+              const lastClick = window.lastLogoClickTime || 0;
 
-                if (now - lastClick < 500) { // 0.5초 이내 클릭
-                  window.logoClickCount = (window.logoClickCount || 0) + 1;
-                } else {
-                  window.logoClickCount = 1;
-                }
-                window.lastLogoClickTime = now;
+              if (now - lastClick < 500) { // 0.5초 이내 클릭
+                window.logoClickCount = (window.logoClickCount || 0) + 1;
+              } else {
+                window.logoClickCount = 1;
+              }
+              window.lastLogoClickTime = now;
 
-                if (window.logoClickCount >= 5) {
-                  const confirmDev = window.confirm("🛠️ 개발자 모드로 관리자 페이지에 접속하시겠습니까?");
-                  if (confirmDev) {
-                    sessionStorage.setItem('dev_admin_bypass', 'true'); // 우회 플래그 설정
-                    navigate("/admin-secret");
-                    window.logoClickCount = 0;
-                  }
+              if (window.logoClickCount >= 5) {
+                const confirmDev = window.confirm("🛠️ 개발자 모드로 관리자 페이지에 접속하시겠습니까?");
+                if (confirmDev) {
+                  sessionStorage.setItem('dev_admin_bypass', 'true'); // 우회 플래그 설정
+                  navigate("/admin-secret");
+                  window.logoClickCount = 0;
                 }
               }
+              // }
             }}
             style={{
               height: "1.2em",
@@ -330,7 +331,7 @@ function Home() {
       <div className="trending-wrapper dashboard-container">
         <div className="dashboard-left">
           <h2 style={{ fontSize: "1.5em", marginBottom: "15px" }}>🎯 상황별 추천</h2>
-          {config.length === 0 ? (
+          {config === null ? (
             <div className="theme-grid">
               {[1, 2, 3, 4].map(i => <div key={i} className="skeleton-box" style={{ height: "80px" }}></div>)}
             </div>

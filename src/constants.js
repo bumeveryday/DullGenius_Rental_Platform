@@ -231,3 +231,19 @@ export const TEXTS = {
  
  `
 };
+
+// [NEW] 인증 에러 메시지 번역 헬퍼
+export const getAuthErrorMessage = (error) => {
+  if (!error) return "";
+  // error가 객체일 수도, 문자열일 수도 있음
+  const msg = (error.message || error).toString();
+
+  if (msg.includes("Invalid login credentials")) return "학번 또는 비밀번호가 올바르지 않습니다.";
+  if (msg.includes("Email not confirmed")) return "이메일 인증이 완료되지 않았습니다.";
+  if (msg.includes("User not found")) return "가입되지 않은 학번입니다.";
+  if (msg.includes("Password should be")) return "비밀번호는 6자 이상이어야 합니다.";
+  if (msg.includes("weak_password")) return "비밀번호가 너무 쉽습니다.";
+  if (msg.includes("User already registered")) return "이미 가입된 학번입니다.";
+
+  return "오류가 발생했습니다: " + msg;
+};

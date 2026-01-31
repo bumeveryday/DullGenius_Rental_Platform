@@ -65,9 +65,21 @@ function Signup() {
       <form onSubmit={handleSubmit} style={styles.form}>
         {/* 이메일 입력 칸 제거 */}
         <input name="name" placeholder="이름" value={formData.name} onChange={handleChange} style={styles.input} required />
-        <input name="studentId" type="number" placeholder="학번 (8자리)" value={formData.studentId} onChange={handleChange} style={styles.input} maxLength={8} onInput={(e) => {
-          if (e.target.value.length > 8) e.target.value = e.target.value.slice(0, 8);
-        }} required />
+        <input
+          name="studentId"
+          type="text"
+          inputMode="numeric"
+          placeholder="학번 (8자리)"
+          value={formData.studentId}
+          onChange={(e) => {
+            const val = e.target.value.replace(/[^0-9]/g, '');
+            if (val.length <= 8) {
+              setFormData(prev => ({ ...prev, studentId: val }));
+            }
+          }}
+          style={styles.input}
+          required
+        />
         <input name="password" type="password" placeholder="비밀번호" value={formData.password} onChange={handleChange} style={styles.input} required />
         <input name="phone" placeholder="전화번호" value={formData.phone} onChange={handleChange} style={styles.input} required />
 
