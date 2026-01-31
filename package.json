@@ -10,10 +10,11 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.13.2",
     "http-proxy-middleware": "^3.0.5",
+    "node-fetch": "^3.3.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.6",
-    "react-scripts": "5.0.1",
+    "react-scripts": "^5.0.1",
     "styled-components": "^6.1.19",
     "web-vitals": "^2.1.4"
   },
@@ -40,5 +41,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "baseline-browser-mapping": "^2.9.19"
   }
 }

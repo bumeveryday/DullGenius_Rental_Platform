@@ -1,12 +1,25 @@
 // src/Admin.js
-// 최종 수정일: 2025.12.05
+// 최종 수정일: 2026.01.30 (다크 모드 적용)
 // 설명: 관리자 페이지 메인 (인증 및 탭 컨테이너)
+
+/* 
+ * ============================================================
+ * [GUIDE] Admin Page Dark Mode Strategy
+ * ============================================================
+ * This Admin Page is designed to be PERMANENTLY DARK.
+ * When adding new components or features to this page:
+ * 1. DO NOT use white backgrounds. Use var(--admin-bg) or var(--admin-card-bg).
+ * 2. DO NOT use black text. Use var(--admin-text-main) or var(--admin-text-sub).
+ * 3. Use the CSS variables defined below for consistency.
+ * ============================================================
+ */
 
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchGames, fetchConfig } from './api';
 import { useAuth } from './contexts/AuthContext'; // [SECURITY] Supabase 권한 기반 인증
 import { useToast } from './contexts/ToastContext';
+import './Admin.css'; // [NEW] 다크 모드 스타일 임포트
 
 // 분리된 컴포넌트 임포트 (admin 폴더 생성 필요)
 import DashboardTab from './admin/DashboardTab';
@@ -15,7 +28,7 @@ import ConfigTab from './admin/ConfigTab';
 import PointsTab from './admin/PointsTab';
 
 function Admin() {
-  const { user, hasRole, logout, loading: authLoading } = useAuth(); // [FIX] logout 추가
+  const { user, hasRole, logout, loading: authLoading } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -89,7 +102,6 @@ function Admin() {
   useEffect(() => {
     if (user && isAdmin) {
       // 캐시가 있으면 먼저 보여준다! (0초 로딩)
-      // 캐시가 있으면 먼저 보여준다! (0초 로딩)
       const cachedGames = localStorage.getItem('games_cache');
       if (cachedGames) {
         try {
@@ -113,9 +125,9 @@ function Admin() {
   // --- 3. 로딩 및 권한 체크 ---
   if (authLoading) {
     return (
-      <div style={styles.authContainer}>
+      <div className="admin-auth-container">
         <div className="spinner"></div>
-        <p style={{ marginTop: "20px", color: "#666" }}>권한 확인 중...</p>
+        <p style={{ marginTop: "20px", color: "var(--admin-text-sub)" }}>권한 확인 중...</p>
       </div>
     );
   }
@@ -123,27 +135,28 @@ function Admin() {
   // 로그인하지 않았거나 권한이 없으면 useEffect에서 리다이렉트
   if (!user || !isAdmin) {
     return (
-      <div style={styles.authContainer}>
+      <div className="admin-auth-container">
         <h2 style={{ fontSize: "2em", marginBottom: "20px" }}>🔒 관리자 전용</h2>
-        <p style={{ color: "#666" }}>접근 권한을 확인하고 있습니다...</p>
+        <p style={{ color: "var(--admin-text-sub)" }}>접근 권한을 확인하고 있습니다...</p>
       </div>
     );
   }
 
   // --- 4. 렌더링: 관리자 메인 화면 ---
   return (
-    <div style={styles.container}>
+    <div className="admin-container">
       {/* 상단 헤더 */}
-      <div style={styles.header}>
-        <h2 style={{ margin: 0 }}>🔓 관리자 페이지</h2>
+      <div className="admin-header">
+        <h2>🔓 관리자 페이지</h2>
         <div style={{ display: "flex", gap: "10px" }}>
-          <button onClick={logout} style={styles.logoutBtn}>로그아웃</button>
-          <Link to="/" style={styles.homeBtn}>🏠 메인으로</Link>
+          <button onClick={logout} className="admin-btn admin-btn-logout">로그아웃</button>
+          <Link to="/" className="admin-btn admin-btn-home">🏠 메인으로</Link>
+          <Link to="/kiosk" className="admin-btn" style={{ background: "#667eea" }}>📱 키오스크</Link>
         </div>
       </div>
 
       {/* 탭 버튼 영역 */}
-      <div style={styles.tabContainer}>
+      <div className="admin-tabs">
         <TabButton label="📋 대여 현황 / 태그" id="dashboard" activeTab={activeTab} onClick={setActiveTab} />
         <TabButton label="➕ 게임 추가" id="add" activeTab={activeTab} onClick={setActiveTab} />
         <TabButton label="🎨 홈페이지 설정" id="config" activeTab={activeTab} onClick={setActiveTab} />
@@ -151,7 +164,7 @@ function Admin() {
       </div>
 
       {/* 탭 컨텐츠 영역 */}
-      <div style={styles.content}>
+      <div className="admin-content">
         {activeTab === "dashboard" && (
           <DashboardTab
             games={games}
@@ -183,39 +196,14 @@ function Admin() {
 
 // --- 스타일 및 서브 컴포넌트 ---
 
-// 탭 버튼 컴포넌트 (중복 제거)
+// 탭 버튼 컴포넌트 (CSS 클래스 사용)
 const TabButton = ({ label, id, activeTab, onClick }) => (
   <button
     onClick={() => onClick(id)}
-    style={{
-      padding: "10px 20px",
-      border: "none",
-      background: activeTab === id ? "#333" : "white",
-      color: activeTab === id ? "white" : "#555",
-      borderRadius: "25px",
-      cursor: "pointer",
-      fontWeight: "bold",
-      fontSize: "0.95rem",
-      whiteSpace: "nowrap",
-      boxShadow: activeTab === id ? "0 2px 5px rgba(0,0,0,0.2)" : "none",
-      transition: "all 0.2s"
-    }}
+    className={`admin-tab-btn ${activeTab === id ? 'active' : ''}`}
   >
     {label}
   </button>
 );
-
-const styles = {
-  container: { padding: "20px", maxWidth: "1000px", margin: "0 auto", paddingBottom: "100px" },
-  authContainer: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "80vh", textAlign: "center" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px", borderBottom: "2px solid #333", paddingBottom: "15px" },
-  tabContainer: { display: "flex", gap: "10px", marginBottom: "30px", borderBottom: "1px solid #ddd", paddingBottom: "10px", overflowX: "auto" },
-  content: { minHeight: "300px" },
-  input: { padding: "12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "1em" },
-  loginBtn: { padding: "12px 20px", background: "#333", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" },
-  logoutBtn: { padding: "8px 15px", background: "#eee", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "0.9em" },
-  homeBtn: { textDecoration: "none", color: "#333", border: "1px solid #ccc", padding: "8px 15px", borderRadius: "8px", background: "white", fontSize: "0.9em" },
-  backLink: { marginTop: "30px", color: "#999", textDecoration: "underline", fontSize: "0.9em" }
-};
 
 export default Admin;

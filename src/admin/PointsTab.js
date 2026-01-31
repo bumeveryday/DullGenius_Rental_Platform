@@ -8,15 +8,16 @@ function PointsTab() {
     const [selectedView, setSelectedView] = useState('info'); // 'info' or 'vote'
 
     return (
-        <div style={styles.container}>
+        <div>
             {/* 서브 탭 */}
             <div style={styles.subTabContainer}>
                 <button
                     onClick={() => setSelectedView('info')}
                     style={{
                         ...styles.subTab,
-                        background: selectedView === 'info' ? '#3498db' : '#ecf0f1',
-                        color: selectedView === 'info' ? 'white' : '#34495e'
+                        background: selectedView === 'info' ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
+                        color: selectedView === 'info' ? '#121212' : 'var(--admin-text-sub)',
+                        border: '1px solid var(--admin-border)'
                     }}
                 >
                     💰 포인트 제도 안내
@@ -25,8 +26,9 @@ function PointsTab() {
                     onClick={() => setSelectedView('vote')}
                     style={{
                         ...styles.subTab,
-                        background: selectedView === 'vote' ? '#3498db' : '#ecf0f1',
-                        color: selectedView === 'vote' ? 'white' : '#34495e'
+                        background: selectedView === 'vote' ? 'var(--admin-primary)' : 'var(--admin-card-bg)',
+                        color: selectedView === 'vote' ? '#121212' : 'var(--admin-text-sub)',
+                        border: '1px solid var(--admin-border)'
                     }}
                 >
                     🗳️ 신규 게임 투표
@@ -43,7 +45,7 @@ function PointsTab() {
 // ===== 포인트 제도 안내 뷰 =====
 function PointsInfoView() {
     return (
-        <div style={styles.contentBox}>
+        <div className="admin-card">
             <h2 style={styles.sectionTitle}>💰 포인트 제도란?</h2>
             <div style={styles.infoCard}>
                 <p style={styles.description}>
@@ -112,7 +114,7 @@ function PointsInfoView() {
             </div>
 
             <div style={styles.comingSoonBox}>
-                <h3>🚧 준비 중인 기능</h3>
+                <h3 style={{ color: "#856404" }}>🚧 준비 중인 기능</h3>
                 <ul style={styles.comingSoonList}>
                     <li>📊 개인 포인트 잔액 조회</li>
                     <li>📈 포인트 히스토리 (적립/사용 내역)</li>
@@ -139,7 +141,7 @@ function VoteView() {
 
     const handleAddProposal = () => {
         if (!proposalName.trim()) {
-            showToast('게임 이름을 입력해주세요.', { type: "warning" });
+            showToast('게임 이름을 입력해주세요. (체험판)', { type: "warning" });
             return;
         }
 
@@ -154,11 +156,11 @@ function VoteView() {
         setProposals([...proposals, newProposal]);
         setProposalName('');
         setProposalLink('');
-        showToast('✅ 게임이 제안되었습니다!', { type: "success" });
+        showToast('✅ [체험판] 게임이 제안되었습니다! (실제 저장되지 않음)', { type: "success" });
     };
 
     return (
-        <div style={styles.contentBox}>
+        <div className="admin-card">
             <h2 style={styles.sectionTitle}>🗳️ 신규 게임 투표</h2>
 
             <div style={styles.infoCard}>
@@ -167,6 +169,18 @@ function VoteView() {
                     <br />
                     투표 수가 높은 게임을 우선적으로 구매합니다.
                 </p>
+            </div>
+
+            {/* 데모 모드 알림 배너 */}
+            <div style={styles.demoBanner}>
+                <span style={{ fontSize: '1.2em' }}>🚧</span>
+                <div>
+                    <strong>체험판 모드 (Demo Mode)</strong>
+                    <div style={{ fontSize: '0.9em', opacity: 0.9 }}>
+                        이 기능은 현재 개발 중입니다. 투표 및 제안 기능은 <strong>시뮬레이션</strong>이며,
+                        새로고침 시 데이터가 초기화됩니다.
+                    </div>
+                </div>
             </div>
 
             {/* 게임 제안 폼 */}
@@ -178,14 +192,16 @@ function VoteView() {
                         placeholder="게임 이름"
                         value={proposalName}
                         onChange={(e) => setProposalName(e.target.value)}
-                        style={styles.input}
+                        className="admin-input"
+                        style={{ flex: 1 }}
                     />
                     <input
                         type="text"
                         placeholder="BGG 링크 (선택)"
                         value={proposalLink}
                         onChange={(e) => setProposalLink(e.target.value)}
-                        style={styles.input}
+                        className="admin-input"
+                        style={{ flex: 1 }}
                     />
                     <button onClick={handleAddProposal} style={styles.addBtn}>
                         제안하기
@@ -242,8 +258,8 @@ const EarnCard = ({ icon, title, points, description }) => (
 const UseCard = ({ icon, title, points, description, highlight }) => (
     <div style={{
         ...styles.useCard,
-        borderColor: highlight ? '#3498db' : '#ecf0f1',
-        background: highlight ? '#ebf5fb' : 'white'
+        borderColor: highlight ? 'var(--admin-primary)' : 'var(--admin-border)',
+        background: highlight ? 'rgba(187, 134, 252, 0.1)' : 'var(--admin-card-bg)' // [FIX] Dark mode highlight
     }}>
         <div style={styles.useIcon}>{icon}</div>
         <div style={styles.useTitle}>{title}</div>
@@ -262,7 +278,7 @@ const ProposalCard = ({ proposal, rank }) => {
             showToast('최소 100P부터 투표 가능합니다.', { type: "warning" });
             return;
         }
-        showToast(`🗳️ ${proposal.name}에 ${amount}P 투표했습니다!\n(실제 구현 시 DB 연동 필요)`, { type: "success" });
+        showToast(`🗳️ [체험판] ${proposal.name}에 ${amount}P 투표했습니다! (저장 안됨)`, { type: "success" });
         setVoteAmount('');
     };
 
@@ -274,7 +290,7 @@ const ProposalCard = ({ proposal, rank }) => {
     };
 
     return (
-        <div style={styles.proposalCard}>
+        <div className="admin-card" style={{ padding: "20px" }}>
             <div style={styles.proposalHeader}>
                 <span style={styles.proposalRank}>{getMedalEmoji(rank)}</span>
                 <span style={styles.proposalName}>{proposal.name}</span>
@@ -293,10 +309,10 @@ const ProposalCard = ({ proposal, rank }) => {
 
             <div style={styles.proposalStats}>
                 <div>
-                    <strong style={{ fontSize: '1.5em', color: '#3498db' }}>
+                    <strong style={{ fontSize: '1.5em', color: 'var(--admin-primary)' }}>
                         {proposal.votes.toLocaleString()}P
                     </strong>
-                    <div style={{ fontSize: '0.8em', color: '#7f8c8d' }}>
+                    <div style={{ fontSize: '0.8em', color: 'var(--admin-text-sub)' }}>
                         {proposal.voters}명 투표
                     </div>
                 </div>
@@ -308,7 +324,8 @@ const ProposalCard = ({ proposal, rank }) => {
                     placeholder="투표 포인트"
                     value={voteAmount}
                     onChange={(e) => setVoteAmount(e.target.value)}
-                    style={styles.voteField}
+                    className="admin-input"
+                    style={{ flex: 1 }}
                     min="100"
                     step="100"
                 />
@@ -322,14 +339,12 @@ const ProposalCard = ({ proposal, rank }) => {
 
 // ===== 스타일 =====
 const styles = {
-    container: {
-        padding: '20px 0',
-    },
+    // styles.container removed
     subTabContainer: {
         display: 'flex',
         gap: '10px',
         marginBottom: '30px',
-        borderBottom: '2px solid #ecf0f1',
+        borderBottom: '2px solid var(--admin-border)',
         paddingBottom: '10px',
     },
     subTab: {
@@ -341,36 +356,31 @@ const styles = {
         fontSize: '0.95rem',
         transition: 'all 0.2s',
     },
-    contentBox: {
-        background: 'white',
-        borderRadius: '12px',
-        padding: '30px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-    },
+    // styles.contentBox removed
     sectionTitle: {
         fontSize: '1.8em',
         marginBottom: '20px',
-        color: '#2c3e50',
-        borderBottom: '3px solid #3498db',
+        color: 'var(--admin-text-main)',
+        borderBottom: '3px solid var(--admin-primary)',
         paddingBottom: '10px',
     },
     subTitle: {
         fontSize: '1.3em',
         marginTop: '30px',
         marginBottom: '15px',
-        color: '#34495e',
+        color: 'var(--admin-text-main)',
     },
     infoCard: {
-        background: '#f8f9fa',
+        background: 'rgba(255, 255, 255, 0.05)',
         padding: '20px',
         borderRadius: '10px',
         marginBottom: '30px',
-        borderLeft: '4px solid #3498db',
+        borderLeft: '4px solid var(--admin-primary)',
     },
     description: {
         fontSize: '1em',
         lineHeight: '1.6',
-        color: '#555',
+        color: 'var(--admin-text-main)',
         margin: 0,
     },
     grid: {
@@ -407,8 +417,8 @@ const styles = {
         opacity: 0.9,
     },
     useCard: {
-        background: 'white',
-        border: '2px solid #ecf0f1',
+        // background handled in component
+        border: '2px solid var(--admin-border)',
         padding: '20px',
         borderRadius: '12px',
         textAlign: 'center',
@@ -423,17 +433,17 @@ const styles = {
         fontWeight: 'bold',
         fontSize: '1.1em',
         marginBottom: '5px',
-        color: '#2c3e50',
+        color: 'var(--admin-text-main)',
     },
     usePoints: {
         fontSize: '1.3em',
         fontWeight: 'bold',
-        color: '#3498db',
+        color: 'var(--admin-primary)',
         marginBottom: '5px',
     },
     useDesc: {
         fontSize: '0.85em',
-        color: '#7f8c8d',
+        color: 'var(--admin-text-sub)',
     },
     comingSoonBox: {
         background: '#fff3cd',
@@ -441,14 +451,16 @@ const styles = {
         borderRadius: '10px',
         padding: '20px',
         marginTop: '30px',
+        color: '#856404' // Warning text color specific exception
     },
     comingSoonList: {
         margin: '10px 0 0 0',
         paddingLeft: '20px',
         lineHeight: '1.8',
+        color: '#856404'
     },
     proposalForm: {
-        background: '#f8f9fa',
+        background: 'rgba(255, 255, 255, 0.05)',
         padding: '20px',
         borderRadius: '10px',
         marginBottom: '30px',
@@ -458,17 +470,11 @@ const styles = {
         gap: '10px',
         marginTop: '15px',
     },
-    input: {
-        flex: 1,
-        padding: '12px',
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-        fontSize: '1em',
-    },
+    // input removed for admin-input
     addBtn: {
         padding: '12px 24px',
-        background: '#3498db',
-        color: 'white',
+        background: 'var(--admin-primary)',
+        color: '#121212',
         border: 'none',
         borderRadius: '8px',
         cursor: 'pointer',
@@ -484,14 +490,7 @@ const styles = {
         gap: '20px',
         marginTop: '20px',
     },
-    proposalCard: {
-        background: 'white',
-        border: '2px solid #ecf0f1',
-        borderRadius: '12px',
-        padding: '20px',
-        transition: 'all 0.2s',
-        boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-    },
+    // proposalCard removed for admin-card
     proposalHeader: {
         display: 'flex',
         alignItems: 'center',
@@ -505,18 +504,18 @@ const styles = {
     proposalName: {
         fontSize: '1.2em',
         fontWeight: 'bold',
-        color: '#2c3e50',
+        color: 'var(--admin-text-main)',
     },
     proposalLink: {
         display: 'inline-block',
         fontSize: '0.9em',
-        color: '#3498db',
+        color: 'var(--admin-primary)',
         textDecoration: 'none',
         marginBottom: '15px',
     },
     proposalStats: {
         padding: '15px',
-        background: '#f8f9fa',
+        background: 'rgba(0,0,0,0.2)',
         borderRadius: '8px',
         textAlign: 'center',
         marginBottom: '15px',
@@ -525,13 +524,7 @@ const styles = {
         display: 'flex',
         gap: '10px',
     },
-    voteField: {
-        flex: 1,
-        padding: '10px',
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-        fontSize: '1em',
-    },
+    // voteField removed
     voteBtn: {
         padding: '10px 20px',
         background: '#27ae60',
@@ -544,17 +537,28 @@ const styles = {
     emptyState: {
         padding: '40px',
         textAlign: 'center',
-        color: '#95a5a6',
-        background: '#f8f9fa',
+        color: 'var(--admin-text-sub)',
+        background: 'rgba(255,255,255,0.05)',
         borderRadius: '10px',
     },
     warningBox: {
-        background: '#ffe6e6',
+        background: 'rgba(231, 76, 60, 0.1)',
         border: '2px solid #e74c3c',
         borderRadius: '10px',
         padding: '20px',
         marginTop: '30px',
-        color: '#c0392b',
+        color: '#e74c3c',
+    },
+    demoBanner: {
+        background: 'linear-gradient(45deg, #FF512F, #DD2476)',
+        color: 'white',
+        padding: '15px 20px',
+        borderRadius: '10px',
+        marginBottom: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '15px',
+        boxShadow: '0 4px 15px rgba(221, 36, 118, 0.3)',
     },
 };
 

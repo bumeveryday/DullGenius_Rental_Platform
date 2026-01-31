@@ -92,14 +92,14 @@ function ConfigTab({ config, onReload }) {
   return (
     <div>
       <h3>🎨 추천 버튼 설정</h3>
-      <p style={{ color: "#666", marginBottom: "20px", fontSize: "0.9em" }}>
+      <p style={{ color: "var(--admin-text-sub)", marginBottom: "20px", fontSize: "0.9em" }}>
         홈페이지 메인 화면에 표시되는 빠른 검색 버튼들을 설정합니다.<br />
         색상을 클릭하여 변경할 수 있습니다.
       </p>
 
       <div style={{ display: "grid", gap: "15px", marginBottom: "30px" }}>
         {items.map((item, idx) => (
-          <div key={item.key || idx} style={styles.card}>
+          <div key={item.key || idx} className="admin-card" style={styles.cardLayout}>
 
             {/* 1. 색상 선택기 */}
             <div style={{ textAlign: "center" }}>
@@ -120,7 +120,8 @@ function ConfigTab({ config, onReload }) {
                 <input
                   value={item.label}
                   onChange={(e) => handleChange(idx, 'label', e.target.value)}
-                  style={styles.input}
+                  className="admin-input"
+                  style={{ width: "100%" }}
                 />
               </div>
               <div>
@@ -129,7 +130,8 @@ function ConfigTab({ config, onReload }) {
                   value={item.value}
                   onChange={(e) => handleChange(idx, 'value', e.target.value)}
                   placeholder="#태그"
-                  style={styles.input}
+                  className="admin-input"
+                  style={{ width: "100%" }}
                 />
               </div>
             </div>
@@ -173,15 +175,10 @@ function ConfigTab({ config, onReload }) {
 
 // --- 스타일 ---
 const styles = {
-  card: {
+  cardLayout: {
     display: "flex",
     gap: "15px",
     alignItems: "center",
-    background: "white",
-    padding: "20px",
-    borderRadius: "12px",
-    border: "1px solid #eee",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.03)"
   },
   colorPreview: {
     width: "40px",
@@ -212,17 +209,9 @@ const styles = {
   label: {
     display: "block",
     fontSize: "0.85em",
-    color: "#888",
+    color: "var(--admin-text-sub)",
     marginBottom: "5px",
     fontWeight: "bold"
-  },
-  input: {
-    width: "100%",
-    padding: "12px",
-    border: "1px solid #ddd",
-    borderRadius: "8px",
-    fontSize: "1em",
-    boxSizing: "border-box" // 패딩 포함 너비 계산
   },
   deleteBtn: {
     background: "#fff",

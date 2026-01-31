@@ -26,6 +26,14 @@ function DashboardTab({ games, loading, onReload }) {
     type: "info"
   });
 
+  // [NEW] 유저 선택 모달 상태
+  const [userSelectModal, setUserSelectModal] = useState({
+    isOpen: false,
+    candidates: [],
+    game: null,
+    renterNameInput: ""
+  });
+
   // [NEW] Confirm 모달 헬퍼 함수
   const showConfirmModal = (title, message, onConfirm, type = "info") => {
     setConfirmModal({ isOpen: true, title, message, onConfirm, type });
@@ -61,24 +69,25 @@ function DashboardTab({ games, loading, onReload }) {
     loadUsers();
   }, []);
 
-  // ⭐ [헬퍼 함수] 이름으로 User ID 찾기
+  // ⭐ [헬퍼 함수] 이름으로 User ID 찾기 (단일 매칭 - 구버전 호환용)
   const findUserId = (nameStr) => {
-    if (!nameStr) return null;
-    if (!allUsers || allUsers.length === 0) {
-      console.warn("⚠️ 유저 목록이 아직 로드되지 않았습니다.");
-      return null;
-    }
-    // 공백 제거 후 비교 (입력 실수 방지)
+    const matches = findMatchingUsers(nameStr);
+    return matches.length > 0 ? matches[0].id : null;
+  };
+
+  // ⭐ [NEW] 이름 포함하는 모든 유저 찾기
+  const findMatchingUsers = (nameStr) => {
+    if (!nameStr) return [];
+    if (!allUsers || allUsers.length === 0) return [];
+
+    // 공백 제거 후 비교
     const cleanInput = nameStr.replace(/\s+/g, "");
 
-    const target = allUsers.find(u => {
-      if (!u.name) return false; // 이름 없는 데이터 건너뜀
+    return allUsers.filter(u => {
+      if (!u.name) return false;
       const cleanUserName = u.name.replace(/\s+/g, "");
-
-      return cleanInput.includes(cleanUserName);
+      return cleanUserName.includes(cleanInput);
     });
-
-    return target ? target.id : null;
   };
 
   // 검색어 디바운싱 (0.3초 딜레이)
@@ -145,17 +154,42 @@ function DashboardTab({ games, loading, onReload }) {
     const renterName = prompt(promptMsg);
     if (!renterName || renterName.trim() === "") return;
 
-    // 2. ID 찾기 시도
-    const userId = findUserId(renterName);
+    // 2. 일치하는 유저들 찾기
+    const candidates = findMatchingUsers(renterName);
 
-    // 찾았는지 못 찾았는지 확인 메시지 (테스트용)
+    // [CASE 1] 2명 이상 -> 선택 모달 띄우기
+    if (candidates.length > 1) {
+      setUserSelectModal({
+        isOpen: true,
+        candidates: candidates,
+        game: game,
+        renterNameInput: renterName
+      });
+      return;
+    }
+
+    // [CASE 2] 1명 -> 자동 선택 후 컨펌
+    if (candidates.length === 1) {
+      proceedRentWithUser(game, renterName, candidates[0]);
+      return;
+    }
+
+    // [CASE 3] 0명 -> 수기 대여 컨펌
+    proceedRentWithUser(game, renterName, null);
+  };
+
+  // 실제 대여 처리 (컨펌 포함)
+  const proceedRentWithUser = (game, renterNameInput, matchedUser) => {
     let confirmMsg = TEXTS.ADMIN_RENT_CONFIRM_HeadsUp
       .replace("{gameName}", game.name)
-      .replace("{renterName}", renterName);
-    if (userId) {
-      confirmMsg += TEXTS.ADMIN_RENT_CONFIRM_SUCCESS.replace("{userId}", userId);
+      .replace("{renterName}", renterNameInput);
+
+    if (matchedUser) {
+      confirmMsg += TEXTS.ADMIN_RENT_CONFIRM_SUCCESS.replace("{userId}", matchedUser.id);
+      confirmMsg += `\n(이름: ${matchedUser.name}, 학번: ${matchedUser.student_id || '-'}, 전화: ${matchedUser.phone || '-'})`;
     } else {
       confirmMsg += TEXTS.ADMIN_RENT_CONFIRM_FAIL;
+      confirmMsg += "\n(비회원 수기 대여로 진행합니다)";
     }
 
     showConfirmModal(
@@ -163,7 +197,8 @@ function DashboardTab({ games, loading, onReload }) {
       confirmMsg,
       async () => {
         try {
-          const res = await adminUpdateGame(game.id, "대여중", renterName, userId);
+          // matchedUser가 있으면 id 사용, 없으면 null
+          const res = await adminUpdateGame(game.id, "대여중", renterNameInput, matchedUser?.id);
           if (res && res.status === "success") {
             showToast(TEXTS.ADMIN_RENT_SUCCESS, { type: "success" });
             onReload();
@@ -212,7 +247,8 @@ function DashboardTab({ games, loading, onReload }) {
         "반납 확인",
         `[${game.name}] 반납 처리하시겠습니까?`,
         async () => {
-          await adminUpdateGame(game.id, "대여가능");
+          // [UPDATED] 정확한 반납을 위해 대여자 정보 전달
+          await adminUpdateGame(game.id, "대여가능", game.renter, game.renterId);
           showToast("반납되었습니다.", { type: "success" });
           onReload();
         }
@@ -238,7 +274,9 @@ function DashboardTab({ games, loading, onReload }) {
     const renterName = game.renter;
     const sameUserDibs = games.filter(g => g.status === "찜" && g.renter === renterName);
     const count = sameUserDibs.length;
-    const userId = findUserId(renterName);
+
+    // [FIX] game.renterId가 있으면 바로 사용, 없으면(수기) 이름 검색
+    const userId = game.renterId || findUserId(renterName);
     if (count <= 1) {
       showConfirmModal(
         "수령 확인",
@@ -305,7 +343,7 @@ function DashboardTab({ games, loading, onReload }) {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
         <h3>🚨 게임 관리 (총 {games.length}개)</h3>
-        <button onClick={onReload} style={{ padding: "5px 10px", cursor: "pointer", background: "#f8f9fa", border: "1px solid #ddd", borderRadius: "5px" }}>🔄 새로고침</button>
+        <button onClick={onReload} style={{ padding: "5px 10px", cursor: "pointer", background: "var(--admin-card-bg)", color: "var(--admin-text-main)", border: "1px solid var(--admin-border)", borderRadius: "5px" }}>🔄 새로고침</button>
       </div>
 
       <FilterBar
@@ -322,11 +360,11 @@ function DashboardTab({ games, loading, onReload }) {
       />
 
       {loading ? (
-        <div style={{ textAlign: "center", padding: "40px", color: "#888" }}>데이터를 불러오는 중... ⏳</div>
+        <div style={{ textAlign: "center", padding: "40px", color: "var(--admin-text-sub)" }}>데이터를 불러오는 중... ⏳</div>
       ) : (
         <div style={{ display: "grid", gap: "10px" }}>
           {filteredGames.map(game => (
-            <div key={game.id} style={styles.card}>
+            <div key={game.id} className="admin-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
               <div style={{ flex: 1, minWidth: "200px" }}>
                 <div style={{ fontWeight: "bold", fontSize: "1.05em" }}>
                   {game.name}
@@ -334,32 +372,41 @@ function DashboardTab({ games, loading, onReload }) {
                     {game.status}
                   </span>
                 </div>
-                <div style={{ fontSize: "0.85em", color: "#666", marginTop: "5px", lineHeight: "1.4" }}>
+                <div style={{ fontSize: "0.85em", color: "var(--admin-text-sub)", marginTop: "5px", lineHeight: "1.4" }}>
                   <span style={{ marginRight: "10px" }}>{game.renter ? `👤 ${game.renter}` : "대여자 없음"}</span>
                   <span style={{ color: "#e67e22", marginRight: "10px" }}>난이도: {game.difficulty || "-"}</span>
                   <br />
-                  태그: <span style={{ color: "#3498db" }}>{game.tags || "(없음)"}</span>
+                  태그: <span style={{ color: "var(--admin-primary)" }}>{game.tags || "(없음)"}</span>
                 </div>
               </div>
 
               <div style={{ display: "flex", gap: "5px" }}>
-                <button onClick={() => handleShowLogs(game)} style={{ ...actionBtnStyle("#ecf0f1"), color: "#555", border: "1px solid #ddd" }} title="이력 조회">📜</button>
-                <button onClick={() => openEditModal(game)} style={actionBtnStyle("#9b59b6")}>✏️ 수정</button>
-                <button onClick={() => handleDelete(game)} style={{ ...actionBtnStyle("#fff"), color: "#e74c3c", border: "1px solid #e74c3c", width: "30px", padding: 0 }}>🗑️</button>
+                <button onClick={() => handleShowLogs(game)} style={{ ...actionBtnStyle("#2c3e50"), color: "#eee", border: "1px solid #555" }} title="이력 조회">📜</button>
+                <button onClick={() => openEditModal(game)} style={actionBtnStyle("#8e44ad")}>✏️ 수정</button>
+                <button onClick={() => handleDelete(game)} style={{ ...actionBtnStyle("transparent"), color: "#e74c3c", border: "1px solid #e74c3c", width: "30px", padding: 0 }}>🗑️</button>
 
-                {/* 상태별 버튼 로직 유지 */}
+                {/* 상태별 버튼 로직 유지 [IMPROVED] */}
                 {game.status === "찜" ? (
                   <>
-                    <button onClick={() => handleReceive(game)} style={actionBtnStyle("#3498db")}>🤝 수령</button>
-                    <button onClick={() => handleStatusChange(game.id, "대여가능", game.name)} style={actionBtnStyle("#e74c3c")}>🚫 취소</button>
+                    <button onClick={() => handleReceive(game)} style={actionBtnStyle("#2980b9")}>🤝 수령</button>
+                    <button onClick={() => handleStatusChange(game.id, "대여가능", game.name)} style={actionBtnStyle("#c0392b")}>🚫 취소</button>
+                    {/* [NEW] 찜 상태여도, 다른 재고가 있으면 대여 가능해야 함 */}
+                    {/* Reserved 카피가 우선순위라 찜 상태로 보이지만, availableCount가 있으면 대여 버튼 추가 */}
+                    {game.availableCount > 0 && (
+                      <button onClick={() => handleDirectRent(game)} style={{ ...actionBtnStyle("var(--admin-card-bg)"), marginLeft: "5px" }}>✋ 현장대여</button>
+                    )}
                   </>
                 ) : game.status !== "대여가능" ? (
                   <>
-                    <button onClick={() => handleReturn(game)} style={actionBtnStyle("#2ecc71")}>↩️ 반납</button>
-                    <button onClick={() => handleStatusChange(game.id, "분실", game.name)} style={actionBtnStyle("#95a5a6")}>⚠️ 분실</button>
+                    <button onClick={() => handleReturn(game)} style={actionBtnStyle("#27ae60")}>↩️ 반납</button>
+                    <button onClick={() => handleStatusChange(game.id, "분실", game.name)} style={actionBtnStyle("#7f8c8d")}>⚠️ 분실</button>
+                    {/* [NEW] 대여중 상태여도, 다른 재고가 있으면 대여 가능해야 함 */}
+                    {game.availableCount > 0 && (
+                      <button onClick={() => handleDirectRent(game)} style={{ ...actionBtnStyle("var(--admin-card-bg)"), marginLeft: "5px" }}>✋ 현장대여</button>
+                    )}
                   </>
                 ) :
-                  <button onClick={() => handleDirectRent(game)} style={actionBtnStyle("#2c3e50")}>✋ 현장대여</button>}
+                  <button onClick={() => handleDirectRent(game)} style={actionBtnStyle("var(--admin-card-bg)")}>✋ 현장대여</button>}
               </div>
             </div>
           ))}
@@ -378,70 +425,58 @@ function DashboardTab({ games, loading, onReload }) {
       {isLogModalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
-            <h3 style={{ marginTop: 0, marginBottom: "15px", borderBottom: "1px solid #eee", paddingBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h3 style={{ marginTop: 0, marginBottom: "15px", borderBottom: "1px solid var(--admin-border)", paddingBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>📜 [{logGameName}] 대여 이력</span>
-              <button onClick={() => setIsLogModalOpen(false)} style={{ background: "none", border: "none", fontSize: "1.2em", cursor: "pointer" }}>✖️</button>
+              <button onClick={() => setIsLogModalOpen(false)} style={{ background: "none", border: "none", fontSize: "1.2em", cursor: "pointer", color: "var(--admin-text-main)" }}>✖️</button>
             </h3>
 
             <div style={{ maxHeight: "500px", overflowY: "auto", fontSize: "0.9em" }}>
               {gameLogs.length === 0 ? (
-                <p style={{ textAlign: "center", color: "#999", padding: "20px" }}>기록이 없습니다.</p>
+                <p style={{ textAlign: "center", color: "var(--admin-text-sub)", padding: "20px" }}>기록이 없습니다.</p>
               ) : (
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead style={{ position: "sticky", top: 0, background: "white", zIndex: 1 }}>
-                    <tr style={{ background: "#f8f9fa", textAlign: "left", borderBottom: "2px solid #ddd" }}>
-                      {/* ⭐ [변경] 헤더를 4개로 확실히 나눕니다 */}
-                      <th style={{ padding: "10px", width: "130px", color: "#555" }}>날짜</th>
-                      <th style={{ padding: "10px", width: "60px", color: "#555", textAlign: "center" }}>행동</th>
-                      <th style={{ padding: "10px", color: "#555" }}>내용</th>
-                      <th style={{ padding: "10px", width: "150px", color: "#555" }}>대여자 정보</th>
+                <table className="admin-table">
+                  <thead style={{ position: "sticky", top: 0, background: "var(--admin-card-bg)", zIndex: 1 }}>
+                    <tr style={{ textAlign: "left", borderBottom: "2px solid var(--admin-border)" }}>
+                      <th style={{ padding: "10px", width: "130px", color: "var(--admin-text-sub)" }}>날짜</th>
+                      <th style={{ padding: "10px", width: "60px", color: "var(--admin-text-sub)", textAlign: "center" }}>행동</th>
+                      <th style={{ padding: "10px", color: "var(--admin-text-sub)" }}>내용</th>
+                      <th style={{ padding: "10px", width: "150px", color: "var(--admin-text-sub)" }}>대여자 정보</th>
                     </tr>
                   </thead>
                   <tbody>
                     {gameLogs.map((log, idx) => {
-                      // 1. 데이터 안전 변환
                       const valStr = String(log.value || "");
-
                       let mainText = valStr;
                       let userInfo = null;
-                      let isNonMember = false; // 디자인 구분용
+                      let isNonMember = false;
 
-                      // [CASE 1] 회원 매칭 성공 (→ [ 기호가 있는 경우)
                       if (valStr.includes("→ [")) {
                         const parts = valStr.split("→ [");
-                        mainText = parts[0].trim(); // 예: "대여중"
-                        userInfo = parts[1].replace("]", "").trim(); // 예: "홍길동, 010..."
-                      }
-                      // [CASE 2] 기호는 없지만 '대여(RENT)'인 경우 (수기 입력)
-                      // 단, "일괄처리" 같은 시스템 메시지는 제외하고 싶다면 조건 추가 가능
-                      else if (log.type === "RENT" && valStr.trim() !== "" && valStr !== "일괄처리") {
-                        mainText = "현장 대여 (수기)"; // 내용은 이걸로 고정
-                        userInfo = valStr; // 원래 적혀있던 "ㄴㅇㄹㄴㅇㄹ"를 대여자 칸으로 이동
-                        isNonMember = true; // 회색 배지로 표시
+                        mainText = parts[0].trim();
+                        userInfo = parts[1].replace("]", "").trim();
+                      } else if (log.type === "RENT" && valStr.trim() !== "" && valStr !== "일괄처리") {
+                        mainText = "현장 대여 (수기)";
+                        userInfo = valStr;
+                        isNonMember = true;
                       }
 
                       return (
-                        <tr key={idx} style={{ borderBottom: "1px solid #eee" }}>
-                          {/* 1. 날짜 (24시간제 포맷팅 적용) */}
-                          <td style={{ padding: "10px 5px", color: "#666", fontSize: "0.85em", minWidth: "80px" }}>
+                        <tr key={idx} style={{ borderBottom: "1px solid var(--admin-border)" }}>
+                          <td style={{ padding: "10px 5px", color: "var(--admin-text-sub)", fontSize: "0.85em", minWidth: "80px" }}>
                             {(() => {
                               const dateStr = String(log.date || "");
                               try {
                                 const date = new Date(dateStr);
                                 if (!isNaN(date.getTime())) {
-                                  // 24시간제로 깔끔하게 변환 (예: 2025. 12. 12. 14:30)
                                   return date.toLocaleString('ko-KR', {
                                     year: 'numeric', month: '2-digit', day: '2-digit',
                                     hour: '2-digit', minute: '2-digit', hour12: false
                                   });
                                 }
                               } catch (e) { }
-                              // 파싱 실패 시: 원본에서 초(:ss) 단위만 떼고 보여줌
                               return dateStr.replace(/:[0-9]{2}$/, "").replace("AM", "").replace("PM", "").trim();
                             })()}
                           </td>
-
-                          {/* 2. 행동 배지 */}
                           <td style={{ padding: "10px 5px", textAlign: "center" }}>
                             <span style={{
                               padding: "4px 8px",
@@ -456,21 +491,16 @@ function DashboardTab({ games, loading, onReload }) {
                               {log.type === "RENT" ? "대여" : log.type === "RETURN" ? "반납" : log.type}
                             </span>
                           </td>
-
-                          {/* 3. 내용 (Content) */}
-                          <td style={{ padding: "10px 5px", color: "#333" }}>
+                          <td style={{ padding: "10px 5px", color: "var(--admin-text-main)" }}>
                             {mainText}
                           </td>
-
-                          {/* 4. 대여자 정보 (Renter Info) */}
                           <td style={{ padding: "10px 5px" }}>
                             {userInfo ? (
                               <div style={{
                                 fontSize: "0.9em",
-                                // 비회원(수기)이면 회색, 회원이면 파란색
-                                color: isNonMember ? "#555" : "#0984e3",
+                                color: isNonMember ? "#ccc" : "#0984e3",
                                 fontWeight: "600",
-                                background: isNonMember ? "#eee" : "#e3f2fd",
+                                background: isNonMember ? "#333" : "rgba(9, 132, 227, 0.1)",
                                 padding: "4px 8px",
                                 borderRadius: "6px",
                                 display: "inline-block"
@@ -478,7 +508,7 @@ function DashboardTab({ games, loading, onReload }) {
                                 👤 {userInfo}
                               </div>
                             ) : (
-                              <span style={{ color: "#ccc", fontSize: "0.8em" }}>-</span>
+                              <span style={{ color: "#555", fontSize: "0.8em" }}>-</span>
                             )}
                           </td>
                         </tr>
@@ -505,31 +535,90 @@ function DashboardTab({ games, loading, onReload }) {
         message={confirmModal.message}
         type={confirmModal.type}
       />
+      {/* [NEW] 유저 선택 모달 */}
+      {userSelectModal.isOpen && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <h3>👥 동명이인 선택</h3>
+            <p>검색된 사용자가 여러 명입니다. 대여할 유저를 선택해주세요.</p>
+            <div style={{ maxHeight: "300px", overflowY: "auto", border: "1px solid #eee", borderRadius: "8px" }}>
+              {userSelectModal.candidates.map(u => (
+                <div
+                  key={u.id}
+                  onClick={() => {
+                    setUserSelectModal({ ...userSelectModal, isOpen: false });
+                    proceedRentWithUser(userSelectModal.game, userSelectModal.renterNameInput, u);
+                  }}
+                  style={{
+                    padding: "15px",
+                    borderBottom: "1px solid #eee",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    background: "#fff"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}
+                >
+                  <div>
+                    <div style={{ fontWeight: "bold", fontSize: "1.1em" }}>{u.name}</div>
+                    <div style={{ fontSize: "0.9em", color: "#666" }}>학번: {u.student_id || "-"}</div>
+                  </div>
+                  <div style={{ fontSize: "0.9em", color: "#888" }}>{u.phone || "전화번호 없음"}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                onClick={() => {
+                  setUserSelectModal({ ...userSelectModal, isOpen: false });
+                  // 수기 대여로 진행할지 여부는 선택사항이지만, 보통 취소가 맞음
+                  // 여기서는 "비회원(수기)으로 진행" 옵션을 줄 수도 있지만
+                  // 일단 그냥 취소하거나, 수기 대여 버튼을 따로 두는게 좋음.
+                  // 간편하게 "수기 대여로 진행" 버튼 추가
+                  proceedRentWithUser(userSelectModal.game, userSelectModal.renterNameInput, null);
+                }}
+                style={{ padding: "8px 12px", border: "1px solid #ddd", background: "white", borderRadius: "6px", cursor: "pointer" }}
+              >
+                비회원(수기)으로 대여
+              </button>
+              <button
+                onClick={() => setUserSelectModal({ ...userSelectModal, isOpen: false })}
+                style={{ padding: "8px 15px", background: "#666", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-const actionBtnStyle = (bgColor) => ({ padding: "6px 12px", border: "none", background: bgColor, color: "white", borderRadius: "6px", cursor: "pointer", fontSize: "0.85em", fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" });
+const actionBtnStyle = (bgColor) => ({ padding: "6px 12px", border: "1px solid rgba(255,255,255,0.1)", background: bgColor, color: "white", borderRadius: "6px", cursor: "pointer", fontSize: "0.85em", fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" });
 const styles = {
-  card: { border: "1px solid #ddd", padding: "15px", borderRadius: "10px", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", boxShadow: "0 2px 5px rgba(0,0,0,0.03)" },
+  // admin-card class replaces styles.card
   statusBadge: { marginLeft: "8px", fontSize: "0.8em", padding: "2px 8px", borderRadius: "12px", color: "white" },
 
   modalOverlay: {
-    position: "fixed",   // 모달 위치 강제 고정
+    position: "fixed",
     top: 0,
     left: 0,
-    right: 0,   // 추가
-    bottom: 0,  // 추가
+    right: 0,
+    bottom: 0,
     width: "100%",
     height: "100%",
-    background: "rgba(0,0,0,0.5)",
+    background: "rgba(0,0,0,0.8)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 9999 // 매우 높은 값으로 설정
+    zIndex: 9999
   },
-  modalContent: { background: "white", padding: "25px", borderRadius: "15px", width: "90%", maxWidth: "800px", boxShadow: "0 5px 20px rgba(0,0,0,0.2)", maxHeight: "90vh", overflowY: "auto" },
-  cancelBtn: { padding: "10px 20px", background: "#ddd", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", color: "#555" }
+  modalContent: { background: "var(--admin-card-bg)", color: "var(--admin-text-main)", padding: "25px", borderRadius: "15px", width: "90%", maxWidth: "800px", boxShadow: "0 5px 20px rgba(0,0,0,0.5)", maxHeight: "90vh", overflowY: "auto" },
+  cancelBtn: { padding: "10px 20px", background: "#444", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", color: "#ccc" }
 };
 
 export default DashboardTab;

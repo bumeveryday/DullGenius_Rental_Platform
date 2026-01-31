@@ -87,7 +87,9 @@ function AddGameTab({ onGameAdded }) {
         <input
           value={keyword} onChange={(e) => setKeyword(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-          placeholder="네이버 검색 (예: 스플렌더)" style={styles.input}
+          placeholder="네이버 검색 (예: 스플렌더)"
+          className="admin-input"
+          style={{ width: "100%" }}
         />
         <button onClick={handleSearch} style={styles.searchBtn}>검색</button>
         <button
@@ -98,17 +100,17 @@ function AddGameTab({ onGameAdded }) {
         </button>
       </div>
 
-      {loading && <div style={{ textAlign: "center", padding: "20px" }}>네이버에서 검색 중... ⏳</div>}
+      {loading && <div style={{ textAlign: "center", padding: "20px", color: "var(--admin-text-sub)" }}>네이버에서 검색 중... ⏳</div>}
 
       {!loading && results.length === 0 && keyword && (
-        <div style={{ textAlign: "center", color: "#999", padding: "20px" }}>
+        <div style={{ textAlign: "center", color: "var(--admin-text-sub)", padding: "20px" }}>
           검색 결과가 없습니다. '직접 추가' 버튼을 사용해보세요.
         </div>
       )}
 
       <div style={styles.gridContainer}>
         {results.map((item) => (
-          <div key={item.productId} style={styles.card}>
+          <div key={item.productId} className="admin-card" style={{ padding: "10px", textAlign: "center" }}>
             <img src={item.image} alt="cover" style={styles.cardImage} />
             <div style={styles.cardTitle} dangerouslySetInnerHTML={{ __html: item.title }} />
             <button onClick={() => openAddModal(item)} style={styles.selectBtn}>선택</button>
@@ -139,12 +141,11 @@ function AddGameTab({ onGameAdded }) {
 }
 
 const styles = {
-  input: { width: "100%", padding: "12px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "1em" },
-  searchBtn: { padding: "10px 20px", background: "#333", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" },
+  // input style removed in favor of className
+  searchBtn: { padding: "10px 20px", background: "#333", color: "white", border: "1px solid #555", borderRadius: "8px", cursor: "pointer" },
   gridContainer: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "15px" },
-  card: { border: "1px solid #eee", padding: "10px", borderRadius: "10px", textAlign: "center", background: "white" },
   cardImage: { width: "100%", height: "120px", objectFit: "contain", marginBottom: "10px" },
-  cardTitle: { fontSize: "0.9em", height: "40px", overflow: "hidden", marginBottom: "10px" },
+  cardTitle: { fontSize: "0.9em", height: "40px", overflow: "hidden", marginBottom: "10px", color: "var(--admin-text-main)" },
   selectBtn: { width: "100%", padding: "10px", background: "#3498db", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold" }
 };
 

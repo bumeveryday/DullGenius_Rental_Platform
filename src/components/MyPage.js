@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchMyRentals } from '../api';
+import { fetchMyRentals, fetchUserPoints, fetchPointHistory } from '../api';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext'; // [NEW] Context 사용
 import { useToast } from '../contexts/ToastContext'; // [NEW]
@@ -10,7 +10,29 @@ const MyPage = () => {
   const { showToast } = useToast(); // [NEW]
 
   const [rentals, setRentals] = useState([]);
+  const [pointHistory, setPointHistory] = useState([]); // [NEW] 포인트 내역
+  const [currentPoints, setCurrentPoints] = useState(0); // [NEW] 현재 포인트
   const [loading, setLoading] = useState(true);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [videoId, setVideoId] = useState(null);
+
+  // [NEW] 유튜브 ID 추출
+  const getYoutubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const openVideo = (url) => {
+    const vid = getYoutubeId(url);
+    if (vid) {
+      setVideoId(vid);
+      setVideoModalOpen(true);
+    } else {
+      window.open(url, '_blank');
+    }
+  };
 
   // Profile 정보 사용 (Smart Fallback)
   const userName = profile?.name || "로딩 중...";
@@ -27,20 +49,28 @@ const MyPage = () => {
   }, [user, authLoading, navigate, showToast]);
 
   useEffect(() => {
-    const loadRentals = async () => {
+    const loadData = async () => {
       // 로그인이 안 되어 있거나 user 객체가 없으면 중단
       if (!user) return;
 
       setLoading(true);
       try {
         // [FIX] user.id (UUID)를 사용
-        const result = await fetchMyRentals(user.id);
+        const [rentalsResult, points, history] = await Promise.all([
+          fetchMyRentals(user.id),
+          fetchUserPoints(user.id),
+          fetchPointHistory(user.id)
+        ]);
 
-        if (result.status === "success") {
-          setRentals(result.data);
+        if (rentalsResult.status === "success") {
+          setRentals(rentalsResult.data);
         } else {
-          console.error("❌ [MyPage] Error message:", result.message);
+          console.error("❌ [MyPage] Rental fetch error:", rentalsResult.message);
         }
+
+        setCurrentPoints(points);
+        setPointHistory(history || []);
+
       } catch (e) {
         console.error("❌ [MyPage] Fetch failed:", e);
       }
@@ -48,7 +78,7 @@ const MyPage = () => {
     };
 
     if (user) {
-      loadRentals();
+      loadData();
     }
   }, [user]);
 
@@ -71,7 +101,11 @@ const MyPage = () => {
           <InfoItem label="이름" value={userName} />
           <InfoItem label="학번" value={studentId} />
           <InfoItem label="연락처" value={userPhone} />
-          <InfoItem label="활동 포인트" value={`${activityPoint.toLocaleString()} P`} />
+          {/* <InfoItem label="활동 포인트" value={`${activityPoint.toLocaleString()} P`} /> Old Point System */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+            <span style={{ fontSize: "0.85em", color: "#888" }}>보유 포인트</span>
+            <span style={{ fontSize: "1.5em", fontWeight: "bold", color: "#3498db" }}>{currentPoints.toLocaleString()} P</span>
+          </div>
         </div>
         <div style={styles.infoNote}>
           * 정보 수정이 필요한 경우 덜지니어스 임원진에게 문의해주세요.
@@ -119,6 +153,26 @@ const MyPage = () => {
                       {item.type === 'DIBS' && <span style={{ fontSize: '0.8em', color: '#F39C12', marginLeft: '5px' }}>⚡</span>}
                     </div>
                     <div style={styles.rentalDate}>{item.type === 'DIBS' ? '찜한 시각' : '대여일'}: {formatDate(item.borrowedAt)}</div>
+
+                    {/* [NEW] 스마트 뱃지 (작게) */}
+                    <div style={{ display: "flex", gap: "5px", marginTop: "5px" }}>
+                      {item.videoUrl && (
+                        <button
+                          onClick={() => openVideo(item.videoUrl)}
+                          style={{ padding: "4px 8px", borderRadius: "12px", border: "1px solid #e74c3c", background: "white", color: "#e74c3c", cursor: "pointer", fontSize: "0.75em", fontWeight: "bold" }}
+                        >
+                          📺 가이드
+                        </button>
+                      )}
+                      {item.manualUrl && (
+                        <button
+                          onClick={() => window.open(item.manualUrl, '_blank')}
+                          style={{ padding: "4px 8px", borderRadius: "12px", border: "1px solid #3498db", background: "white", color: "#3498db", cursor: "pointer", fontSize: "0.75em", fontWeight: "bold" }}
+                        >
+                          📖 룰북
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div style={styles.rentalStatus}>
                     <div style={{ ...styles.dDayBadge, backgroundColor: badgeColor }}>
@@ -134,7 +188,56 @@ const MyPage = () => {
           </div>
         )}
       </section>
-    </div>
+
+      {/* 3. 포인트 내역 섹션 [NEW] */}
+      <section style={{ ...styles.card, marginTop: "20px" }}>
+        <h3 style={styles.sectionTitle}>💰 포인트 적립 내역</h3>
+
+        {pointHistory.length === 0 ? (
+          <div style={{ padding: "20px", textAlign: "center", color: "#888" }}>아직 포인트 내역이 없습니다. 동아리 활동을 해보세요!</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {pointHistory.map((item) => (
+              <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px", borderBottom: "1px solid #f1f2f6" }}>
+                <div>
+                  <div style={{ fontWeight: "bold", color: "#2c3e50" }}>{item.reason}</div>
+                  <div style={{ fontSize: "0.8em", color: "#95a5a6" }}>{formatDate(item.created_at)}</div>
+                </div>
+                <div style={{ fontWeight: "bold", color: item.amount > 0 ? "#2ecc71" : "#e74c3c" }}>
+                  {item.amount > 0 ? "+" : ""}{item.amount} P
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+
+      {/* [NEW] 유튜브 모달 */}
+      {
+        videoModalOpen && (
+          <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }} onClick={() => setVideoModalOpen(false)}>
+            <div style={{ position: "relative", width: "90%", maxWidth: "800px", aspectRatio: "16/9", background: "black" }}>
+              <iframe
+                width="100%"
+                height="100%"
+                src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+              <button
+                onClick={(e) => { e.stopPropagation(); setVideoModalOpen(false); }}
+                style={{ position: "absolute", top: "-40px", right: "0", background: "none", border: "none", color: "white", fontSize: "2em", cursor: "pointer" }}
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 };
 

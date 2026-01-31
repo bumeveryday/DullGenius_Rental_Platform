@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 /**
  * 재사용 가능한 확인 모달 컴포넌트
  * window.confirm()을 대체하여 더 나은 UI/UX 제공
+ * Admin 페이지에서는 Dark Mode 스타일을 적용받음 (.modal-content 등)
  */
 function ConfirmModal({
     isOpen,
@@ -56,11 +57,11 @@ function ConfirmModal({
     };
 
     return (
-        <div style={styles.overlay} onClick={onClose}>
-            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" style={styles.overlay} onClick={onClose}>
+            <div className="modal-content" style={styles.modal} onClick={(e) => e.stopPropagation()}>
                 {/* 헤더 */}
-                <div style={styles.header}>
-                    <h3 style={styles.title}>{title}</h3>
+                <div className="confirm-modal-header" style={styles.header}>
+                    <h3 className="confirm-modal-title" style={styles.title}>{title}</h3>
                     <button onClick={onClose} style={styles.closeBtn} aria-label="닫기">
                         ✕
                     </button>
@@ -68,7 +69,7 @@ function ConfirmModal({
 
                 {/* 메시지 */}
                 <div style={styles.content}>
-                    <p style={styles.message}>
+                    <p className="confirm-modal-message" style={styles.message}>
                         {message.split('\n').map((line, i) => (
                             <span key={i}>
                                 {line}
@@ -79,7 +80,7 @@ function ConfirmModal({
                 </div>
 
                 {/* 버튼 */}
-                <div style={styles.footer}>
+                <div className="confirm-modal-footer" style={styles.footer}>
                     <button onClick={onClose} style={styles.cancelBtn}>
                         {cancelText}
                     </button>
@@ -102,7 +103,7 @@ const styles = {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        // background handled by .modal-overlay
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -110,11 +111,11 @@ const styles = {
         animation: 'fadeIn 0.2s ease-out'
     },
     modal: {
-        backgroundColor: 'white',
+        // background handled by .modal-content
         borderRadius: '12px',
         width: '90%',
         maxWidth: '450px',
-        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
         animation: 'slideUp 0.3s ease-out',
         overflow: 'hidden'
     },
@@ -123,13 +124,13 @@ const styles = {
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '20px 24px',
-        borderBottom: '1px solid #f0f0f0'
+        // border handled by class
     },
     title: {
         margin: 0,
         fontSize: '1.3em',
         fontWeight: 'bold',
-        color: '#2c3e50'
+        // color handled by class
     },
     closeBtn: {
         background: 'none',
@@ -154,22 +155,21 @@ const styles = {
         margin: 0,
         fontSize: '1em',
         lineHeight: '1.6',
-        color: '#555',
+        // color handled by class
         whiteSpace: 'pre-wrap'
     },
     footer: {
         display: 'flex',
         gap: '12px',
         padding: '20px 24px',
-        borderTop: '1px solid #f0f0f0',
-        backgroundColor: '#fafafa'
+        // border and background handled by class
     },
     cancelBtn: {
         flex: 1,
         padding: '12px 20px',
-        border: '1px solid #ddd',
-        backgroundColor: 'white',
-        color: '#555',
+        border: '1px solid #555',
+        backgroundColor: '#444',
+        color: '#ccc',
         borderRadius: '8px',
         fontSize: '1em',
         fontWeight: '600',

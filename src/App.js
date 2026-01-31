@@ -1,5 +1,5 @@
 // src/App.js
-// 최종 수정일: 2025.12.02
+// 최종 수정일: 2026.01.30 (빌드 리프레시)
 // 설명: 메인 화면(Home) 및 라우터 설정, 데이터 로딩, 필터링 로직 포함
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -17,6 +17,7 @@ import Signup from './components/Signup'; // 회원가입 페이지
 import MyPage from './components/MyPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext'; // [NEW] Supabase Auth
 import { ToastProvider } from './contexts/ToastContext'; // [NEW] Toast 시스템
+import KioskPage from './kiosk/KioskPage'; // [NEW] Kiosk Page
 
 
 function Home() {
@@ -461,6 +462,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/admin-secret" element={<Admin />} />
+            <Route path="/kiosk" element={<KioskPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

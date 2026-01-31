@@ -1,0 +1,132 @@
+-- [1] Profiles 테이블 확장 (포인트 추가)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS current_points INTEGER DEFAULT 0;
+
+-- [2] 포인트 장부 테이블 생성
+CREATE TABLE IF NOT EXISTS point_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    amount INTEGER NOT NULL,
+    type TEXT CHECK (type IN ('RENTAL', 'RETURN_ON_TIME', 'MATCH_REWARD', 'VOTE', 'ADMIN_ADJUSTMENT')),
+    reason TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('kst', now())
+);
+
+-- 인덱스 (조회 속도용)
+CREATE INDEX IF NOT EXISTS idx_transactions_user ON point_transactions(user_id);
+
+-- [3] 매치 기록 테이블 생성
+CREATE TABLE IF NOT EXISTS matches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    game_id INTEGER REFERENCES games(id) ON DELETE SET NULL, -- 게임 삭제되도 기록은 유지(Set Null)
+    played_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('kst', now()),
+    players JSONB NOT NULL, -- 참여자 ID 배열
+    winner_id UUID, -- 무승부면 NULL
+    verified_at TIMESTAMP WITH TIME ZONE -- 키오스크 인증 시각
+);
+
+-- [4] 내부 함수: 포인트 지급 및 로그 동시 처리
+CREATE OR REPLACE FUNCTION earn_points(
+    p_user_id UUID,
+    p_amount INTEGER,
+    p_type TEXT,
+    p_reason TEXT
+) RETURNS VOID AS $$
+BEGIN
+    -- 1. 트랜잭션 기록
+    INSERT INTO point_transactions (user_id, amount, type, reason)
+    VALUES (p_user_id, p_amount, p_type, p_reason);
+
+    -- 2. 유저 총점 업데이트
+    UPDATE profiles
+    SET current_points = current_points + p_amount
+    WHERE id = p_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- [5] RPC: 매치 결과 등록 (5분 쿨타임)
+CREATE OR REPLACE FUNCTION register_match_result(
+    p_game_id INTEGER,
+    p_player_ids UUID[], -- 참여자 ID 배열
+    p_winner_id UUID -- 승자 ID (없으면 NULL)
+) RETURNS JSONB AS $$
+DECLARE
+    v_last_played TIMESTAMP;
+    v_player_id UUID;
+    v_is_winner BOOLEAN;
+    v_points INTEGER;
+BEGIN
+    -- 1. 쿨타임 체크 (가장 최근 해당 게임 매치 시간 확인)
+    SELECT played_at INTO v_last_played
+    FROM matches
+    WHERE game_id = p_game_id
+    ORDER BY played_at DESC
+    LIMIT 1;
+
+    -- 5분 (300초) 이내면 차단 (장난 방지 최소컷)
+    IF v_last_played IS NOT NULL AND (EXTRACT(EPOCH FROM (timezone('kst', now()) - v_last_played)) < 300) THEN
+         RETURN jsonb_build_object('success', false, 'message', '너무 자주 등록할 수 없습니다. (5분 쿨타임)');
+    END IF;
+
+    -- 2. 매치 기록 저장
+    INSERT INTO matches (game_id, players, winner_id, verified_at)
+    VALUES (p_game_id, to_jsonb(p_player_ids), p_winner_id, timezone('kst', now()));
+
+    -- 3. 포인트 지급 (승자 200, 패자 50)
+    FOREACH v_player_id IN ARRAY p_player_ids
+    LOOP
+        v_is_winner := (v_player_id = p_winner_id);
+        
+        IF v_is_winner THEN
+            v_points := 200;
+            PERFORM earn_points(v_player_id, v_points, 'MATCH_REWARD', '대전 승리 (게임 ' || p_game_id || ')');
+        ELSE
+            v_points := 50;
+            PERFORM earn_points(v_player_id, v_points, 'MATCH_REWARD', '대전 참여 (게임 ' || p_game_id || ')');
+        END IF;
+    END LOOP;
+
+    RETURN jsonb_build_object('success', true);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- [6] RPC: 키오스크 간편 반납
+-- "반납" 버튼 누르면 즉시 포인트 지급하고 상태 변경
+CREATE OR REPLACE FUNCTION kiosk_return(
+    p_copy_id INTEGER,
+    p_user_id UUID, -- 반납하려는 사람 (본인 혹은 키오스크 대리)
+    p_condition_ok BOOLEAN DEFAULT TRUE
+) RETURNS JSONB AS $$
+DECLARE
+    v_rental_id UUID;
+    v_game_id INTEGER;
+BEGIN
+    -- 1. 현재 대여중인 정보 찾기
+    SELECT rental_id, game_id INTO v_rental_id, v_game_id
+    FROM rentals
+    JOIN game_copies ON rentals.copy_id = game_copies.copy_id
+    WHERE rentals.copy_id = p_copy_id 
+      AND rentals.returned_at IS NULL
+      AND (rentals.user_id = p_user_id OR p_user_id IS NULL); -- 유저 검증 (옵션)
+
+    IF v_rental_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', '반납할 대여 기록을 찾을 수 없습니다.');
+    END IF;
+
+    -- 2. 반납 처리 (Rentals)
+    UPDATE rentals
+    SET returned_at = timezone('kst', now())
+    WHERE rental_id = v_rental_id;
+
+    -- 3. 상태 변경 (Game Copies)
+    UPDATE game_copies
+    SET status = 'AVAILABLE'
+    WHERE copy_id = p_copy_id;
+
+    -- 4. 반납 포인트 지급 (+100P)
+    IF p_user_id IS NOT NULL THEN
+        PERFORM earn_points(p_user_id, 100, 'RETURN_ON_TIME', '키오스크 반납 (게임 ' || v_game_id || ')');
+    END IF;
+
+    RETURN jsonb_build_object('success', true);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
