@@ -1,6 +1,6 @@
 // src/admin/AddGameTab.js
 import { useState } from 'react';
-import { searchNaver, addGame } from '../api';
+import { searchNaver, addGame, checkGameExists, addGameCopy } from '../api';
 import GameFormModal from './GameFormModal';
 import ConfirmModal from '../components/ConfirmModal'; // [NEW]
 import { useToast } from '../contexts/ToastContext';
@@ -59,26 +59,58 @@ function AddGameTab({ onGameAdded }) {
   };
 
   // 모달에서 '저장' 버튼 눌렀을 때 실행
-  const handleSaveGame = (formData) => {
-    showConfirmModal(
-      "게임 추가",
-      `[${formData.name}] 추가하시겠습니까?`,
-      async () => {
-        try {
-          // id는 DB에서 생성되므로 제거하고 보냄
-          const { id, ...rest } = formData;
-          await addGame({ ...rest, location: "" });
-          showToast("✅ 추가되었습니다!", { type: "success" });
-          setIsModalOpen(false);
-          setResults([]);
-          setKeyword("");
-          if (onGameAdded) onGameAdded();
-        } catch (e) {
-          console.error("게임 추가 실패:", e);
-          showToast("추가 실패: " + (e.message || e), { type: "error" });
-        }
+  const handleSaveGame = async (formData) => { // [Changed] async
+    try {
+      // 1. 중복 체크
+      const duplicates = await checkGameExists(formData.name);
+
+      if (duplicates && duplicates.length > 0) {
+        // 중복 발견: 재고 추가 유도
+        const existGame = duplicates[0];
+        showConfirmModal(
+          "📢 중복 게임 발견",
+          `'${formData.name}' 게임이 이미 존재합니다.\n새로 만드는 대신 재고(Copy)를 추가하시겠습니까?\n(현재 재고: ${existGame.game_copies[0]?.count || '?'}개)`,
+          async () => {
+            try {
+              await addGameCopy(existGame.id, ""); // 위치는 공란 or Default
+              showToast("✅ 기존 게임에 재고가 추가되었습니다!", { type: "success" });
+              setIsModalOpen(false);
+              setResults([]);
+              setKeyword("");
+              if (onGameAdded) onGameAdded();
+            } catch (e) {
+              showToast("재고 추가 실패: " + e.message, { type: "error" });
+            }
+          },
+          "warning" // Warning type for visual distinction if supported
+        );
+        return;
       }
-    );
+
+      // 2. 신규 생성 (기존 로직)
+      showConfirmModal(
+        "게임 추가",
+        `[${formData.name}] 추가하시겠습니까?`,
+        async () => {
+          try {
+            // id는 DB에서 생성되므로 제거하고 보냄
+            const { id, ...rest } = formData;
+            await addGame({ ...rest, location: "" });
+            showToast("✅ 추가되었습니다!", { type: "success" });
+            setIsModalOpen(false);
+            setResults([]);
+            setKeyword("");
+            if (onGameAdded) onGameAdded();
+          } catch (e) {
+            console.error("게임 추가 실패:", e);
+            showToast("추가 실패: " + (e.message || e), { type: "error" });
+          }
+        }
+      );
+    } catch (e) {
+      console.error("중복 체크 실패:", e);
+      showToast("오류 발생: " + e.message, { type: "error" });
+    }
   };
 
   return (

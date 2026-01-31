@@ -4,10 +4,12 @@ import './Kiosk.css';
 import { useToast } from '../contexts/ToastContext'; // Toast 알림
 import MatchModal from './MatchModal';
 import RouletteModal from './RouletteModal';
+import ReturnModal from './ReturnModal';
 import RentalModal from './RentalModal';
 
 // [Constants]
-const MASTER_KEY = "dullgenius_2024"; // 실제 운영 시에는 환경변수로 빼는 것이 좋음
+// [Constants]
+const MASTER_KEY = process.env.REACT_APP_KIOSK_MASTER_KEY || "dullgenius_2024";
 const IDLE_TIMEOUT_MS = 180000; // 3분 (번인 방지)
 const REFRESH_HOUR = 4; // 새벽 4시 자동 새로고침
 
@@ -18,6 +20,8 @@ function KioskPage() {
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [activationCode, setActivationCode] = useState("");
     const [isIdle, setIsIdle] = useState(false);
+    // Track usage to prevent reload during activity
+    const isIdleRef = useRef(false);
 
     // [Clock State]
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -40,8 +44,13 @@ function KioskPage() {
         // 새벽 4시 리프레시 체크 (1분마다)
         const refreshInterval = setInterval(() => {
             const now = new Date();
+            // Check if it's 4 AM AND user is idle to prevent interruption
             if (now.getHours() === REFRESH_HOUR && now.getMinutes() === 0) {
-                window.location.reload();
+                if (isIdleRef.current) {
+                    window.location.reload();
+                } else {
+                    console.log("Skipping reload due to user activity");
+                }
             }
         }, 60000);
 
@@ -85,11 +94,15 @@ function KioskPage() {
     // [Effect 3] 유휴 시간 감지 (Screen Saver)
     useEffect(() => {
         const resetTimer = () => {
-            if (isIdle) setIsIdle(false);
+            if (isIdle) {
+                setIsIdle(false);
+                isIdleRef.current = false;
+            }
             if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
 
             idleTimerRef.current = setTimeout(() => {
                 setIsIdle(true);
+                isIdleRef.current = true;
             }, IDLE_TIMEOUT_MS);
         };
 

@@ -149,18 +149,39 @@ export const dibsGame = async (gameId, userId) => {
 };
 
 // 6. 리뷰 목록 가져오기
-export const fetchReviews = async () => {
+export const fetchReviews = async (gameId) => {
   // author_name이 reviews 테이블에 있으므로 그냥 가져오면 됨
-  const { data, error } = await supabase
+  let query = supabase
     .from('reviews')
     .select('*')
     .order('created_at', { ascending: false });
+
+  if (gameId) {
+    query = query.eq('game_id', gameId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("리뷰 로딩 실패:", error);
     return [];
   }
-  return data;
+
+  // [FIX] 서버 DB에 중복된 데이터가 있을 경우를 대비해, API 레벨에서 중복 제거
+  // (작성자 + 내용 + 게임ID)가 같으면 중복으로 간주하고 최신 것만 남김
+  const uniqueReviews = [];
+  const seen = new Set();
+
+  for (const review of data) {
+    // 키 생성 (유니크 조건)
+    const key = `${review.game_id}-${review.author_name || review.user_name}-${review.content}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueReviews.push(review);
+    }
+  }
+
+  return uniqueReviews;
 };
 
 // 7. 리뷰 작성하기
@@ -325,8 +346,11 @@ export const searchNaver = async (query) => {
   }
 };
 
-// [Admin] 게임 추가
+// [Admin] 게임 추가 (개선됨)
 export const addGame = async (gameData) => {
+  // 1. 중복 체크 (선택 사항, 프론트에서도 함)
+  // 여기서는 강제로 막지는 않음 (프론트가 '새로 생성'을 선택했을 수 있으므로)
+
   // 1. Games 테이블 추가
   const { data: newGame, error } = await supabase
     .from('games')
@@ -355,6 +379,32 @@ export const addGame = async (gameData) => {
     }]);
   }
   return newGame;
+};
+
+// [Admin] 게임 이름 중복 확인 [NEW]
+export const checkGameExists = async (name) => {
+  const { data, error } = await supabase
+    .from('games')
+    .select('id, name, game_copies(count)')
+    .eq('name', name);
+
+  if (error) return [];
+  return data; // 중복된 게임 리스트 (보통 1개여야 함)
+};
+
+// [Admin] 기존 게임에 재고(Copy) 추가 [NEW]
+export const addGameCopy = async (gameId, location) => {
+  const { data, error } = await supabase
+    .from('game_copies')
+    .insert([{
+      game_id: gameId,
+      status: 'AVAILABLE',
+      location: location || '동아리방'
+    }])
+    .select();
+
+  if (error) throw error;
+  return data;
 };
 
 // [Admin] 설정 저장 (DB: app_config)
@@ -696,6 +746,54 @@ export const kioskReturn = async (copyId, userId) => {
   }
   return data;
 };
+
+// [Kiosk] 16. 키오스크 간편 대여 (RPC) [NEW]
+export const kioskRental = async (gameId, userId) => {
+  const { data, error } = await supabase.rpc('kiosk_rental', {
+    p_game_id: gameId,
+    p_user_id: userId
+  });
+
+  if (error) {
+    console.error("Kiosk Rental Error:", error);
+    return { success: false, message: error.message };
+  }
+  return data;
+};
+
+// [Admin] 17. 전체 포인트 내역 조회 (Dashboard) [NEW]
+export const fetchGlobalPointHistory = async (limit = 50) => {
+  const { data, error } = await supabase
+    .from('point_transactions')
+    .select(`
+      *,
+      profiles:user_id (name, student_id)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("Global Point History Error:", error);
+    return [];
+  }
+  return data;
+};
+
+// [Admin] 18. 포인트 랭킹 조회 (Dashboard) [NEW]
+export const fetchLeaderboard = async (limit = 10) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, name, student_id, current_points')
+    .order('current_points', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("Leaderboard Error:", error);
+    return [];
+  }
+  return data;
+};
+
 
 // [Kiosk] 15. 유저 포인트 조회 (Helper)
 export const fetchUserPoints = async (userId) => {

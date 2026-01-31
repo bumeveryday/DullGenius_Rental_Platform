@@ -46,14 +46,13 @@ function GameDetail() {
         }
       }
 
+
       // 2. 리뷰 로딩
       setIsReviewsLoading(true);
-      const reviewsData = await fetchReviews();
-      if (Array.isArray(reviewsData)) {
-        const filteredReviews = reviewsData.filter(r => String(r.game_id) === String(id));
-        filteredReviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        setReviews(filteredReviews);
-      }
+      // [FIX] 중복 제거 및 필터링은 API 내부에서 처리됨
+      const reviewsData = await fetchReviews(id);
+      setReviews(reviewsData || []);
+
       setIsReviewsLoading(false);
       setLoading(false);
     };
@@ -156,13 +155,9 @@ function GameDetail() {
       setNewReview({ rating: "5", comment: "" });
       setCooldown(10);
 
-      // 리뷰 목록 리로드 (간단히)
-      const reviewsData = await fetchReviews();
-      if (Array.isArray(reviewsData)) {
-        const filteredReviews = reviewsData.filter(r => String(r.game_id) === String(id));
-        filteredReviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        setReviews(filteredReviews);
-      }
+      // 리뷰 목록 리로드
+      const reviewsData = await fetchReviews(id);
+      setReviews(reviewsData || []);
 
     } catch (e) {
       showToast("리뷰 등록 실패: " + e.message, { type: "error" });

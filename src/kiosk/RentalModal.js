@@ -1,7 +1,9 @@
+
 // src/kiosk/RentalModal.js
-import React, { useState, useEffect, useMemo } from 'react';
-import { fetchGames, fetchUsers, kioskRental } from '../api'; // kioskRental RPC 필요
+import React, { useState, useMemo } from 'react';
+import { kioskRental } from '../api';
 import { useToast } from '../contexts/ToastContext';
+import useKioskData from '../hooks/useKioskData'; // Import Hook
 import './Kiosk.css';
 
 // [Cached Data]
@@ -12,10 +14,8 @@ function RentalModal({ onClose }) {
     const { showToast } = useToast();
     const [step, setStep] = useState(1); // 1:Game -> 2:User -> 3:Auth -> 4:Done
 
-    // Data
-    const [games, setGames] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
+    // Data via Hook
+    const { games, users, loading } = useKioskData();
 
     // Filter
     const [gameSearch, setGameSearch] = useState("");
@@ -25,39 +25,6 @@ function RentalModal({ onClose }) {
     // Selection
     const [selectedGame, setSelectedGame] = useState(null);
     const [selectedUser, setSelectedUser] = useState(null);
-
-    // Initial Load (LocalStorage + Sync)
-    useEffect(() => {
-        const loadData = async () => {
-            // 1. LocalStorage
-            const localGames = localStorage.getItem('kiosk_games');
-            const localUsers = localStorage.getItem('kiosk_users');
-
-            if (localGames && localUsers) {
-                setGames(JSON.parse(localGames));
-                setUsers(JSON.parse(localUsers));
-                setLoading(false);
-            }
-
-            // 2. Background Sync
-            try {
-                const [gamesData, usersData] = await Promise.all([fetchGames(), fetchUsers()]);
-                const validGames = gamesData.filter(g => !g.error);
-                const validUsers = usersData || [];
-
-                setGames(validGames);
-                setUsers(validUsers);
-
-                localStorage.setItem('kiosk_games', JSON.stringify(validGames));
-                localStorage.setItem('kiosk_users', JSON.stringify(validUsers));
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadData();
-    }, []);
 
     // Filter Logic
     const filteredGames = useMemo(() => {
@@ -91,10 +58,10 @@ function RentalModal({ onClose }) {
         // Proceed to Rental
         const result = await kioskRental(selectedGame.id, selectedUser.id);
         if (result.success) {
-            showToast(`✅ 대여 성공! (${selectedGame.name})`, { type: "success" });
+            showToast("대여 성공! (" + selectedGame.name + ")", { type: "success" });
             onClose();
         } else {
-            showToast(`❌ 대여 실패: ${result.message}`, { type: "error" });
+            showToast("대여 실패: " + result.message, { type: "error" });
         }
     };
 

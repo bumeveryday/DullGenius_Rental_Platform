@@ -130,3 +130,56 @@ BEGIN
     RETURN jsonb_build_object('success', true);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- [7] RPC: 키오스크 간편 대여 (무인 대여)
+CREATE OR REPLACE FUNCTION kiosk_rental(
+    p_game_id INTEGER,
+    p_user_id UUID
+) RETURNS JSONB AS $$
+DECLARE
+    v_copy_id INTEGER;
+BEGIN
+    -- 1. 대여 가능한 카피 찾기 (AVAILABLE 상태 중 하나)
+    SELECT copy_id INTO v_copy_id
+    FROM game_copies
+    WHERE game_id = p_game_id AND status = 'AVAILABLE'
+    LIMIT 1;
+
+    IF v_copy_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', '현재 대여 가능한 재고가 없습니다.');
+    END IF;
+
+    -- 2. 대여 기록 생성 (Rentals)
+    INSERT INTO rentals (copy_id, user_id, type, borrowed_at, due_date)
+    VALUES (
+        v_copy_id, 
+        p_user_id, 
+        'RENT', 
+        timezone('kst', now()), 
+        timezone('kst', now() + INTERVAL '2 days') -- 기본 2일 대여
+    );
+
+    -- 3. 상태 변경 (Game Copies)
+    UPDATE game_copies
+    SET status = 'RENTED'
+    WHERE copy_id = v_copy_id;
+    
+    RETURN jsonb_build_object('success', true);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- [8] RLS 정책 추가 (리더보드/내역 조회용)
+-- profiles 테이블이 RLS가 켜져있다면, 다른 사람의 정보를 볼 수 없음.
+-- 따라서 전체 공개(혹은 로그인 유저 공개) 정책을 추가합니다.
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public profiles are viewable by everyone" 
+ON profiles FOR SELECT USING (true);
+
+-- 포인트 내역도 공개 (투명성) 혹은 본인만 보게 할 수 있으나, 
+-- 관리자 페이지(Dashboard)에서는 전체를 봐야 하므로 일단 SELECT 열어둠 (혹은 admin 전용 정책 필요)
+ALTER TABLE point_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Point logs are viewable by everyone" 
+ON point_transactions FOR SELECT USING (true);

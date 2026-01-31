@@ -1,16 +1,16 @@
 // src/kiosk/MatchModal.js
-import React, { useState, useEffect, useMemo } from 'react';
-import { fetchGames, fetchUsers, registerMatch } from '../api';
+import React, { useState, useMemo } from 'react';
+import { registerMatch } from '../api';
 import { useToast } from '../contexts/ToastContext';
+import useKioskData from '../hooks/useKioskData';
 import './Kiosk.css';
 
 function MatchModal({ onClose }) {
     const { showToast } = useToast();
     const [step, setStep] = useState(1); // 1:Game -> 2:Players -> 3:Winner -> 4:Done
 
-    // Data List
-    const [games, setGames] = useState([]);
-    const [users, setUsers] = useState([]);
+    // Data List via Hook
+    const { games, users, loading } = useKioskData();
 
     // Search/Filter
     const [gameSearchTerm, setGameSearchTerm] = useState('');
@@ -21,55 +21,8 @@ function MatchModal({ onClose }) {
     const [selectedPlayers, setSelectedPlayers] = useState([]);
     const [selectedWinner, setSelectedWinner] = useState(null);
 
-    // Loading
-    const [loading, setLoading] = useState(true);
+    // Processing State
     const [processing, setProcessing] = useState(false);
-
-    // [Strategy: LocalStorage + Background Sync]
-    useEffect(() => {
-        const loadData = async () => {
-            // 1. Try Loading from LocalStorage first (Instant)
-            const localGames = localStorage.getItem('kiosk_games');
-            const localUsers = localStorage.getItem('kiosk_users');
-            const lastSync = localStorage.getItem('kiosk_last_sync');
-
-            if (localGames && localUsers) {
-                setGames(JSON.parse(localGames));
-                setUsers(JSON.parse(localUsers));
-                // Show content immediately if local data exists
-                setLoading(false);
-            }
-
-            // 2. Background Sync (Fetch latest from server)
-            try {
-                // If synced recently (< 5 min), skip fetch to save bandwidth?
-                // For now, always sync to be safe.
-                const [gamesData, usersData] = await Promise.all([fetchGames(), fetchUsers()]);
-
-                const validGames = gamesData.filter(g => !g.error);
-                const validUsers = usersData || [];
-
-                // Compare and update if changed (Deep comparison is expensive, just overwrite for now)
-                setGames(validGames);
-                setUsers(validUsers);
-
-                // Save to LocalStorage
-                localStorage.setItem('kiosk_games', JSON.stringify(validGames));
-                localStorage.setItem('kiosk_users', JSON.stringify(validUsers));
-                localStorage.setItem('kiosk_last_sync', new Date().toISOString());
-
-            } catch (e) {
-                console.error("Background sync failed:", e);
-                // If local data missing and sync failed, show error
-                if (!localGames) {
-                    showToast("데이터 로딩 실패 (인터넷 확인 필요)", { type: "error" });
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadData();
-    }, []);
 
     // [Optimization] Memoized Filters
     const filteredGames = useMemo(() => {
@@ -113,10 +66,11 @@ function MatchModal({ onClose }) {
             const result = await registerMatch(selectedGame.id, playerIds, winnerId);
 
             if (result.success) {
-                showToast(`🎉 매치 등록 완료! 승자: ${selectedWinner?.name || '없음'}`, { type: "success" });
+                const winnerName = selectedWinner ? selectedWinner.name : '없음';
+                showToast("매치 등록 완료! 승자: " + winnerName, { type: "success" });
                 onClose();
             } else {
-                showToast(`❌ 실패: ${result.message}`, { type: "error" });
+                showToast("실패: " + result.message, { type: "error" });
             }
         } catch (e) {
             console.error(e);
