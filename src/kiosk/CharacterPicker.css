@@ -1,0 +1,202 @@
+@keyframes ripple {
+    0% {
+        transform: scale(0);
+        opacity: 0.6;
+    }
+
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+@keyframes buttonPress {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(0.92);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.character-picker {
+    background: #1a1a1a;
+    border-radius: 15px;
+    padding: 15px;
+    margin-top: 15px;
+    border: 1px solid #333;
+}
+
+.char-toggle-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #444 0%, #3a3a3a 100%);
+    border: 1px solid #555;
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.char-toggle-btn:hover {
+    background: linear-gradient(135deg, #555 0%, #444 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.char-toggle-btn:active {
+    transform: scale(0.98);
+}
+
+.char-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.char-tab {
+    flex: 1;
+    padding: 10px;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: #999;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.char-tab:hover {
+    background: #333;
+    transform: translateY(-2px);
+}
+
+.char-tab.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    transform: translateY(-2px);
+}
+
+.char-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 15px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.char-btn {
+    aspect-ratio: 1;
+    min-height: 44px;
+    background: linear-gradient(135deg, #2a2a2a 0%, #222 100%);
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.3rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.char-btn:hover {
+    background: linear-gradient(135deg, #333 0%, #2a2a2a 100%);
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.char-btn:active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    transform: scale(0.95);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5), inset 0 2px 8px rgba(0, 0, 0, 0.3);
+    animation: buttonPress 0.3s ease-out;
+}
+
+/* Ripple effect on click */
+.char-btn::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    border-radius: 50%;
+    background: rgba(102, 126, 234, 0.5);
+    pointer-events: none;
+    opacity: 0;
+}
+
+.char-btn:active::after {
+    animation: ripple 0.6s ease-out;
+}
+
+.char-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.char-control-btn {
+    flex: 1;
+    padding: 12px;
+    background: linear-gradient(135deg, #444 0%, #3a3a3a 100%);
+    border: 1px solid #555;
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.char-control-btn:hover {
+    background: linear-gradient(135deg, #555 0%, #444 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.char-control-btn:active {
+    transform: scale(0.98);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.char-control-btn.clear {
+    background: linear-gradient(135deg, #FF512F 0%, #DD2476 100%);
+    border-color: #FF512F;
+    box-shadow: 0 2px 8px rgba(255, 81, 47, 0.3);
+}
+
+.char-control-btn.clear:hover {
+    background: linear-gradient(135deg, #FF6347 0%, #E94A7A 100%);
+    box-shadow: 0 4px 12px rgba(255, 81, 47, 0.5);
+}
+
+.char-control-btn.clear:active {
+    background: linear-gradient(135deg, #DD2476 0%, #C71F65 100%);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+}

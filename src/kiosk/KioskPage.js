@@ -30,6 +30,7 @@ function KioskPage() {
     const [isIdle, setIsIdle] = useState(false);
     // Track usage to prevent reload during activity
     const isIdleRef = useRef(false);
+    const gracePeriodEndRef = useRef(0); // 유예 기간 종료 시각
 
     // [Clock State]
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -41,6 +42,39 @@ function KioskPage() {
     const [showRentalModal, setShowRentalModal] = useState(false); // [NEW]
 
     const idleTimerRef = useRef(null);
+
+    // [Helper] Set grace period
+    const setGracePeriod = (minutes) => {
+        const graceMs = minutes * 60 * 1000;
+        gracePeriodEndRef.current = Date.now() + graceMs;
+        // 타이머 재설정
+        if (idleTimerRef.current) {
+            clearTimeout(idleTimerRef.current);
+        }
+        if (!isIdle) {
+            scheduleIdleTimer();
+        }
+    };
+
+    const scheduleIdleTimer = () => {
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+
+        const now = Date.now();
+        const timeUntilGraceEnd = gracePeriodEndRef.current - now;
+
+        if (timeUntilGraceEnd > 0) {
+            // 유예 기간 중이면 유예 기간 종료 후에 타이머 시작
+            idleTimerRef.current = setTimeout(() => {
+                scheduleIdleTimer(); // 유예 종료 후 정상 타이머 시작
+            }, timeUntilGraceEnd);
+        } else {
+            // 정상 타이머 설정
+            idleTimerRef.current = setTimeout(() => {
+                setIsIdle(true);
+                isIdleRef.current = true;
+            }, IDLE_TIMEOUT_MS);
+        }
+    };
 
     // [Effect 1] 초기 인증 체크 & 자동 새로고침 스케줄러
     useEffect(() => {
@@ -124,12 +158,7 @@ function KioskPage() {
                 setIsIdle(false);
                 isIdleRef.current = false;
             }
-            if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-
-            idleTimerRef.current = setTimeout(() => {
-                setIsIdle(true);
-                isIdleRef.current = true;
-            }, IDLE_TIMEOUT_MS);
+            scheduleIdleTimer();
         };
 
         // 터치/클릭 이벤트 리스너 -> 타이머 초기화
@@ -145,7 +174,7 @@ function KioskPage() {
             window.removeEventListener('mousemove', resetTimer);
             if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
         };
-    }, [isIdle]);
+    }, []); // isIdle 제거 - 한 번만 설정
 
     // [Handlers]
     const handleActivation = async () => {
@@ -228,7 +257,7 @@ function KioskPage() {
             {/* 상단바 */}
             <header style={{ padding: "20px", borderBottom: "1px solid #333", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>🎲 덜지니어스 키오스크</div>
-                <div style={{ fontSize: "1rem", color: "#888", fontFamily: "monospace" }}>
+                <div style={{ fontSize: "1.3rem", color: "#888", fontFamily: "'Courier New', Consolas, monospace", fontWeight: "600", letterSpacing: "2px" }}>
                     {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </div>
             </header>
@@ -262,17 +291,28 @@ function KioskPage() {
 
             {/* 플로팅 반납 버튼 (어디서든 접근 가능) */}
             <button className="floating-return-btn" onClick={() => setShowReturnModal(true)}>
-                📦
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: '2.5rem' }}>📦</div>
+                    <div style={{ fontSize: '1.2rem', marginTop: '8px', fontWeight: 'bold', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
+                        반납하기
+                    </div>
+                </div>
             </button>
 
             {/* 매치 모달 */}
-            {showMatchModal && <MatchModal onClose={() => setShowMatchModal(false)} />}
+            {showMatchModal && <MatchModal onClose={() => {
+                setShowMatchModal(false);
+                setGracePeriod(5); // 매치 등록 후 5분 유예
+            }} />}
 
             {/* 룰렛 모달 */}
             {showRouletteModal && <RouletteModal onClose={() => setShowRouletteModal(false)} />}
 
             {/* 반납 모달 */}
-            {showReturnModal && <ReturnModal onClose={() => setShowReturnModal(false)} />}
+            {showReturnModal && <ReturnModal onClose={() => {
+                setShowReturnModal(false);
+                setGracePeriod(3); // 반납 후 3분 유예
+            }} />}
 
             {/* [NEW] 무인 대여 모달 */}
             {showRentalModal && <RentalModal onClose={() => setShowRentalModal(false)} />}

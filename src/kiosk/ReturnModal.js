@@ -137,7 +137,7 @@ function ReturnModal({ onClose }) {
     };
 
     return (
-        <div className="kiosk-modal-overlay" onClick={onClose}>
+        <div className="kiosk-modal-overlay" style={{ zIndex: 1000 }} onClick={onClose}>
             <div className="kiosk-modal" style={{ width: "90%", height: "90%", display: "flex", flexDirection: "column" }} onClick={e => e.stopPropagation()}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
                     <h2>📦 간편 반납</h2>
@@ -146,6 +146,9 @@ function ReturnModal({ onClose }) {
 
                 <div style={{ color: "#aaa", marginBottom: "10px" }}>
                     이름을 클릭하면 대여 목록이 나타납니다. 반납할 게임을 체크하세요.
+                </div>
+                <div style={{ color: "#888", fontSize: "0.85rem", marginBottom: "15px", fontStyle: "italic" }}>
+                    💡 언제든 닫기를 눌러 원래 작업으로 돌아갈 수 있어요!
                 </div>
 
                 <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>

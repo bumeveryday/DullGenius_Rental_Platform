@@ -28,20 +28,27 @@ function RouletteModal({ onClose }) {
         if (playerCount === null) {
             setFilteredGames(allGames);
         } else {
-            // players 필드 파싱 (예: "2-4인", "3-6인" 등)
+            // players 필드 파싱 (다양한 형식 지원: "2-4인", "3~6", "5인" 등)
             const filtered = allGames.filter(game => {
                 if (!game.players) return false;
-                const match = game.players.match(/(\d+)-(\d+)/);
-                if (match) {
-                    const min = parseInt(match[1]);
-                    const max = parseInt(match[2]);
+
+                // "인" 제거 후 파싱
+                const playersStr = game.players.replace(/인/g, '').trim();
+
+                // 범위 형식: "2-4" 또는 "3~6"
+                const rangeMatch = playersStr.match(/(\d+)[-~](\d+)/);
+                if (rangeMatch) {
+                    const min = parseInt(rangeMatch[1]);
+                    const max = parseInt(rangeMatch[2]);
                     return playerCount >= min && playerCount <= max;
                 }
-                // 단일 인원수인 경우 (예: "4인")
-                const singleMatch = game.players.match(/^(\d+)/);
+
+                // 단일 인원수: "4"
+                const singleMatch = playersStr.match(/^(\d+)$/);
                 if (singleMatch) {
                     return parseInt(singleMatch[1]) === playerCount;
                 }
+
                 return false;
             });
             setFilteredGames(filtered);
