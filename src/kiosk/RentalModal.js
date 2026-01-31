@@ -4,6 +4,8 @@ import React, { useState, useMemo } from 'react';
 import { kioskRental } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import useKioskData from '../hooks/useKioskData'; // Import Hook
+import { filterUsers, filterGames } from '../lib/searchUtils'; // Import Search Utilities
+import CharacterPicker from './CharacterPicker'; // Import Virtual Keyboard
 import './Kiosk.css';
 
 // [Cached Data]
@@ -27,16 +29,11 @@ function RentalModal({ onClose }) {
 
     // Filter Logic
     const filteredGames = useMemo(() => {
-        if (!gameSearch) return games;
-        return games.filter(g => g.name.toLowerCase().includes(gameSearch.toLowerCase()));
+        return filterGames(games, gameSearch);
     }, [games, gameSearch]);
 
     const filteredUsers = useMemo(() => {
-        if (!userSearch) return users;
-        return users.filter(u =>
-            u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-            (u.student_id && u.student_id.includes(userSearch))
-        );
+        return filterUsers(users, userSearch);
     }, [users, userSearch]);
 
     // Auth Logic
@@ -77,9 +74,9 @@ function RentalModal({ onClose }) {
                             className="kiosk-search-input"
                             placeholder="🔍 게임 이름 검색..."
                             value={gameSearch}
-                            onChange={e => setGameSearch(e.target.value)}
-                            autoFocus
+                            readOnly
                         />
+                        <CharacterPicker value={gameSearch} onChange={setGameSearch} />
                         <div className="grid-3-col">
                             {filteredGames.map(game => (
                                 <button key={game.id} className="kiosk-list-btn" onClick={() => {
@@ -102,9 +99,9 @@ function RentalModal({ onClose }) {
                             className="kiosk-search-input"
                             placeholder="🔍 이름 검색..."
                             value={userSearch}
-                            onChange={e => setUserSearch(e.target.value)}
-                            autoFocus
+                            readOnly
                         />
+                        <CharacterPicker value={userSearch} onChange={setUserSearch} />
                         <div className="grid-3-col">
                             {filteredUsers.map(user => (
                                 <button key={user.id} className="kiosk-list-btn" onClick={() => {

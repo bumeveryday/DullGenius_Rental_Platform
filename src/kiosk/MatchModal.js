@@ -3,6 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { registerMatch } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import useKioskData from '../hooks/useKioskData';
+import { filterUsers, filterGames } from '../lib/searchUtils'; // Import Search Utilities
+import CharacterPicker from './CharacterPicker'; // Import Virtual Keyboard
 import './Kiosk.css';
 
 function MatchModal({ onClose }) {
@@ -26,19 +28,11 @@ function MatchModal({ onClose }) {
 
     // [Optimization] Memoized Filters
     const filteredGames = useMemo(() => {
-        if (!gameSearchTerm) return games;
-        return games.filter(game =>
-            game.name.toLowerCase().includes(gameSearchTerm.toLowerCase())
-        );
+        return filterGames(games, gameSearchTerm);
     }, [games, gameSearchTerm]);
 
     const filteredUsers = useMemo(() => {
-        if (!userSearchTerm) return users;
-        const term = userSearchTerm.toLowerCase();
-        return users.filter(user =>
-            user.name.toLowerCase().includes(term) ||
-            user.student_id?.includes(term)
-        );
+        return filterUsers(users, userSearchTerm);
     }, [users, userSearchTerm]);
 
     // Handlers
@@ -93,9 +87,9 @@ function MatchModal({ onClose }) {
                             className="kiosk-search-input"
                             placeholder="🔍 게임 이름 검색..."
                             value={gameSearchTerm}
-                            onChange={(e) => setGameSearchTerm(e.target.value)}
-                            autoFocus
+                            readOnly
                         />
+                        <CharacterPicker value={gameSearchTerm} onChange={setGameSearchTerm} />
 
                         <div className="grid-3-col" style={{ maxHeight: "55vh" }}>
                             {filteredGames.length === 0 ? (
@@ -123,9 +117,10 @@ function MatchModal({ onClose }) {
                             className="kiosk-search-input"
                             placeholder="🔍 이름 또는 학번 검색..."
                             value={userSearchTerm}
-                            onChange={(e) => setUserSearchTerm(e.target.value)}
+                            readOnly
                             style={{ padding: "12px 15px", fontSize: "1rem" }}
                         />
+                        <CharacterPicker value={userSearchTerm} onChange={setUserSearchTerm} />
 
                         <div className="grid-3-col" style={{ maxHeight: "45vh" }}>
                             {filteredUsers.length === 0 ? (

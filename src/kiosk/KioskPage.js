@@ -8,10 +8,18 @@ import ReturnModal from './ReturnModal';
 import RentalModal from './RentalModal';
 
 // [Constants]
-// [Constants]
-const MASTER_KEY = process.env.REACT_APP_KIOSK_MASTER_KEY || "";
+const MASTER_KEY = process.env.REACT_APP_KIOSK_MASTER_KEY;
 const IDLE_TIMEOUT_MS = 180000; // 3분 (번인 방지)
 const REFRESH_HOUR = 4; // 새벽 4시 자동 새로고침
+
+// [Utility] SHA-256 해시 생성 (간단한 보안 강화)
+async function hashToken(key) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(key);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 function KioskPage() {
     const { showToast } = useToast();
@@ -36,10 +44,28 @@ function KioskPage() {
 
     // [Effect 1] 초기 인증 체크 & 자동 새로고침 스케줄러
     useEffect(() => {
-        const token = localStorage.getItem('kiosk_token');
-        if (token === 'AUTHORIZED') {
-            setIsAuthorized(true);
+        // 환경 변수 검증
+        if (!MASTER_KEY) {
+            console.error('❌ REACT_APP_KIOSK_MASTER_KEY 환경 변수가 설정되지 않았습니다.');
+            return;
         }
+
+        // 토큰 검증 (해시 확인)
+        const validateSession = async () => {
+            const storedToken = localStorage.getItem('kiosk_token');
+
+            if (storedToken) {
+                const validHash = await hashToken(MASTER_KEY);
+                if (storedToken === validHash) {
+                    setIsAuthorized(true);
+                } else {
+                    // 유효하지 않은 토큰은 제거
+                    localStorage.removeItem('kiosk_token');
+                }
+            }
+        };
+
+        validateSession();
 
         // 새벽 4시 리프레시 체크 (1분마다)
         const refreshInterval = setInterval(() => {
@@ -122,13 +148,31 @@ function KioskPage() {
     }, [isIdle]);
 
     // [Handlers]
-    const handleActivation = () => {
+    const handleActivation = async () => {
+        // 환경 변수 미설정 검증
+        if (!MASTER_KEY) {
+            showToast("⚠️ 시스템 오류: 마스터 키가 설정되지 않았습니다. 관리자에게 문의하세요.", { type: "error" });
+            return;
+        }
+
+        // 빈 입력 검증
+        if (!activationCode.trim()) {
+            showToast("❌ 마스터 키를 입력해주세요.", { type: "error" });
+            return;
+        }
+
+        // 마스터 키 확인
         if (activationCode === MASTER_KEY) {
-            localStorage.setItem('kiosk_token', 'AUTHORIZED');
+            // 해시화된 토큰 생성 및 저장 (영구 보관)
+            const hashedToken = await hashToken(MASTER_KEY);
+            localStorage.setItem('kiosk_token', hashedToken);
+
             setIsAuthorized(true);
+            setActivationCode(""); // 입력 필드 초기화
             showToast("✅ 기기 인증 완료! 키오스크 모드를 시작합니다.", { type: "success" });
         } else {
             showToast("❌ 인증 실패. 마스터 키를 확인하세요.", { type: "error" });
+            setActivationCode(""); // 실패 시에도 초기화
         }
     };
 
@@ -137,6 +181,18 @@ function KioskPage() {
         return (
             <div className="activation-screen">
                 <h1 style={{ marginBottom: "30px" }}>🔒 기기 인증 필요</h1>
+                {!MASTER_KEY && (
+                    <div style={{
+                        background: "#ff4444",
+                        color: "white",
+                        padding: "15px",
+                        borderRadius: "8px",
+                        marginBottom: "20px",
+                        fontSize: "0.9rem"
+                    }}>
+                        ⚠️ 시스템 오류: REACT_APP_KIOSK_MASTER_KEY 환경 변수가 설정되지 않았습니다.
+                    </div>
+                )}
                 <input
                     type="password"
                     className="activation-input"
@@ -144,11 +200,18 @@ function KioskPage() {
                     value={activationCode}
                     onChange={(e) => setActivationCode(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleActivation()}
+                    disabled={!MASTER_KEY}
                 />
                 <button
                     className="kiosk-btn"
-                    style={{ fontSize: "1rem", padding: "10px 30px", background: "#333" }}
+                    style={{
+                        fontSize: "1rem",
+                        padding: "10px 30px",
+                        background: MASTER_KEY ? "#333" : "#666",
+                        cursor: MASTER_KEY ? "pointer" : "not-allowed"
+                    }}
                     onClick={handleActivation}
+                    disabled={!MASTER_KEY}
                 >
                     인증하기
                 </button>
