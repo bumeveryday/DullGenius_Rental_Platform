@@ -28,8 +28,7 @@ function Home() {
   // ==========================================
   // [이스터 에그] 로고 5번 클릭 시 관리자 페이지 이동
   // ==========================================
-  const clickTimeoutRef = useRef(null);
-  const clickCountRef = useRef(0);
+
 
 
 
