@@ -46,8 +46,7 @@ export const fetchGames = async () => {
       const copies = game.game_copies || [];
 
       // 1-1. 유효한 찜 찾기
-      let reservedCopy = null;
-      let isExpiredDibs = false;
+      // 1-1. 유효한 찜 찾기
 
       // RESERVED 상태인 카피들 중 만료 안 된 것 찾기
       // 만약 만료되었으면 해당 카피는 논리적으로 AVAILABLE 취급해야 함 (단, DB 업데이트는 별도)

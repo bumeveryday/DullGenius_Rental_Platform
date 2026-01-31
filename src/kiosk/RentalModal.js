@@ -7,8 +7,7 @@ import useKioskData from '../hooks/useKioskData'; // Import Hook
 import './Kiosk.css';
 
 // [Cached Data]
-let cachedUsers = null;
-let cachedGames = null;
+
 
 function RentalModal({ onClose }) {
     const { showToast } = useToast();

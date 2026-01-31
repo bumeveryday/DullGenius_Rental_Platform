@@ -38,7 +38,7 @@ const MyPage = () => {
   const userName = profile?.name || "로딩 중...";
   const studentId = profile?.student_id || user?.email?.split('@')[0] || "-";
   const userPhone = profile?.phone || "-";
-  const activityPoint = profile?.activity_point ?? 0;
+
 
   useEffect(() => {
     // 비로그인 시 리다이렉트

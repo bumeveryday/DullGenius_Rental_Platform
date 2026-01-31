@@ -31,22 +31,7 @@ function Home() {
   const clickTimeoutRef = useRef(null);
   const clickCountRef = useRef(0);
 
-  const handleSecretClick = () => {
-    clickCountRef.current += 1;
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-    }
-    if (clickCountRef.current >= 5) {
-      clickCountRef.current = 0;
-      if (window.confirm("관리자 페이지로 이동하시겠습니까?")) {
-        navigate("/admin-secret");
-      }
-    } else {
-      clickTimeoutRef.current = setTimeout(() => {
-        clickCountRef.current = 0;
-      }, 1000);
-    }
-  };
+
 
   // ==========================================
   // 1. 상태 관리 (State Management)

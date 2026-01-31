@@ -55,7 +55,7 @@ function ReturnModal({ onClose }) {
             setLoading(false);
         };
         loadRentals();
-    }, []);
+    }, [showToast]);
 
     const toggleUser = (userId) => {
         setExpandedUserId(expandedUserId === userId ? null : userId);
