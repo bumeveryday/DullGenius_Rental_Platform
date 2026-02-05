@@ -38,6 +38,8 @@ export function filterUsers(users, searchTerm) {
  * 게임 배열을 검색어로 필터링
  * - 게임 이름의 일반 매칭
  * - 게임 이름의 초성 매칭
+ * - [ALPHA]: 영문으로 시작하는 게임 필터링
+ * - [NUMERIC]: 숫자로 시작하는 게임 필터링
  * 
  * @param {Array} games - 게임 배열
  * @param {string} searchTerm - 검색어
@@ -48,6 +50,22 @@ export function filterGames(games, searchTerm) {
 
     const term = searchTerm.toLowerCase();
 
+    // 특수 카테고리 키워드 처리
+    if (term === '[alpha]') {
+        return games.filter(game => {
+            const firstChar = game.name.charAt(0);
+            return /[a-zA-Z]/.test(firstChar);
+        });
+    }
+
+    if (term === '[numeric]') {
+        return games.filter(game => {
+            const firstChar = game.name.charAt(0);
+            return /[0-9]/.test(firstChar);
+        });
+    }
+
+    // 일반 검색
     return games.filter(game => {
         // 1. 게임 이름의 일반 매칭
         const nameMatch = game.name.toLowerCase().includes(term);

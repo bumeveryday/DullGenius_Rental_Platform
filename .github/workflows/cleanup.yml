@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Call Supabase Cleanup RPC
         run: |
-          curl -X POST '${{ secrets.SUPABASE_URL }}/rest/v1/rpc/cleanup_expired_dibs' \
-          -H "ApiKey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+          curl -X POST '${{ secrets.REACT_APP_SUPABASE_URL }}/rest/v1/rpc/cleanup_expired_dibs' \
+          -H "ApiKey: ${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}" \
           -H "Content-Type: application/json"

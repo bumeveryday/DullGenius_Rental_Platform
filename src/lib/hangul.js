@@ -33,6 +33,9 @@ export function getChoseong(text) {
         } else if (CHOSEONG_LIST.includes(text[i])) {
             // 이미 초성인 경우 그대로 추가
             result += text[i];
+        } else if (text[i] === ' ') {
+            // 띄어쓰기는 무시 (검색 편의성 향상)
+            continue;
         } else {
             // 한글이 아닌 경우 그대로 추가 (영문, 숫자 등)
             result += text[i];

@@ -65,12 +65,12 @@
 
 .char-tab {
     flex: 1;
-    padding: 10px;
+    padding: 14px 12px;
     background: #2a2a2a;
     border: 1px solid #444;
     border-radius: 8px;
-    color: #999;
-    font-size: 1rem;
+    color: #ccc;
+    font-size: 1.1rem;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -93,11 +93,15 @@
 
 .char-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(8, 1fr);
     gap: 8px;
     margin-bottom: 15px;
-    max-height: 200px;
-    overflow-y: auto;
+}
+
+/* 통합 뷰: 초성 14개 + 카테고리 2개 = 16개 버튼 */
+.char-grid.unified {
+    grid-template-columns: repeat(8, 1fr);
+    max-height: none;
 }
 
 .char-btn {

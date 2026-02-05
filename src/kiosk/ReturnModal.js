@@ -82,6 +82,7 @@ function ReturnModal({ onClose }) {
         setProcessing(true);
         let successCount = 0;
         let failCount = 0;
+        const failedItems = []; // 실패한 항목 추적
 
         // Process each selected rental
         for (const rentalId of selectedRentals) {
@@ -103,15 +104,24 @@ function ReturnModal({ onClose }) {
                     successCount++;
                 } else {
                     failCount++;
+                    failedItems.push({
+                        name: targetRental.game_copies.game.name,
+                        reason: result.message
+                    });
                 }
             } catch (e) {
                 console.error(e);
                 failCount++;
+                failedItems.push({
+                    name: targetRental.game_copies.game.name,
+                    reason: "네트워크 오류"
+                });
             }
         }
 
         setProcessing(false);
 
+        // 피드백 개선
         if (successCount > 0) {
             showToast(`✅ ${successCount}개 반납 완료! 각 건당 100P 지급되었습니다.`, { type: "success" });
 
@@ -132,7 +142,8 @@ function ReturnModal({ onClose }) {
         }
 
         if (failCount > 0) {
-            showToast(`❌ ${failCount}개 반납 실패`, { type: "error" });
+            const failedNames = failedItems.map(item => `${item.name} (${item.reason})`).join(', ');
+            showToast(`❌ ${failCount}개 반납 실패: ${failedNames}`, { type: "error", duration: 8000 });
         }
     };
 
@@ -153,10 +164,16 @@ function ReturnModal({ onClose }) {
 
                 <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
                     {loading ? (
-                        <div style={{ textAlign: "center", padding: "50px" }}>로딩 중...</div>
+                        <div className="skeleton-container">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="skeleton-item" />
+                            ))}
+                        </div>
                     ) : userRentals.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: "50px", color: "#888" }}>
-                            현재 대여 중인 게임이 없습니다.
+                        <div className="empty-state">
+                            <div className="empty-state-icon">📦</div>
+                            <div className="empty-state-title">현재 대여 중인 게임이 없습니다</div>
+                            <div className="empty-state-subtitle">게임을 대여하고 반납해보세요!</div>
                         </div>
                     ) : (
                         userRentals.map(ug => (

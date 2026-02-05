@@ -52,12 +52,19 @@ function RentalModal({ onClose }) {
         }
 
         // Proceed to Rental
-        const result = await kioskRental(selectedGame.id, selectedUser.id);
-        if (result.success) {
-            showToast("대여 성공! (" + selectedGame.name + ")", { type: "success" });
-            onClose();
-        } else {
-            showToast("대여 실패: " + result.message, { type: "error" });
+        try {
+            const result = await kioskRental(selectedGame.id, selectedUser.id);
+            if (result.success) {
+                showToast(`✅ 대여 성공! (${selectedGame.name})`, { type: "success" });
+                onClose();
+            } else {
+                // 구체적인 에러 메시지
+                const errorMsg = result.message || "대여 처리 중 오류가 발생했습니다.";
+                showToast(`대여 실패: ${errorMsg}`, { type: "error", duration: 5000 });
+            }
+        } catch (error) {
+            console.error("대여 실패:", error);
+            showToast("❌ 네트워크 오류가 발생했습니다. 다시 시도해주세요.", { type: "error" });
         }
     };
 

@@ -50,25 +50,47 @@ function MatchModal({ onClose }) {
     };
 
     const handleRegister = async () => {
-        if (!selectedGame || selectedPlayers.length < 1) return;
+        // 1. 기본 입력 검증
+        if (!selectedGame) {
+            showToast("게임을 선택해주세요.", { type: "error" });
+            return;
+        }
+
+        if (selectedPlayers.length < 1) {
+            showToast("최소 1명 이상의 플레이어가 필요합니다.", { type: "error" });
+            return;
+        }
+
+        // 2. 중복 참여자 체크
+        const playerIds = selectedPlayers.map(u => u.id);
+        const uniqueIds = new Set(playerIds);
+        if (uniqueIds.size !== playerIds.length) {
+            showToast("중복된 참여자가 있습니다. 다시 확인해주세요.", { type: "error" });
+            return;
+        }
+
+        // 3. 승자가 참여자 목록에 있는지 확인
+        if (selectedWinner && !selectedPlayers.find(p => p.id === selectedWinner.id)) {
+            showToast("승자는 참여자 중 한 명이어야 합니다.", { type: "error" });
+            return;
+        }
 
         setProcessing(true);
         try {
-            const playerIds = selectedPlayers.map(u => u.id);
             const winnerId = selectedWinner ? selectedWinner.id : null;
-
             const result = await registerMatch(selectedGame.id, playerIds, winnerId);
 
             if (result.success) {
-                const winnerName = selectedWinner ? selectedWinner.name : '없음';
-                showToast("매치 등록 완료! 승자: " + winnerName, { type: "success" });
+                const winnerName = selectedWinner ? selectedWinner.name : '무승부';
+                const pointInfo = selectedWinner ? "+200P" : "각 +50P";
+                showToast(`✅ 매치 등록 완료! 승자: ${winnerName} (${pointInfo})`, { type: "success" });
                 onClose();
             } else {
                 showToast("실패: " + result.message, { type: "error" });
             }
         } catch (e) {
             console.error(e);
-            showToast("매치 등록 중 오류가 발생했습니다.", { type: "error" });
+            showToast("매치 등록 중 오류가 발생했습니다. 다시 시도해주세요.", { type: "error" });
         } finally {
             setProcessing(false);
         }

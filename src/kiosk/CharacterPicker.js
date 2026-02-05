@@ -1,23 +1,33 @@
 // src/kiosk/CharacterPicker.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './CharacterPicker.css';
 
 // 한글 초성
 const CHOSEONG = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 
-// 영문/숫자 (자주 쓰이는 것만)
-const ALPHANUMERIC = [
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', // 숫자
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', // 영문 자주 쓰임
-    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+// 영문/숫자 카테고리 (특수 키워드)
+const CATEGORIES = [
+    { label: '영문', value: '[ALPHA]' },
+    { label: '숫자', value: '[NUMERIC]' }
 ];
 
 function CharacterPicker({ value, onChange }) {
-    const [mode, setMode] = useState('korean'); // 'korean', 'alphanumeric'
     const [isExpanded, setIsExpanded] = useState(true); // 키보드 펼침/접힘 상태
+
+    // 검색어가 2글자 이상이면 키보드 자동 숨김
+    useEffect(() => {
+        if (value.length >= 2) {
+            setIsExpanded(false);
+        }
+    }, [value]);
 
     const handleCharClick = (char) => {
         onChange(value + char);
+    };
+
+    const handleCategoryClick = (categoryValue) => {
+        // 카테고리 키워드로 검색어 설정
+        onChange(categoryValue);
     };
 
     const handleBackspace = () => {
@@ -26,22 +36,6 @@ function CharacterPicker({ value, onChange }) {
 
     const handleClear = () => {
         onChange('');
-    };
-
-    const renderButtons = () => {
-        let chars = [];
-        if (mode === 'korean') chars = CHOSEONG;
-        else if (mode === 'alphanumeric') chars = ALPHANUMERIC;
-
-        return chars.map(char => (
-            <button
-                key={char}
-                className="char-btn"
-                onClick={() => handleCharClick(char)}
-            >
-                {char}
-            </button>
-        ));
     };
 
     return (
@@ -57,25 +51,29 @@ function CharacterPicker({ value, onChange }) {
             {/* Keyboard Content */}
             {isExpanded && (
                 <>
-                    {/* Mode Tabs */}
-                    <div className="char-tabs">
-                        <button
-                            className={`char-tab ${mode === 'korean' ? 'active' : ''}`}
-                            onClick={() => setMode('korean')}
-                        >
-                            한글 초성
-                        </button>
-                        <button
-                            className={`char-tab ${mode === 'alphanumeric' ? 'active' : ''}`}
-                            onClick={() => setMode('alphanumeric')}
-                        >
-                            영문/숫자
-                        </button>
-                    </div>
+                    {/* All Buttons in One View */}
+                    <div className="char-grid unified">
+                        {/* 초성 버튼 */}
+                        {CHOSEONG.map(char => (
+                            <button
+                                key={char}
+                                className="char-btn"
+                                onClick={() => handleCharClick(char)}
+                            >
+                                {char}
+                            </button>
+                        ))}
 
-                    {/* Character Buttons */}
-                    <div className="char-grid">
-                        {renderButtons()}
+                        {/* 카테고리 버튼 */}
+                        {CATEGORIES.map(category => (
+                            <button
+                                key={category.value}
+                                className="char-btn category-btn"
+                                onClick={() => handleCategoryClick(category.value)}
+                            >
+                                {category.label}
+                            </button>
+                        ))}
                     </div>
 
                     {/* Control Buttons */}
@@ -94,3 +92,4 @@ function CharacterPicker({ value, onChange }) {
 }
 
 export default CharacterPicker;
+
