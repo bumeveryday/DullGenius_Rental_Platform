@@ -328,7 +328,7 @@ function DashboardTab({ games, loading, onReload }) {
     try {
       const res = await fetchGameLogs(game.id);
 
-      console.log("받아온 로그 데이터:", res);
+
       if (res.status === "success") {
         setGameLogs(res.logs);
       } else {

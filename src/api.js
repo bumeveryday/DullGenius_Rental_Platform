@@ -337,7 +337,7 @@ export const searchNaver = async (query) => {
     }
 
     const data = await response.json();
-    console.log("검색 결과:", data);
+
     return data;
   } catch (e) {
     console.error("검색 중 오류:", e);

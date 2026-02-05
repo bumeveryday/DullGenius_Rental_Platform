@@ -109,7 +109,7 @@ function KioskPage() {
                 if (isIdleRef.current) {
                     window.location.reload();
                 } else {
-                    console.log("Skipping reload due to user activity");
+
                 }
             }
         }, 60000);
@@ -126,7 +126,7 @@ function KioskPage() {
                     wakeLock = await navigator.wakeLock.request('screen');
                 }
             } catch (err) {
-                console.log(err);
+
             }
         };
         requestWakeLock();
