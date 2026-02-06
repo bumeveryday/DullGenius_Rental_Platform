@@ -4,8 +4,8 @@ const { createClient } = require('@supabase/supabase-js');
 // const fetch = require('node-fetch');
 
 // 1. Supabase Client 설정
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
 const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
 if (!supabaseUrl || !supabaseKey) {
