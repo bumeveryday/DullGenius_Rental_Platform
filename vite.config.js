@@ -6,6 +6,7 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '')
     return {
         plugins: [react()],
+        envPrefix: ['VITE_', 'REACT_APP_'],
         server: {
             port: 3000,
             proxy: {
