@@ -1,0 +1,90 @@
+[
+  {
+    "log_id": "47921747-50a1-4be9-b775-3d19d8739f7a",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:415, RentID:1904186b-bb81-4f24-b2c1-f4ebd0cd6f37",
+    "created_at": "2026-01-29T19:08:16.248346+00:00"
+  },
+  {
+    "log_id": "faecc478-65cd-41c0-b456-06407e0b2a45",
+    "game_id": 2,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:2, RentID:bea41845-2a66-42b2-a7e0-89e170818113",
+    "created_at": "2026-01-29T19:08:20.09869+00:00"
+  },
+  {
+    "log_id": "07e616c0-7895-4909-bd4f-1cc6492f6f83",
+    "game_id": 14,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:14, RentID:395beea5-e788-4af6-b345-e8d5a727224a",
+    "created_at": "2026-01-29T19:08:25.632319+00:00"
+  },
+  {
+    "log_id": "ae34b6f1-2ed8-4bf0-9100-cab68a460d82",
+    "game_id": 14,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:14, RentID:0cc43fa8-6abc-494a-818b-3f6afb97a30c",
+    "created_at": "2026-01-29T19:24:52.313774+00:00"
+  },
+  {
+    "log_id": "ef734b43-4d15-49fb-a111-4b13c4e77cd9",
+    "game_id": 12,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:12, RentID:1ab5a50d-1f2c-4f2c-9e24-a8221fc51267",
+    "created_at": "2026-01-29T19:24:56.559098+00:00"
+  },
+  {
+    "log_id": "e8f57d1b-ee95-4253-804c-cf28fd9d3980",
+    "game_id": 8,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:8, RentID:137b7ef6-2fae-4c09-8879-bdadc4800a10",
+    "created_at": "2026-01-30T07:25:23.619195+00:00"
+  },
+  {
+    "log_id": "72e13574-415d-4ba5-a351-602a3ba778f4",
+    "game_id": 8,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN Direct, RentID:a111f443-3165-43e2-b8e4-f861e94b658d, Name:김범근",
+    "created_at": "2026-01-30T07:26:24.710288+00:00"
+  },
+  {
+    "log_id": "23798d93-e5f7-4e83-a7e6-eef95d8d001f",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:415, RentID:b2202dcc-2753-42c8-a4d1-b99b5a90e7c5",
+    "created_at": "2026-01-31T02:45:24.434788+00:00"
+  },
+  {
+    "log_id": "031157a4-c338-4971-9bdd-0b27f4d8169f",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:415, RentID:55f0b8fb-3f2d-4235-b014-ee0df9a124bc",
+    "created_at": "2026-02-06T13:47:12.071338+00:00"
+  },
+  {
+    "log_id": "3a3a901b-e147-4550-8ea6-9827337fe9db",
+    "game_id": 24,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:24, RentID:0c44c672-eaa4-4d20-81fc-719da4222b43",
+    "created_at": "2026-02-06T13:47:16.772071+00:00"
+  },
+  {
+    "log_id": "9d9c0a66-6cd7-46a9-b8fe-1986cd874436",
+    "game_id": 27,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:440, RentID:f185dbac-d785-4195-8d39-962aed4a8353",
+    "created_at": "2026-02-06T13:47:20.600974+00:00"
+  }
+]

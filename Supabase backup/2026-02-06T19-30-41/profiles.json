@@ -1,0 +1,28 @@
+[
+  {
+    "id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "student_id": "22200084",
+    "name": "김범근",
+    "phone": "",
+    "is_paid": false,
+    "penalty": 0,
+    "joined_semester": "2025-1",
+    "activity_point": 0,
+    "created_at": "2026-01-28T09:05:44.83125+00:00",
+    "updated_at": "2026-01-28T09:05:44.83125+00:00",
+    "current_points": 950
+  },
+  {
+    "id": "b7b48afe-43f1-42b4-84dc-114e8b94cbd5",
+    "student_id": "22400044",
+    "name": "권준서",
+    "phone": "01033694995",
+    "is_paid": false,
+    "penalty": 0,
+    "joined_semester": "2025-1",
+    "activity_point": 0,
+    "created_at": "2026-01-31T11:08:29.387658+00:00",
+    "updated_at": "2026-01-31T11:08:29.387658+00:00",
+    "current_points": 50
+  }
+]

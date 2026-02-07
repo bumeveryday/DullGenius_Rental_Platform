@@ -273,7 +273,7 @@ function Home() {
 
               // 2. [DEV] 이스터에그: 5번 연속 클릭 시 관리자 페이지 이동
               // 2. [DEV] 이스터에그: 5번 연속 클릭 시 관리자 페이지 이동
-              // if (process.env.NODE_ENV === 'development') { // [CHANGED] 배포 환경에서도 허용
+              // if (import.meta.env.DEV) { // [CHANGED] 배포 환경에서도 허용
               const now = Date.now();
               const lastClick = window.lastLogoClickTime || 0;
 

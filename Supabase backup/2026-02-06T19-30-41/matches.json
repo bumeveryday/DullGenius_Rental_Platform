@@ -1,0 +1,23 @@
+[
+  {
+    "id": "bf3513d3-d290-4f75-892e-8aea0626e56c",
+    "game_id": 11,
+    "played_at": "2026-01-31T14:17:49.973216+00:00",
+    "players": [
+      "ee24c496-ac06-40bb-ac09-9aebb4277526"
+    ],
+    "winner_id": null,
+    "verified_at": "2026-01-31T14:17:49.973216+00:00"
+  },
+  {
+    "id": "cb0f7594-9192-4bbf-aa91-cc340e7ec0e4",
+    "game_id": 2,
+    "played_at": "2026-02-07T00:20:23.621832+00:00",
+    "players": [
+      "ee24c496-ac06-40bb-ac09-9aebb4277526",
+      "b7b48afe-43f1-42b4-84dc-114e8b94cbd5"
+    ],
+    "winner_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "verified_at": "2026-02-07T00:20:23.621832+00:00"
+  }
+]

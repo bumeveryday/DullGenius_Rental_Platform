@@ -1,0 +1,32 @@
+[
+  {
+    "key": "recommendations",
+    "value": [
+      {
+        "key": "default_1",
+        "color": "#f1c40f",
+        "label": "#입문\\n추천",
+        "value": "#입문"
+      },
+      {
+        "key": "default_2",
+        "color": "#e67e22",
+        "label": "#파티\\n게임",
+        "value": "#파티"
+      },
+      {
+        "key": "default_3",
+        "color": "#e74c3c",
+        "label": "#전략\\n게임",
+        "value": "#전략"
+      },
+      {
+        "key": "default_4",
+        "color": "#9b59b6",
+        "label": "#2인\\n추천",
+        "value": "#2인"
+      }
+    ],
+    "updated_at": "2026-01-29T17:01:05.329369+00:00"
+  }
+]

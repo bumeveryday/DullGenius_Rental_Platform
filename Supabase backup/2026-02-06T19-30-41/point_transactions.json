@@ -1,0 +1,82 @@
+[
+  {
+    "id": "02237400-3379-4692-8168-e23262ac9682",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 3)",
+    "created_at": "2026-01-30T04:21:18.277763+00:00"
+  },
+  {
+    "id": "6b54e00b-7971-49cc-b088-4ce0fe7a8a97",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 2)",
+    "created_at": "2026-01-30T04:21:20.656422+00:00"
+  },
+  {
+    "id": "f02cdc6a-0ee1-472e-9305-5b4474cc8997",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 14)",
+    "created_at": "2026-01-30T04:21:22.69391+00:00"
+  },
+  {
+    "id": "7864f4d9-2fa4-4467-9cd8-34499e38adaf",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 14)",
+    "created_at": "2026-01-30T04:26:20.744717+00:00"
+  },
+  {
+    "id": "2105a751-2a6f-4d5b-b3bb-6d6152bc0ae5",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 12)",
+    "created_at": "2026-01-30T04:26:20.7925+00:00"
+  },
+  {
+    "id": "f3941f92-3891-4fa0-a0f6-0e71f224617e",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 8)",
+    "created_at": "2026-01-30T16:30:04.784828+00:00"
+  },
+  {
+    "id": "22848db4-8c5f-43a2-a645-281b1c1d7271",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 3)",
+    "created_at": "2026-01-31T13:26:30.784991+00:00"
+  },
+  {
+    "id": "5b02be7a-8da5-43d8-b6cf-a4a776f1878a",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 50,
+    "type": "MATCH_REWARD",
+    "reason": "대전 참여 (게임 11)",
+    "created_at": "2026-01-31T14:17:49.973216+00:00"
+  },
+  {
+    "id": "f0c67dc8-89e9-40df-906d-4872ee8f6e73",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 200,
+    "type": "MATCH_REWARD",
+    "reason": "대전 승리 (게임 2)",
+    "created_at": "2026-02-07T00:20:23.621832+00:00"
+  },
+  {
+    "id": "17dee86e-1a57-4bc3-b93a-7bb6bf8310ab",
+    "user_id": "b7b48afe-43f1-42b4-84dc-114e8b94cbd5",
+    "amount": 50,
+    "type": "MATCH_REWARD",
+    "reason": "대전 참여 (게임 2)",
+    "created_at": "2026-02-07T00:20:23.621832+00:00"
+  }
+]
