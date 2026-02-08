@@ -201,34 +201,35 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 4. [Admin] 관리자 전용 반납
+-- 4. [Admin] 관리자 전용 반납 (수정: Orphan 처리 강화)
 CREATE OR REPLACE FUNCTION public.admin_return_copy(
     p_game_id integer
 ) RETURNS jsonb AS $$
 DECLARE
     v_copy_id integer;
 BEGIN
-    -- 해당 게임 중 '대여중(RENTED)' 이거나 '분실' 등인 카피 하나 찾기 (우선순위: RENTED)
+    -- 해당 게임 중 'AVAILABLE'이 아닌 카피(대여중, 찜, 분실 등) 하나 찾기
+    -- (우선순위 없음, 아무거나 하나 잡아서 반납 처리)
     SELECT copy_id INTO v_copy_id
     FROM public.game_copies
     WHERE game_id = p_game_id AND status != 'AVAILABLE'
     LIMIT 1;
     
     IF v_copy_id IS NULL THEN
-        RETURN jsonb_build_object('success', false, 'message', '반납할 재고가 없습니다(이미 모두 Available).');
+        RETURN jsonb_build_object('success', false, 'message', '반납할 재고가 없습니다(모두 대여 가능 상태).');
     END IF;
 
-    -- 1. 상태 변경
+    -- 1. 상태 변경 (AVAILABLE로 초기화)
     UPDATE public.game_copies SET status = 'AVAILABLE' WHERE copy_id = v_copy_id;
 
-    -- 2. 렌탈 종료 (가장 최근 것)
+    -- 2. 렌탈 종료 (가장 최근 것, 만약 있다면)
     UPDATE public.rentals
     SET returned_at = now()
     WHERE copy_id = v_copy_id AND returned_at IS NULL;
 
     -- 3. 로그
     INSERT INTO public.logs (game_id, action_type, details)
-    VALUES (p_game_id, 'RETURN', 'ADMIN Return');
+    VALUES (p_game_id, 'RETURN', 'ADMIN Return (Fixed)');
 
     RETURN jsonb_build_object('success', true);
 END;

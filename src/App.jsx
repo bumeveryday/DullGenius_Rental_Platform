@@ -406,9 +406,15 @@ function Home() {
                 ) : (
                   <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc" }}>이미지 없음</div>
                 )}
-                {game.status !== "대여가능" && (
-                  <div style={{ position: "absolute", top: "10px", right: "10px", background: "rgba(231, 76, 60, 0.9)", color: "white", padding: "5px 10px", borderRadius: "15px", fontSize: "0.8em", fontWeight: "bold" }}>
+                {(game.status !== "대여가능" || (game.available_count > 1)) && (
+                  <div style={{
+                    position: "absolute", top: "10px", right: "10px",
+                    background: game.status === "대여가능" ? "rgba(46, 204, 113, 0.9)" : "rgba(231, 76, 60, 0.9)",
+                    color: "white", padding: "4px 10px", borderRadius: "12px", fontSize: "0.8em", fontWeight: "bold",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                  }}>
                     {game.status}
+                    {game.status === "대여가능" && game.available_count > 0 && ` (${game.available_count})`}
                   </div>
                 )}
               </div>

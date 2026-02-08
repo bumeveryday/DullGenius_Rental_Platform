@@ -2,127 +2,93 @@
 import { supabase } from './lib/supabaseClient';
 import { statusToKorean, koreanToStatus } from './constants'; // [NEW] STATUS enum 헬퍼 함수
 
-// 1. 전체 게임 목록 가져오기
+// 1. 전체 게임 목록 가져오기 (V2 - game_id 기반)
+// 1. 전체 게임 목록 가져오기 (V2 - game_id 기반 + 실시간 재고 계산)
 export const fetchGames = async () => {
   try {
-
-    // Supabase는 조인된 데이터를 배열/객체로 반환함.
-    // game_copies의 status를 가져와서 최상위 status로 매핑
-    // 또한 대여중인 경우 대여자 정보(rentals -> profiles)를 가져옴
+    // [V2] games + rentals + game_copies(재고 확인용)
     const { data, error } = await supabase
       .from('games')
       .select(`
-        id, name, category, image, naver_id, bgg_id, difficulty, genre, players, tags,
-        total_views, dibs_count, review_count, avg_rating,
-        game_copies!inner (
-          status,
-          copy_id,
-          rentals (
-            rental_id,
-            user_id,
-            renter_name,
-            returned_at,
-            profiles (name)
-          )
-        )
-      `)
+  *,
+  game_copies (
+    copy_id,
+    status
+  ),
+  rentals(
+    rental_id,
+    user_id,
+    renter_name,
+    type,
+    returned_at,
+    due_date,
+    borrowed_at,
+    profiles(name)
+  )
+    `)
       .order('name');
 
     if (error) throw error;
 
-    // Supabase는 조인된 데이터를 배열/객체로 반환함.
-    // game_copies의 status를 가져와서 최상위 status로 매핑
-    // (지금은 카피가 여러 개여도 하나라도 AVAILABLE이면 대여가능인 로직이 필요하지만,
-    //  단순화를 위해 첫 번째 카피의 상태를 사용하거나, 집계 로직이 필요함.
-    //  기존 마이그레이션이 1:1에 가깝게 되어있다면 단순 매핑)
-
     return data.map(game => {
-      // game_copies는 배열.
-      // 1. 상태 결정 우선순위:
-      //    (1) 유효한 'RESERVED' (찜)이 있는가? -> 있으면 'RESERVED' (그래야 관리자가 수령 처리 가능)
-      //    (2) 'AVAILABLE'이 있는가? -> 'AVAILABLE'
-      //    (3) 그 외 (RENTED 등)
+      // 1. 실시간 재고 계산 (AVAILABLE 상태인 카피 수)
+      const realAvailableCount = (game.game_copies || []).filter(c => c.status === 'AVAILABLE').length;
 
-      const copies = game.game_copies || [];
+      // 2. 활성 rental 필터링 (returned_at이 NULL인 것만)
+      const activeRentals = (game.rentals || []).filter(r => !r.returned_at);
 
-      // 1-1. 유효한 찜 찾기
-      // 1-1. 유효한 찜 찾기
-
-      // RESERVED 상태인 카피들 중 만료 안 된 것 찾기
-      // 만약 만료되었으면 해당 카피는 논리적으로 AVAILABLE 취급해야 함 (단, DB 업데이트는 별도)
-      // 여기서는 '보여지는 상태' 결정용
-      const validReserved = copies.find(c => {
-        if (c.status !== 'RESERVED') return false;
-        // 만료 체크
-        if (c.rentals) {
-          const active = c.rentals.find(r => !r.returned_at);
-          if (active && active.due_date) {
-            if (new Date() > new Date(active.due_date)) return false; // 만료됨
-          }
-        }
-        return true;
-      });
-
-      // 1-2. 대여 가능 카피 찾기
-      // 상태가 AVAILABLE 이거나, RESERVED지만 만료된 경우(아직 DB업뎃 안된)
-      const hasAvailable = copies.some(c => {
-        if (c.status === 'AVAILABLE') return true;
-        if (c.status === 'RESERVED') {
-          // 만료 체크
-          const active = c.rentals?.find(r => !r.returned_at);
-          if (active && active.due_date && new Date() > new Date(active.due_date)) {
-            return true; // 만료된 찜은 대여 가능으로 간주
-          }
-        }
-        return false;
-      });
-
-      let copyStatus = 'MAINTENANCE';
-      let targetCopy = null;
-
-      if (validReserved) {
-        copyStatus = 'RESERVED';
-        targetCopy = validReserved;
-      } else if (hasAvailable) {
-        copyStatus = 'AVAILABLE';
-        // targetCopy는 굳이 필요 없지만 available 중 하나
-        targetCopy = copies.find(c => c.status === 'AVAILABLE');
-      } else {
-        // 나머지는 대여중이거나 수리중
-        // 첫번째 카피 상태를 따르거나 RENTED로 통일
-        const rentedCopy = copies.find(c => c.status === 'RENTED');
-        if (rentedCopy) {
-          copyStatus = 'RENTED';
-          targetCopy = rentedCopy;
-        } else {
-          copyStatus = copies[0]?.status || 'MAINTENANCE';
-          targetCopy = copies[0];
-        }
-      }
-
-      // 2. 대여자 정보 추출 (targetCopy 기준)
-      let renterName = null;
+      // 3. 상태 결정
+      let status = '대여가능';
+      let renter = null;
       let renterId = null;
+      let dueDate = null;
 
-      if ((copyStatus === 'RENTED' || copyStatus === 'RESERVED') && targetCopy?.rentals) {
-        const activeRental = targetCopy.rentals.find(r => !r.returned_at);
-        if (activeRental) {
-          renterName = activeRental.renter_name || activeRental.profiles?.name || null;
-          renterId = activeRental.user_id || null;
+      // 우선순위: DIBS > RENT
+      const activeDibs = activeRentals.filter(r => r.type === 'DIBS');
+      const activeRents = activeRentals.filter(r => r.type === 'RENT');
+
+      if (activeDibs.length > 0) {
+        // 찜이 있으면 일단 '예약됨' 표시 (재고가 있어도 찜 우선 노출 정책)
+        status = '예약됨';
+        const latestDibs = activeDibs.sort((a, b) =>
+          new Date(b.borrowed_at) - new Date(a.borrowed_at)
+        )[0];
+        renter = latestDibs.renter_name || latestDibs.profiles?.name;
+        renterId = latestDibs.user_id;
+        dueDate = latestDibs.due_date;
+      } else if (activeRents.length > 0) {
+        // 대여 중 (재고가 남아있을 수도 있음)
+        if (realAvailableCount > 0) {
+          status = '대여가능'; // 재고가 남았으면 대여 가능으로 표시 (혼합 상태)
+          // 단, UI에서는 '대여가능 (N)'으로 표시될 것임
+        } else {
+          status = '이용 중'; // 재고 0이면 이용 중
         }
+
+        const renters = activeRents.map(r => r.renter_name || r.profiles?.name);
+        renter = renters.join(', ');
+        renterId = activeRents[0].user_id;
+        dueDate = activeRents.sort((a, b) =>
+          new Date(a.due_date) - new Date(b.due_date)
+        )[0].due_date;
+      } else if (realAvailableCount <= 0) {
+        status = '대여 중'; // 렌탈 기록은 없는데 재고도 없는 경우 (오류 상황 or 분실?)
       }
 
       return {
         ...game,
-        status: statusToKorean(copyStatus),
-        renter: renterName,
-        renterId: renterId
+        status,
+        available_count: realAvailableCount, // [OVERWRITE] DB 컬럼 대신 계산된 값 사용
+        renter,
+        renterId,
+        due_date: dueDate,
+        active_rental_count: activeRentals.length
       };
     });
 
-  } catch (error) {
-    console.error("게임 목록 불러오기 실패:", error);
-    return { error: true, message: error.message || "네트워크 오류" }; // [개선] 에러 객체 반환
+  } catch (e) {
+    console.error("fetchGames 실패:", e);
+    throw e;
   }
 };
 
@@ -137,9 +103,9 @@ export const rentGame = async (gameId, userId) => {
   return data;
 };
 
+// 5. 찜하기 (V2)
 export const dibsGame = async (gameId, userId) => {
-  // [New] 찜하기 (30분)
-  const { data, error } = await supabase.rpc('dibs_any_copy', {
+  const { data, error } = await supabase.rpc('dibs_game', {
     p_game_id: gameId,
     p_user_id: userId
   });
@@ -173,7 +139,7 @@ export const fetchReviews = async (gameId) => {
 
   for (const review of data) {
     // 키 생성 (유니크 조건)
-    const key = `${review.game_id}-${review.author_name || review.user_name}-${review.content}`;
+    const key = `${review.game_id} -${review.author_name || review.user_name} -${review.content} `;
     if (!seen.has(key)) {
       seen.add(key);
       uniqueReviews.push(review);
@@ -323,9 +289,9 @@ export const searchNaver = async (query) => {
     // 개발 환경(npm start): setupProxy.js가 가로채는 '/v1' 경로 사용
     // 배포 환경(Netlify): Serverless Function 경로 사용
     if (import.meta.env.DEV) {
-      url = `/v1/search/shop.json?query=${encodeURIComponent(query)}&display=10`;
+      url = `/ v1 / search / shop.json ? query = ${encodeURIComponent(query)}& display=10`;
     } else {
-      url = `/.netlify/functions/naver-proxy?query=${encodeURIComponent(query)}`;
+      url = `/.netlify / functions / naver - proxy ? query = ${encodeURIComponent(query)} `;
     }
 
     const response = await fetch(url);
@@ -333,7 +299,7 @@ export const searchNaver = async (query) => {
     if (!response.ok) {
       const errText = await response.text();
       console.error("Naver API Error:", errText);
-      throw new Error(`API 호출 실패 (${response.status})`);
+      throw new Error(`API 호출 실패(${response.status})`);
     }
 
     const data = await response.json();
@@ -455,13 +421,14 @@ export const editGame = async (gameData) => {
 };
 
 // [Updated] 트랜잭션 RPC를 사용하는 안전한 관리자 상태 변경
+// 관리자: 게임 상태 변경 (V2 - game_id 기반)
 export const adminUpdateGame = async (gameId, newStatus, renterName, userId) => {
   const statusKey = koreanToStatus(newStatus) || 'AVAILABLE';
 
   try {
     if (statusKey === 'RENTED') {
-      // [RPC] 관리자용 대여 (트랜잭션)
-      const { data, error } = await supabase.rpc('admin_rent_copy', {
+      // 관리자 대여
+      const { data, error } = await supabase.rpc('admin_rent_game', {
         p_game_id: gameId,
         p_renter_name: renterName || (userId ? "회원" : "관리자"),
         p_user_id: userId || null
@@ -471,28 +438,19 @@ export const adminUpdateGame = async (gameId, newStatus, renterName, userId) => 
       return { status: "success" };
 
     } else if (statusKey === 'AVAILABLE') {
-      // [RPC] 관리자용 반납 (트랜잭션)
-      // [FIX] 누구 것을 반납하는지 명시 (renterName, userId)
-      const { data, error } = await supabase.rpc('admin_return_copy', {
+      // 관리자 반납
+      const { data, error } = await supabase.rpc('admin_return_game', {
         p_game_id: gameId,
-        p_renter_name: renterName || null,
-        p_user_id: userId || null
+        p_renter_name: renterName,
+        p_user_id: userId
       });
       if (error) throw error;
       if (!data.success) throw new Error(data.message);
       return { status: "success" };
 
     } else {
-      // 그 외 상태(분실, 수리중 등)는 기존처럼 단순 상태 변경
-      // 1. 카피 ID 찾기
-      const { data: copies } = await supabase.from('game_copies').select('copy_id').eq('game_id', gameId).limit(1);
-      if (!copies || copies.length === 0) throw new Error("재고가 없습니다.");
-      const copyId = copies[0].copy_id;
-
-      // 2. 상태 변경
-      await supabase.from('game_copies').update({ status: statusKey }).eq('copy_id', copyId);
-
-      // 3. 로그
+      // 그 외 상태(분실, 수리중 등)는 available_count 조정
+      // 예: 분실 시 quantity 감소
       await supabase.from('logs').insert([{
         game_id: gameId,
         action_type: 'STATUS_CHANGE',
@@ -501,157 +459,209 @@ export const adminUpdateGame = async (gameId, newStatus, renterName, userId) => 
       return { status: "success" };
     }
   } catch (e) {
-    console.error("adminUpdateGame failed:", e);
-    return { status: "error", message: e.message };
+    console.error("adminUpdateGame 실패:", e);
+    throw e;
   }
 };
 
+// [Deleted] adminRentSpecificCopy (Legacy)
+// [Deleted] adminReturnSpecificCopy (Legacy)
+
+// [Admin] 특정 대여자 일괄 반납
+// [Admin] 특정 대여자 일괄 반납
 // [Admin] 특정 대여자 일괄 반납
 export const returnGamesByRenter = async (renterName) => {
-  // ... (Code omitted for brevity, keeping existing logic but maybe we should use admin_return_copy loop?)
-  // For now, keeping existing logic as it's complex to map exactly to single-copy return RPC without loop.
-  // But strictly speaking, we should use atomic operations if possible.
-  // Given user request for "Robustness", let's leave this as is for now because 'admin_return_copy' targets a game_id,
-  // and here we iterate rentals. We can call admin_return_copy inside loop?
-  // Let's keep it simple and safe for this turn.
-
-  // 1. 회원인 경우: user_id로 조회
-  const { data: users } = await supabase.from('profiles').select('id').eq('name', renterName);
-
   let activeRentals = [];
 
+  // 1. 회원 ID로 조회
+  const { data: users } = await supabase.from('profiles').select('id').eq('name', renterName);
+
   if (users && users.length > 0) {
-    // 회원 대여 조회
     const userId = users[0].id;
     const { data } = await supabase
       .from('rentals')
-      .select('game_copies(game_id), rental_id')
+      .select('rental_id, game_id, games(name)') // [FIX] game_copies 제거, games(name) 조인
       .eq('user_id', userId)
+      .eq('type', 'RENT')
       .is('returned_at', null);
 
-    // Flatten to list of game_ids
-    if (data) {
-      data.forEach(r => {
-        if (r.game_copies) activeRentals.push(r.game_copies.game_id);
-      });
-    }
+    if (data) activeRentals = [...data];
   }
 
-  // 2. 수기 대여 조회
+  // 2. 수기 대여 조회 (이름 일치, 비회원)
   const { data: manualRentals } = await supabase
     .from('rentals')
-    .select('game_copies(game_id), rental_id')
+    .select('rental_id, game_id, games(name)') // [FIX]
     .eq('renter_name', renterName)
+    .eq('type', 'RENT')
     .is('returned_at', null);
 
   if (manualRentals) {
-    manualRentals.forEach(r => {
-      if (r.game_copies) activeRentals.push(r.game_copies.game_id);
-    });
+    activeRentals = [...activeRentals, ...manualRentals];
   }
 
-  // 3. 일괄 반납 처리 (RPC 호출로 전환)
-  let successCount = 0;
-  if (activeRentals.length > 0) {
-    for (const gId of activeRentals) {
-      try {
-        await supabase.rpc('admin_return_copy', { p_game_id: gId });
-        successCount++;
-      } catch (e) {
-        console.error("일괄 반납 중 에러:", e);
-      }
-    }
-  }
-
-  return { status: "success", count: successCount };
-};
-
-// [Admin] 특정 대여자 일괄 찜 승인 (수령)
-// [Admin] 특정 대여자 일괄 찜 승인 (수령)
-export const approveDibsByRenter = async (renterName, userId) => {
-  let reservedCopies = [];
-
-  // 1. 회원 ID로 조회
-  if (userId) {
-    const { data, error } = await supabase
-      .from('rentals')
-      .select('copy_id, rental_id, game_name')
-      .eq('user_id', userId)
-      .eq('type', 'DIBS')
-      .is('returned_at', null);
-
-    if (error) console.error("회원 찜 조회 실패:", error);
-    if (data) reservedCopies = [...data];
-  }
-
-  // 2. 이름(renterName)으로 조회 (수기 예약 포함)
-  if (renterName) {
-    const { data: manualReserved, error } = await supabase
-      .from('rentals')
-      .select('copy_id, rental_id, game_name')
-      .eq('renter_name', renterName)
-      .eq('type', 'DIBS')
-      .is('returned_at', null);
-
-    if (error) console.error("이름 찜 조회 실패:", error);
-    if (manualReserved && manualReserved.length > 0) {
-      reservedCopies = [...reservedCopies, ...manualReserved];
-    }
-  }
-
-  // 3. 중복 제거 (rental_id 기준)
+  // 3. 중복 제거
   const uniqueRentals = [];
   const seenIds = new Set();
-
-  for (const r of reservedCopies) {
+  for (const r of activeRentals) {
     if (!seenIds.has(r.rental_id)) {
       seenIds.add(r.rental_id);
       uniqueRentals.push(r);
     }
   }
 
-  let finalCount = 0;
-
+  // 4. 일괄 반납 처리 (RPC 사용)
+  let successCount = 0;
   if (uniqueRentals.length > 0) {
-    const now = new Date().toISOString();
-    const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7일 후
-
-    for (const reserved of uniqueRentals) {
+    for (const rental of uniqueRentals) {
       try {
-        // (1) Update Copy Status
-        const { error: copyError } = await supabase
-          .from('game_copies')
-          .update({ status: 'RENTED' })
-          .eq('copy_id', reserved.copy_id);
-
-        if (copyError) {
-          console.error(`[Error] Copy Update Failed (ID: ${reserved.copy_id})`, copyError);
-          continue; // 실패 시 rental 업데이트 건너뜀
+        const gameId = rental.game_id; // [FIX] 직접 game_id 사용
+        if (!gameId) {
+          console.error("Game ID missing for return:", rental);
+          continue;
         }
 
-        // (2) Update Rental Type
-        const { error: rentalError } = await supabase
-          .from('rentals')
-          .update({
-            type: 'RENT',
-            borrowed_at: now,
-            due_date: dueDate
-          })
-          .eq('rental_id', reserved.rental_id);
+        // [RPC] 관리자 반납 (v2 함수는 game_id 기반)
+        const { data, error } = await supabase.rpc('admin_return_game', { p_game_id: gameId });
 
-        if (rentalError) {
-          console.error(`[Error] Rental Update Failed (ID: ${reserved.rental_id})`, rentalError);
-          // 롤백 로직이 복잡하므로 여기선 로그만 남김 (트랜잭션 미지원)
+        if (error) {
+          console.error(`[Error] Return RPC Failed(GameID: ${gameId})`, error);
+        } else if (!data.success) {
+          console.error(`[Fail] Return result false: ${data.message}`);
         } else {
-          finalCount++;
+          successCount++;
         }
       } catch (e) {
-        console.error(`[Exception] Processing rental ${reserved.rental_id}:`, e);
+        console.error("일괄 반납 중 에러:", e);
       }
     }
   }
+  return { status: "success", count: successCount };
+};
 
-  return { status: "success", count: finalCount };
+// [Admin] 특정 대여자 일괄 찜 승인 (수령) - 개선 버전
+// [Admin] 특정 대여자 일괄 찜 승인 (수령) - 개선 버전
+export const approveDibsByRenter = async (renterName, userId) => {
+  let reservedList = [];
+
+  // 1. 회원 ID로 조회
+  if (userId) {
+    const { data, error } = await supabase
+      .from('rentals')
+      .select('rental_id, game_id, games(name)') // [FIX] game_copies 제거
+      .eq('user_id', userId)
+      .eq('type', 'DIBS')
+      .is('returned_at', null);
+
+    if (error) console.error("회원 찜 조회 실패:", error);
+    if (data) reservedList = [...data];
+  }
+
+  // 2. 이름으로 조회 (수기 예약 포함)
+  if (renterName) {
+    const { data: manualReserved, error } = await supabase
+      .from('rentals')
+      .select('rental_id, game_id, games(name)') // [FIX]
+      .eq('renter_name', renterName)
+      .eq('type', 'DIBS')
+      .is('returned_at', null);
+
+    if (error) console.error("이름 찜 조회 실패:", error);
+    if (manualReserved && manualReserved.length > 0) {
+      reservedList = [...reservedList, ...manualReserved];
+    }
+  }
+
+  // 3. 중복 제거 (rental_id 기준)
+  const uniqueRentals = [];
+  const seenIds = new Set();
+  const alreadyAddedGameIds = new Set(); // 같은 게임 중복 방지 (다중 찜 방지)
+
+  for (const r of reservedList) {
+    if (!seenIds.has(r.rental_id)) {
+      // (선택) 같은 게임을 여러 번 찜했을 경우 하나만 승인? -> 일단 정책상 중복 찜 불가하므로 그대로 진행
+      seenIds.add(r.rental_id);
+      uniqueRentals.push(r);
+    }
+  }
+
+  // 조기 반환: 처리할 찜이 없음
+  if (uniqueRentals.length === 0) {
+    return {
+      status: "success",
+      count: 0,
+      total: 0,
+      failed: 0,
+      message: "처리할 찜이 없습니다."
+    };
+  }
+
+  // 4. [개선] 병렬 처리 + game_id 직접 전달
+  const processingPromises = uniqueRentals.map(async (reserved) => {
+    // [FIX] game_id 사용
+    const gameId = reserved.game_id;
+    const gameName = reserved.games?.name || "알 수 없음";
+
+    if (!gameId) {
+      return {
+        success: false,
+        gameName: gameName,
+        error: "Game ID 누락"
+      };
+    }
+
+    try {
+      // [FIX] admin_rent_game RPC 사용 (트랜잭션)
+      // renterName과 userId를 명확히 전달
+      const { data, error } = await supabase.rpc('admin_rent_game', {
+        p_game_id: gameId,
+        p_renter_name: renterName || "관리자",
+        p_user_id: userId || null
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.message);
+
+      return { success: true, gameName: gameName };
+
+    } catch (e) {
+      return {
+        success: false,
+        gameName: gameName,
+        error: e.message || "예외 발생"
+      };
+    }
+  });
+
+  const results = await Promise.allSettled(processingPromises);
+
+  // 결과 집계
+  let successCount = 0;
+  let failCount = 0;
+  const failedGames = [];
+
+  results.forEach((result, idx) => {
+    if (result.status === 'fulfilled' && result.value.success) {
+      successCount++;
+    } else {
+      failCount++;
+      const errorInfo = result.status === 'fulfilled'
+        ? result.value
+        : { gameName: uniqueRentals[idx]?.games?.name || '알 수 없음', error: '처리 실패' };
+      failedGames.push(errorInfo);
+    }
+  });
+
+  return {
+    status: "success",
+    count: successCount,
+    total: uniqueRentals.length,
+    failed: failCount,
+    failedGames: failedGames,
+    message: successCount > 0
+      ? `${successCount}건 수령 완료${failCount > 0 ? ` (${failCount}건 실패)` : ''} `
+      : "모든 처리가 실패했습니다."
+  };
 };
 
 export const deleteGame = async (gameId) => {
@@ -696,10 +706,8 @@ export const fetchMyRentals = async (userId) => {
       due_date,
       returned_at,
       type,
-      game_copies (
-        status,
-        games (id, name, video_url, manual_url)
-      )
+      game_id,
+      games (id, name, image, video_url, manual_url)
     `)
     .eq('user_id', userId)
     .order('borrowed_at', { ascending: false });
@@ -709,19 +717,22 @@ export const fetchMyRentals = async (userId) => {
     return { status: "error", message: error.message };
   }
 
-  // 데이터 평탄화 (Flatten)
+  // 데이터 가공 (Flatten)
   const formatted = data.map(r => ({
     rentalId: r.rental_id,
     borrowedAt: r.borrowed_at,
     dueDate: r.due_date,
     returnedAt: r.returned_at,
-    // game_copies나 games가 null일 경우 대비
-    gameId: r.game_copies?.games?.id, // [NEW] 게임 ID 추가
-    gameName: r.game_copies?.games?.name || "알 수 없는 게임",
-    videoUrl: r.game_copies?.games?.video_url,
-    manualUrl: r.game_copies?.games?.manual_url,
-    status: r.returned_at ? "반납완료" : "대여중",
-    type: r.type || 'RENT' // 기본값 RENT
+    type: r.type || 'RENT',
+
+    // [FIX] games 테이블 직접 참조
+    gameId: r.game_id,
+    gameName: r.games?.name || "알 수 없는 게임",
+    gameImage: r.games?.image,
+    videoUrl: r.games?.video_url,
+    manualUrl: r.games?.manual_url,
+
+    status: r.returned_at ? "반납완료" : (r.type === "DIBS" ? "찜(예약)" : "대여중")
   }))
     .filter(r => {
       // 1. 이미 반납된 것은 제외 (여긴 원래 같음)
@@ -809,8 +820,8 @@ export const fetchGlobalPointHistory = async (limit = 50) => {
   const { data, error } = await supabase
     .from('point_transactions')
     .select(`
-      *,
-      profiles:user_id (name, student_id)
+  *,
+  profiles: user_id(name, student_id)
     `)
     .order('created_at', { ascending: false })
     .limit(limit);

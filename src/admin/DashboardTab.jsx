@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { adminUpdateGame, deleteGame, approveDibsByRenter, returnGamesByRenter, editGame, fetchGameLogs, fetchUsers } from '../api';
 import GameFormModal from './GameFormModal';
+import UserSelectModal from './UserSelectModal'; // [NEW]
 import ConfirmModal from '../components/ConfirmModal'; // [NEW]
 import FilterBar from '../components/FilterBar';
 import { TEXTS, getStatusColor } from '../constants';
@@ -26,12 +27,13 @@ function DashboardTab({ games, loading, onReload }) {
     type: "info"
   });
 
-  // [NEW] 유저 선택 모달 상태
+  // [새로운] 유저 선택 모달 상태
   const [userSelectModal, setUserSelectModal] = useState({
     isOpen: false,
     candidates: [],
     game: null,
-    renterNameInput: ""
+    renterNameInput: "",
+    actionType: "rent" // 'rent' or 'receive'
   });
 
   // [NEW] Confirm 모달 헬퍼 함수
@@ -214,12 +216,53 @@ function DashboardTab({ games, loading, onReload }) {
     );
   };
 
+  // [새로운] 실제 수령 처리 (컨펌 포함)
+  const proceedReceiveWithUser = (game, renterNameInput, matchedUser) => {
+    let confirmMsg = `[${game.name}] 현장 수령 확인하시겠습니까?\n\n대여자: ${renterNameInput}`;
+
+    if (matchedUser) {
+      confirmMsg += `\n✅ 회원 확인됨 (ID: ${matchedUser.id})`;
+      confirmMsg += `\n(이름: ${matchedUser.name}, 학번: ${matchedUser.student_id || '-'}, 전화: ${matchedUser.phone || '-'})`;
+    } else {
+      confirmMsg += `\n⚠️ 회원 정보 없음 (비회원 수기 수령)`;
+    }
+
+    showConfirmModal(
+      "수령 확인",
+      confirmMsg,
+      async () => {
+        const res = await approveDibsByRenter(renterNameInput, matchedUser?.id);
+
+        if (res.count > 0) {
+          showToast(`✅ ${res.message}`, { type: "success" });
+
+          if (res.failed > 0 && res.failedGames && res.failedGames.length > 0) {
+            const failedList = res.failedGames.map(f => `${f.gameName} (${f.error})`).join(', ');
+            showToast(`⚠️ 실패 목록: ${failedList}`, { type: "warning", duration: 8000 });
+          }
+
+          // [FIX] 캐시 무효화 + 강제 새로고침
+          localStorage.removeItem('games_cache');
+          await onReload();
+        } else if (res.total === 0) {
+          showToast("⚠️ 처리할 찜이 없습니다. (이미 수령되었거나 만료됨)", { type: "warning" });
+          onReload();
+        } else {
+          showToast(`❌ 처리 실패: ${res.failedGames?.[0]?.error || '알 수 없는 오류'}`, { type: "error" });
+          onReload();
+        }
+      },
+      "info"
+    );
+  };
+
 
 
   const handleStatusChange = async (gameId, newStatus, gameName) => {
     let msg = `[${gameName}] 상태를 '${newStatus}'(으)로 변경하시겠습니까?`;
     if (newStatus === "대여중") msg = "현장 수령 확인하시겠습니까?";
-    if (newStatus === "대여가능") msg = "반납 처리하시겠습니까?";
+    // [FIX] "대여가능"으로 변경하려는 경우
+    if (newStatus === "대여가능") msg = "반납 처리하시겠습니까? (강제 반납)";
 
     showConfirmModal(
       "상태 변경",
@@ -239,16 +282,17 @@ function DashboardTab({ games, loading, onReload }) {
   // 4. 스마트 반납 (일괄 처리 로직)
   const handleReturn = async (game) => {
     const renterName = game.renter;
-    const sameUserRentals = games.filter(g => g.status === "대여중" && g.renter === renterName);
+    // [FIX] "이용 중" 또는 "대여중" 상태 모두 포함
+    const sameUserRentals = games.filter(g => (g.status === "이용 중" || g.status === "대여중") && g.renter === renterName);
     const count = sameUserRentals.length;
 
+    // [FIX] 단일 반납이어도 확실한 처리를 위해 일괄 반납 함수(1:1 ID 매칭) 사용
     if (count <= 1) {
       showConfirmModal(
         "반납 확인",
         `[${game.name}] 반납 처리하시겠습니까?`,
         async () => {
-          // [UPDATED] 정확한 반납을 위해 대여자 정보 전달
-          await adminUpdateGame(game.id, "대여가능", game.renter, game.renterId);
+          await returnGamesByRenter(renterName, game.renterId); // game.renterId는 없을 수도 있음
           showToast("반납되었습니다.", { type: "success" });
           onReload();
         }
@@ -269,34 +313,90 @@ function DashboardTab({ games, loading, onReload }) {
     // 취소 시 단일 반납은 모달의 취소 버튼으로 처리됨
   };
 
-  // 5. 스마트 수령 (일괄 찜 처리 로직)
+  // 5. [개선] 스마트 수령 (일괄 찜 처리 로직 + 동명이인 처리)
   const handleReceive = async (game) => {
     const renterName = game.renter;
-    const sameUserDibs = games.filter(g => g.status === "찜" && g.renter === renterName);
+    // [FIX] "예약됨" 또는 "찜" 상태 모두 포함
+    const sameUserDibs = games.filter(g => (g.status === "예약됨" || g.status === "찜") && g.renter === renterName);
     const count = sameUserDibs.length;
 
-    // [FIX] game.renterId가 있으면 바로 사용, 없으면(수기) 이름 검색
-    const userId = game.renterId || findUserId(renterName);
+    // [개선] 동명이인 처리
+    let userId = game.renterId; // 먼저 game에서 가져오기
+
+    // renterId가 없으면 (수기 예약) 이름으로 검색
+    if (!userId) {
+      const candidates = findMatchingUsers(renterName);
+
+      // [경우 1] 2명 이상 동명이인 -> 선택 모달
+      if (candidates.length > 1) {
+        setUserSelectModal({
+          isOpen: true,
+          candidates: candidates,
+          game: game,
+          renterNameInput: renterName,
+          actionType: 'receive' // [새로운 필드] 수령인지 대여인지 구분
+        });
+        return;
+      }
+
+      // [경우 2] 1명 매칭 -> 자동 선택
+      if (candidates.length === 1) {
+        userId = candidates[0].id;
+      }
+
+      // [경우 3] 0명 -> userId = null (비회원 수기)
+    }
+
+    // 단일 수령 처리
     if (count <= 1) {
       showConfirmModal(
         "수령 확인",
         `[${game.name}] 현장 수령 확인하시겠습니까?`,
         async () => {
-          await adminUpdateGame(game.id, "대여중", renterName, userId);
-          showToast("처리되었습니다.", { type: "success" });
-          onReload();
+          const res = await approveDibsByRenter(renterName, userId);
+
+          // [개선] 상세한 피드백
+          if (res.count > 0) {
+            showToast(`✅ ${res.message}`, { type: "success" });
+            // [FIX] 캐시 무효화 + 강제 새로고침
+            localStorage.removeItem('games_cache');
+            await onReload();
+          } else if (res.total === 0) {
+            showToast("⚠️ 처리할 찜이 없습니다. (이미 수령되었거나 만료됨)", { type: "warning" });
+            onReload();
+          } else {
+            showToast(`❌ 처리 실패: ${res.failedGames?.[0]?.error || '알 수 없는 오류'}`, { type: "error" });
+            onReload();
+          }
         }
       );
       return;
     }
 
+    // 일괄 수령 처리
     showConfirmModal(
       "일괄 수령 처리",
       `💡 [${renterName}] 님이 예약한 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '대여중'으로 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 처리합니다)`,
       async () => {
-        await approveDibsByRenter(renterName, userId);
-        showToast(`${count}건이 일괄 수령 처리되었습니다.`, { type: "success" });
-        onReload();
+        const res = await approveDibsByRenter(renterName, userId);
+
+        // [개선] 상세한 피드백
+        if (res.count > 0) {
+          showToast(`✅ ${res.message}`, { type: "success" });
+
+          // 실패한 게임이 있으면 추가 알림
+          if (res.failed > 0 && res.failedGames && res.failedGames.length > 0) {
+            const failedList = res.failedGames.map(f => `${f.gameName} (${f.error})`).join(', ');
+            showToast(`⚠️ 실패 목록: ${failedList}`, { type: "warning", duration: 8000 });
+          }
+
+          // [FIX] 캐시 무효화 + 강제 새로고침
+          localStorage.removeItem('games_cache');
+          await onReload();
+        } else {
+          showToast("❌ 모든 처리가 실패했습니다.", { type: "error" });
+          onReload();
+        }
       },
       "warning"
     );
@@ -386,22 +486,24 @@ function DashboardTab({ games, loading, onReload }) {
                 <button onClick={() => handleDelete(game)} style={{ ...actionBtnStyle("transparent"), color: "#e74c3c", border: "1px solid #e74c3c", width: "30px", padding: 0 }}>🗑️</button>
 
                 {/* 상태별 버튼 로직 유지 [IMPROVED] */}
-                {game.status === "찜" ? (
+                {game.status === "예약됨" ? (
                   <>
                     <button onClick={() => handleReceive(game)} style={actionBtnStyle("#2980b9")}>🤝 수령</button>
                     <button onClick={() => handleStatusChange(game.id, "대여가능", game.name)} style={actionBtnStyle("#c0392b")}>🚫 취소</button>
                     {/* [NEW] 찜 상태여도, 다른 재고가 있으면 대여 가능해야 함 */}
-                    {/* Reserved 카피가 우선순위라 찜 상태로 보이지만, availableCount가 있으면 대여 버튼 추가 */}
-                    {game.availableCount > 0 && (
+                    {/* Reserved 카피가 우선순위라 찜 상태로 보이지만, available_count가 있으면 대여 버튼 추가 */}
+                    {game.available_count > 0 && (
                       <button onClick={() => handleDirectRent(game)} style={{ ...actionBtnStyle("var(--admin-card-bg)"), marginLeft: "5px" }}>✋ 현장대여</button>
                     )}
                   </>
                 ) : game.status !== "대여가능" ? (
                   <>
-                    <button onClick={() => handleReturn(game)} style={actionBtnStyle("#27ae60")}>↩️ 반납</button>
+                    {(game.status === "이용 중" || game.status === "대여중") && (
+                      <button onClick={() => handleReturn(game)} style={actionBtnStyle("#27ae60")}>↩️ 반납</button>
+                    )}
                     <button onClick={() => handleStatusChange(game.id, "분실", game.name)} style={actionBtnStyle("#7f8c8d")}>⚠️ 분실</button>
                     {/* [NEW] 대여중 상태여도, 다른 재고가 있으면 대여 가능해야 함 */}
-                    {game.availableCount > 0 && (
+                    {game.available_count > 0 && (
                       <button onClick={() => handleDirectRent(game)} style={{ ...actionBtnStyle("var(--admin-card-bg)"), marginLeft: "5px" }}>✋ 현장대여</button>
                     )}
                   </>
@@ -535,65 +637,25 @@ function DashboardTab({ games, loading, onReload }) {
         message={confirmModal.message}
         type={confirmModal.type}
       />
-      {/* [NEW] 유저 선택 모달 */}
-      {userSelectModal.isOpen && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <h3>👥 동명이인 선택</h3>
-            <p>검색된 사용자가 여러 명입니다. 대여할 유저를 선택해주세요.</p>
-            <div style={{ maxHeight: "300px", overflowY: "auto", border: "1px solid #eee", borderRadius: "8px" }}>
-              {userSelectModal.candidates.map(u => (
-                <div
-                  key={u.id}
-                  onClick={() => {
-                    setUserSelectModal({ ...userSelectModal, isOpen: false });
-                    proceedRentWithUser(userSelectModal.game, userSelectModal.renterNameInput, u);
-                  }}
-                  style={{
-                    padding: "15px",
-                    borderBottom: "1px solid #eee",
-                    cursor: "pointer",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    background: "#fff"
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}
-                >
-                  <div>
-                    <div style={{ fontWeight: "bold", fontSize: "1.1em" }}>{u.name}</div>
-                    <div style={{ fontSize: "0.9em", color: "#666" }}>학번: {u.student_id || "-"}</div>
-                  </div>
-                  <div style={{ fontSize: "0.9em", color: "#888" }}>{u.phone || "전화번호 없음"}</div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-              <button
-                onClick={() => {
-                  setUserSelectModal({ ...userSelectModal, isOpen: false });
-                  // 수기 대여로 진행할지 여부는 선택사항이지만, 보통 취소가 맞음
-                  // 여기서는 "비회원(수기)으로 진행" 옵션을 줄 수도 있지만
-                  // 일단 그냥 취소하거나, 수기 대여 버튼을 따로 두는게 좋음.
-                  // 간편하게 "수기 대여로 진행" 버튼 추가
-                  proceedRentWithUser(userSelectModal.game, userSelectModal.renterNameInput, null);
-                }}
-                style={{ padding: "8px 12px", border: "1px solid #ddd", background: "white", borderRadius: "6px", cursor: "pointer" }}
-              >
-                비회원(수기)으로 대여
-              </button>
-              <button
-                onClick={() => setUserSelectModal({ ...userSelectModal, isOpen: false })}
-                style={{ padding: "8px 15px", background: "#666", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}
-              >
-                취소
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* [NEW] 유저 선택 모달 (분리됨) */}
+      <UserSelectModal
+        isOpen={userSelectModal.isOpen}
+        onClose={() => setUserSelectModal({ ...userSelectModal, isOpen: false })}
+        candidates={userSelectModal.candidates}
+        onSelectUser={(u) => {
+          setUserSelectModal({ ...userSelectModal, isOpen: false });
+          // actionType에 따라 분기 처리
+          if (userSelectModal.actionType === 'receive') {
+            proceedReceiveWithUser(userSelectModal.game, userSelectModal.renterNameInput, u);
+          } else {
+            proceedRentWithUser(userSelectModal.game, userSelectModal.renterNameInput, u);
+          }
+        }}
+        onSelectManual={() => {
+          setUserSelectModal({ ...userSelectModal, isOpen: false });
+          proceedRentWithUser(userSelectModal.game, userSelectModal.renterNameInput, null);
+        }}
+      />
     </div>
   );
 }

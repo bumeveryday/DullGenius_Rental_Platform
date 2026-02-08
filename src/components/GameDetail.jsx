@@ -208,6 +208,11 @@ function GameDetail() {
             <div style={{ fontSize: "0.8em", color: "#888" }}>상태</div>
             <div style={{ fontSize: "1.2em", fontWeight: "bold", color: game.status === "대여가능" ? "#2ecc71" : "#e74c3c" }}>
               {game.status}
+              {game.status === "대여가능" && game.available_count > 0 && (
+                <span style={{ fontSize: "0.8em", color: "#27ae60", marginLeft: "5px" }}>
+                  ({game.available_count}개 남음)
+                </span>
+              )}
             </div>
           </div>
         </div>

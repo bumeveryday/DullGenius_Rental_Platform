@@ -10,7 +10,11 @@ export const STATUS = {
   RENTED: { ko: '대여중', en: 'RENTED', color: '#3498db' },
   RESERVED: { ko: '찜', en: 'RESERVED', color: '#f1c40f' },
   LOST: { ko: '분실', en: 'LOST', color: '#95a5a6' },
-  MAINTENANCE: { ko: '수리중', en: 'MAINTENANCE', color: '#95a5a6' }
+  MAINTENANCE: { ko: '수리중', en: 'MAINTENANCE', color: '#95a5a6' },
+  // [NEW] 호환성 및 V2 상태값
+  RESERVED_V2: { ko: '예약됨', en: 'RESERVED', color: '#f1c40f' },
+  RENTED_V2: { ko: '이용 중', en: 'RENTED', color: '#e74c3c' },     // 대여 중 (Red)
+  RENTED_NO_STOCK: { ko: '대여 중', en: 'RENTED', color: '#e74c3c' } // 재고 없음 (Red)
 };
 
 // 헬퍼 함수: 영문 -> 한글
