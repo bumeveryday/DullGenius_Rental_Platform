@@ -65,7 +65,7 @@ function Home() {
 
   useEffect(() => {
     const loadData = async () => {
-      const CACHE_DURATION = 5 * 60 * 1000; // 5분
+      const CACHE_DURATION = 0; // [DEBUG] 캐시 끄기 (항상 최신 데이터 로드)
 
       // [개선] 캐시 확인 (타임스탬프 기반)
       const cachedGames = localStorage.getItem('games_cache');
@@ -406,7 +406,7 @@ function Home() {
                 ) : (
                   <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc" }}>이미지 없음</div>
                 )}
-                {(game.status !== "대여가능" || (game.available_count > 1)) && (
+                {(game.status !== "대여가능") && (
                   <div style={{
                     position: "absolute", top: "10px", right: "10px",
                     background: game.status === "대여가능" ? "rgba(46, 204, 113, 0.9)" : "rgba(231, 76, 60, 0.9)",

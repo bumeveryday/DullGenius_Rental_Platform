@@ -4,24 +4,22 @@ import { statusToKorean, koreanToStatus } from './constants'; // [NEW] STATUS en
 
 // 1. 전체 게임 목록 가져오기 (V2 - Application-Side Join)
 export const fetchGames = async () => {
+
   try {
     // [Step 1] 병렬 데이터 조회
-    // FK 제약이나 스키마 변경으로 인한 PGRST200 에러 방지를 위해 개별 조회
-    const [gamesRes, copiesRes, rentalsRes] = await Promise.all([
+    // game_copies 테이블은 삭제되었으므로 games와 rentals만 조회
+    const [gamesRes, rentalsRes] = await Promise.all([
       supabase.from('games').select('*').order('name'),
-      supabase.from('game_copies').select('copy_id, game_id, status'),
       supabase.from('rentals').select('rental_id, game_id, user_id, renter_name, type, returned_at, due_date, borrowed_at').is('returned_at', null)
     ]);
 
     if (gamesRes.error) throw gamesRes.error;
-
-    // 에러 로그만 남기고 계속 진행 (데이터가 없으면 빈 배열 취급)
-    if (copiesRes.error) console.warn("Copies fetch failed:", copiesRes.error);
     if (rentalsRes.error) console.warn("Rentals fetch failed:", rentalsRes.error);
 
     const games = gamesRes.data || [];
-    const copies = copiesRes.data || [];
     const activeRentals = rentalsRes.data || [];
+
+
 
     // [Step 2] 렌탈 유저 정보(Profile) 조회
     const userIds = [...new Set(activeRentals.map(r => r.user_id).filter(Boolean))];
@@ -39,19 +37,11 @@ export const fetchGames = async () => {
     }
 
     // [Step 3] 데이터 병합 (Application-Side Join)
-
-    // 3-1. Copy 그룹화 (game_id 기준)
-    const copiesByGame = {};
-    copies.forEach(c => {
-      if (!copiesByGame[c.game_id]) copiesByGame[c.game_id] = [];
-      copiesByGame[c.game_id].push(c);
-    });
-
-    // 3-2. Rental 그룹화 (game_id 기준)
+    // Rental 그룹화 (game_id 기준)
     const rentalsByGame = {};
     activeRentals.forEach(r => {
       if (!rentalsByGame[r.game_id]) rentalsByGame[r.game_id] = [];
-      // 프로필 정보 주입 (Supabase 조인 흉내)
+      // 프로필 정보 주입
       if (r.user_id && profilesMap[r.user_id]) {
         r.profiles = { name: profilesMap[r.user_id] };
       }
@@ -60,12 +50,11 @@ export const fetchGames = async () => {
 
     // [Step 4] 최종 게임 객체 생성
     return games.map(game => {
-      const gameCopies = copiesByGame[game.id] || [];
       const gameRentals = rentalsByGame[game.id] || [];
 
-      // 1. 실시간 재고 계산 (AVAILABLE 상태인 카피 수)
-      // game_copies 테이블을 직접 조회했으므로 정확함
-      const realAvailableCount = gameCopies.filter(c => c.status === 'AVAILABLE').length;
+      // 1. 실시간 재고: DB의 available_count 컬럼 신뢰
+      // 만약 null이면 0 처리 (단, quantity가 있는데 0인 경우는 진짜 없는 것)
+      const realAvailableCount = game.available_count ?? 0;
 
       // 2. 상태 결정 로직
       let status = '대여가능';
@@ -83,7 +72,6 @@ export const fetchGames = async () => {
           new Date(b.borrowed_at) - new Date(a.borrowed_at)
         )[0];
 
-        // 이름 우선순위: 수기입력 이름 > 프로필 이름
         renter = latestDibs.renter_name || latestDibs.profiles?.name;
         renterId = latestDibs.user_id;
         dueDate = latestDibs.due_date;
@@ -91,14 +79,13 @@ export const fetchGames = async () => {
         if (realAvailableCount > 0) {
           status = '대여가능'; // 재고 남음
         } else {
-          status = '이용 중'; // 재고 없음
+          status = '대여 중'; // 재고 없음
         }
 
         const renters = activeRents.map(r => r.renter_name || r.profiles?.name).filter(Boolean);
         renter = renters.join(', ');
-        renterId = activeRents[0].user_id; // 대표 ID
+        renterId = activeRents[0].user_id;
 
-        // 가장 빠른 반납 예정일
         if (activeRents.some(r => r.due_date)) {
           const sortedByDueDate = activeRents
             .filter(r => r.due_date)
@@ -112,13 +99,12 @@ export const fetchGames = async () => {
       return {
         ...game,
         status,
-        available_count: realAvailableCount, // 계산된 값 사용
+        available_count: realAvailableCount,
         renter,
         renterId,
         due_date: dueDate,
         active_rental_count: gameRentals.length,
-        rentals: gameRentals,
-        game_copies: gameCopies
+        rentals: gameRentals
       };
     });
 

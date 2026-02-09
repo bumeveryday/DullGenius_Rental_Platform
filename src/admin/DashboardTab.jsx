@@ -480,35 +480,32 @@ function DashboardTab({ games, loading, onReload }) {
                 </div>
               </div>
 
+              {/* 상태별 버튼 로직 [IMPROVED] */}
               <div style={{ display: "flex", gap: "5px" }}>
                 <button onClick={() => handleShowLogs(game)} style={{ ...actionBtnStyle("#2c3e50"), color: "#eee", border: "1px solid #555" }} title="이력 조회">📜</button>
                 <button onClick={() => openEditModal(game)} style={actionBtnStyle("#8e44ad")}>✏️ 수정</button>
                 <button onClick={() => handleDelete(game)} style={{ ...actionBtnStyle("transparent"), color: "#e74c3c", border: "1px solid #e74c3c", width: "30px", padding: 0 }}>🗑️</button>
 
-                {/* 상태별 버튼 로직 유지 [IMPROVED] */}
-                {game.status === "예약됨" ? (
+                {/* 1. 수령/취소 (예약이 있는 경우) */}
+                {((game.rentals && game.rentals.some(r => r.type === 'DIBS')) || game.status === '예약됨') && (
                   <>
                     <button onClick={() => handleReceive(game)} style={actionBtnStyle("#2980b9")}>🤝 수령</button>
                     <button onClick={() => handleStatusChange(game.id, "대여가능", game.name)} style={actionBtnStyle("#c0392b")}>🚫 취소</button>
-                    {/* [NEW] 찜 상태여도, 다른 재고가 있으면 대여 가능해야 함 */}
-                    {/* Reserved 카피가 우선순위라 찜 상태로 보이지만, available_count가 있으면 대여 버튼 추가 */}
-                    {game.available_count > 0 && (
-                      <button onClick={() => handleDirectRent(game)} style={{ ...actionBtnStyle("var(--admin-card-bg)"), marginLeft: "5px" }}>✋ 현장대여</button>
-                    )}
                   </>
-                ) : game.status !== "대여가능" ? (
+                )}
+
+                {/* 2. 반납/분실 (대여 중인 건이 하나라도 있는 경우) */}
+                {((game.rentals && game.rentals.some(r => r.type === 'RENT' && !r.returned_at)) || game.active_rental_count > 0) && (
                   <>
-                    {(game.status === "이용 중" || game.status === "대여중") && (
-                      <button onClick={() => handleReturn(game)} style={actionBtnStyle("#27ae60")}>↩️ 반납</button>
-                    )}
+                    <button onClick={() => handleReturn(game)} style={actionBtnStyle("#27ae60")}>↩️ 반납</button>
                     <button onClick={() => handleStatusChange(game.id, "분실", game.name)} style={actionBtnStyle("#7f8c8d")}>⚠️ 분실</button>
-                    {/* [NEW] 대여중 상태여도, 다른 재고가 있으면 대여 가능해야 함 */}
-                    {game.available_count > 0 && (
-                      <button onClick={() => handleDirectRent(game)} style={{ ...actionBtnStyle("var(--admin-card-bg)"), marginLeft: "5px" }}>✋ 현장대여</button>
-                    )}
                   </>
-                ) :
-                  <button onClick={() => handleDirectRent(game)} style={actionBtnStyle("var(--admin-card-bg)")}>✋ 현장대여</button>}
+                )}
+
+                {/* 3. 현장대여 (재고가 남아있는 경우) */}
+                {game.available_count > 0 && (
+                  <button onClick={() => handleDirectRent(game)} style={{ ...actionBtnStyle("var(--admin-card-bg)"), marginLeft: "5px" }}>✋ 현장대여</button>
+                )}
               </div>
             </div>
           ))}
