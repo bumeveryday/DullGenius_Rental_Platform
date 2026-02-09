@@ -15,6 +15,7 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
     tags: "",
     image: "",
     video_url: "",
+    recommendation_text: "",
     manual_url: "",
     ...initialData
   });
@@ -23,7 +24,7 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
   useEffect(() => {
     if (isOpen) {
       setFormData({
-        name: "", category: "보드게임", difficulty: "", players: "", tags: "", image: "", video_url: "", manual_url: "",
+        name: "", category: "보드게임", difficulty: "", players: "", tags: "", image: "", video_url: "", recommendation_text: "", manual_url: "",
         ...initialData // 부모가 준 데이터가 있으면 덮어씌움
       });
     }
@@ -147,6 +148,17 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
             onChange={e => setFormData({ ...formData, image: e.target.value })}
             className="admin-input"
             style={{ width: "100%" }}
+          />
+        </div>
+
+        <div className="admin-form-group">
+          <label className="admin-label">추천 멘트 (한줄평)</label>
+          <textarea
+            value={formData.recommendation_text || ""}
+            onChange={e => setFormData({ ...formData, recommendation_text: e.target.value })}
+            placeholder="예: 초보자도 쉽게 즐길 수 있는 파티 게임!"
+            className="admin-input"
+            style={{ width: "100%", minHeight: "60px", resize: "vertical" }}
           />
         </div>
 

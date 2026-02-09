@@ -199,6 +199,13 @@ function GameDetail() {
         </div>
         <p style={{ color: "#666" }}>{game.category} | {game.genre}</p>
 
+        {/* [NEW] 추천 문구 */}
+        {game.recommendation_text && (
+          <div style={{ marginTop: "15px", padding: "10px", backgroundColor: "#f0f8ff", borderRadius: "8px", color: "#2980b9", fontSize: "0.95em", fontStyle: "italic" }}>
+            💡 {game.recommendation_text}
+          </div>
+        )}
+
         <div style={{ display: "flex", justifyContent: "space-around", margin: "20px 0", background: "#f9f9f9", padding: "15px", borderRadius: "10px" }}>
           <div>
             <div style={{ fontSize: "0.8em", color: "#888" }}>난이도</div>

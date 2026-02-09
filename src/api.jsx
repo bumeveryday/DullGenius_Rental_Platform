@@ -2,87 +2,123 @@
 import { supabase } from './lib/supabaseClient';
 import { statusToKorean, koreanToStatus } from './constants'; // [NEW] STATUS enum 헬퍼 함수
 
-// 1. 전체 게임 목록 가져오기 (V2 - game_id 기반)
-// 1. 전체 게임 목록 가져오기 (V2 - game_id 기반 + 실시간 재고 계산)
+// 1. 전체 게임 목록 가져오기 (V2 - Application-Side Join)
 export const fetchGames = async () => {
   try {
-    // [V2] games + rentals + game_copies(재고 확인용)
-    const { data, error } = await supabase
-      .from('games')
-      .select(`
-  *,
-  game_copies (
-    copy_id,
-    status
-  ),
-  rentals(
-    rental_id,
-    user_id,
-    renter_name,
-    type,
-    returned_at,
-    due_date,
-    borrowed_at,
-    profiles(name)
-  )
-    `)
-      .order('name');
+    // [Step 1] 병렬 데이터 조회
+    // FK 제약이나 스키마 변경으로 인한 PGRST200 에러 방지를 위해 개별 조회
+    const [gamesRes, copiesRes, rentalsRes] = await Promise.all([
+      supabase.from('games').select('*').order('name'),
+      supabase.from('game_copies').select('copy_id, game_id, status'),
+      supabase.from('rentals').select('rental_id, game_id, user_id, renter_name, type, returned_at, due_date, borrowed_at').is('returned_at', null)
+    ]);
 
-    if (error) throw error;
+    if (gamesRes.error) throw gamesRes.error;
 
-    return data.map(game => {
+    // 에러 로그만 남기고 계속 진행 (데이터가 없으면 빈 배열 취급)
+    if (copiesRes.error) console.warn("Copies fetch failed:", copiesRes.error);
+    if (rentalsRes.error) console.warn("Rentals fetch failed:", rentalsRes.error);
+
+    const games = gamesRes.data || [];
+    const copies = copiesRes.data || [];
+    const activeRentals = rentalsRes.data || [];
+
+    // [Step 2] 렌탈 유저 정보(Profile) 조회
+    const userIds = [...new Set(activeRentals.map(r => r.user_id).filter(Boolean))];
+    let profilesMap = {};
+
+    if (userIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', userIds);
+
+      if (!profilesError && profiles) {
+        profiles.forEach(p => profilesMap[p.id] = p.name);
+      }
+    }
+
+    // [Step 3] 데이터 병합 (Application-Side Join)
+
+    // 3-1. Copy 그룹화 (game_id 기준)
+    const copiesByGame = {};
+    copies.forEach(c => {
+      if (!copiesByGame[c.game_id]) copiesByGame[c.game_id] = [];
+      copiesByGame[c.game_id].push(c);
+    });
+
+    // 3-2. Rental 그룹화 (game_id 기준)
+    const rentalsByGame = {};
+    activeRentals.forEach(r => {
+      if (!rentalsByGame[r.game_id]) rentalsByGame[r.game_id] = [];
+      // 프로필 정보 주입 (Supabase 조인 흉내)
+      if (r.user_id && profilesMap[r.user_id]) {
+        r.profiles = { name: profilesMap[r.user_id] };
+      }
+      rentalsByGame[r.game_id].push(r);
+    });
+
+    // [Step 4] 최종 게임 객체 생성
+    return games.map(game => {
+      const gameCopies = copiesByGame[game.id] || [];
+      const gameRentals = rentalsByGame[game.id] || [];
+
       // 1. 실시간 재고 계산 (AVAILABLE 상태인 카피 수)
-      const realAvailableCount = (game.game_copies || []).filter(c => c.status === 'AVAILABLE').length;
+      // game_copies 테이블을 직접 조회했으므로 정확함
+      const realAvailableCount = gameCopies.filter(c => c.status === 'AVAILABLE').length;
 
-      // 2. 활성 rental 필터링 (returned_at이 NULL인 것만)
-      const activeRentals = (game.rentals || []).filter(r => !r.returned_at);
-
-      // 3. 상태 결정
+      // 2. 상태 결정 로직
       let status = '대여가능';
       let renter = null;
       let renterId = null;
       let dueDate = null;
 
       // 우선순위: DIBS > RENT
-      const activeDibs = activeRentals.filter(r => r.type === 'DIBS');
-      const activeRents = activeRentals.filter(r => r.type === 'RENT');
+      const activeDibs = gameRentals.filter(r => r.type === 'DIBS');
+      const activeRents = gameRentals.filter(r => r.type === 'RENT');
 
       if (activeDibs.length > 0) {
-        // 찜이 있으면 일단 '예약됨' 표시 (재고가 있어도 찜 우선 노출 정책)
         status = '예약됨';
         const latestDibs = activeDibs.sort((a, b) =>
           new Date(b.borrowed_at) - new Date(a.borrowed_at)
         )[0];
+
+        // 이름 우선순위: 수기입력 이름 > 프로필 이름
         renter = latestDibs.renter_name || latestDibs.profiles?.name;
         renterId = latestDibs.user_id;
         dueDate = latestDibs.due_date;
       } else if (activeRents.length > 0) {
-        // 대여 중 (재고가 남아있을 수도 있음)
         if (realAvailableCount > 0) {
-          status = '대여가능'; // 재고가 남았으면 대여 가능으로 표시 (혼합 상태)
-          // 단, UI에서는 '대여가능 (N)'으로 표시될 것임
+          status = '대여가능'; // 재고 남음
         } else {
-          status = '이용 중'; // 재고 0이면 이용 중
+          status = '이용 중'; // 재고 없음
         }
 
-        const renters = activeRents.map(r => r.renter_name || r.profiles?.name);
+        const renters = activeRents.map(r => r.renter_name || r.profiles?.name).filter(Boolean);
         renter = renters.join(', ');
-        renterId = activeRents[0].user_id;
-        dueDate = activeRents.sort((a, b) =>
-          new Date(a.due_date) - new Date(b.due_date)
-        )[0].due_date;
+        renterId = activeRents[0].user_id; // 대표 ID
+
+        // 가장 빠른 반납 예정일
+        if (activeRents.some(r => r.due_date)) {
+          const sortedByDueDate = activeRents
+            .filter(r => r.due_date)
+            .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+          if (sortedByDueDate.length > 0) dueDate = sortedByDueDate[0].due_date;
+        }
       } else if (realAvailableCount <= 0) {
-        status = '대여 중'; // 렌탈 기록은 없는데 재고도 없는 경우 (오류 상황 or 분실?)
+        status = '대여 중';
       }
 
       return {
         ...game,
         status,
-        available_count: realAvailableCount, // [OVERWRITE] DB 컬럼 대신 계산된 값 사용
+        available_count: realAvailableCount, // 계산된 값 사용
         renter,
         renterId,
         due_date: dueDate,
-        active_rental_count: activeRentals.length
+        active_rental_count: gameRentals.length,
+        rentals: gameRentals,
+        game_copies: gameCopies
       };
     });
 
@@ -313,9 +349,6 @@ export const searchNaver = async (query) => {
 
 // [Admin] 게임 추가 (개선됨)
 export const addGame = async (gameData) => {
-  // 1. 중복 체크 (선택 사항, 프론트에서도 함)
-  // 여기서는 강제로 막지는 않음 (프론트가 '새로 생성'을 선택했을 수 있으므로)
-
   // 1. Games 테이블 추가
   const { data: newGame, error } = await supabase
     .from('games')
@@ -326,23 +359,20 @@ export const addGame = async (gameData) => {
       difficulty: gameData.difficulty,
       image: gameData.image,
       video_url: gameData.video_url,
+      recommendation_text: gameData.recommendation_text,
       manual_url: gameData.manual_url,
       tags: gameData.tags,
-      total_views: 0
+      total_views: 0,
+      quantity: 1, // [NEW] 기본 재고 1
+      available_count: 1 // [NEW] 대여 가능 1
     }])
     .select()
     .single();
 
   if (error) throw error;
 
-  // 2. Game Copy 추가 (1개)
-  if (newGame) {
-    await supabase.from('game_copies').insert([{
-      game_id: newGame.id,
-      status: 'AVAILABLE',
-      location: gameData.location || '동아리방'
-    }]);
-  }
+  // 2. Game Copy 추가 (제거됨 - games 테이블에 통합)
+
   return newGame;
 };
 
@@ -350,7 +380,7 @@ export const addGame = async (gameData) => {
 export const checkGameExists = async (name) => {
   const { data, error } = await supabase
     .from('games')
-    .select('id, name, game_copies(count)')
+    .select('id, name, quantity')
     .eq('name', name);
 
   if (error) return [];
@@ -358,14 +388,25 @@ export const checkGameExists = async (name) => {
 };
 
 // [Admin] 기존 게임에 재고(Copy) 추가 [NEW]
-export const addGameCopy = async (gameId, location) => {
+export const addGameCopy = async (gameId) => { // location removed (no column)
+  // 1. 현재 수량 가져오기
+  const { data: game, error: fetchError } = await supabase
+    .from('games')
+    .select('quantity, available_count')
+    .eq('id', gameId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. 수량 증가
+  const newQty = (game.quantity || 0) + 1;
+  const newAvail = (game.available_count || 0) + 1;
+
+  // 3. 업데이트
   const { data, error } = await supabase
-    .from('game_copies')
-    .insert([{
-      game_id: gameId,
-      status: 'AVAILABLE',
-      location: location || '동아리방'
-    }])
+    .from('games')
+    .update({ quantity: newQty, available_count: newAvail })
+    .eq('id', gameId)
     .select();
 
   if (error) throw error;
@@ -414,6 +455,7 @@ export const editGame = async (gameData) => {
       tags: gameData.tags,
       image: gameData.image,
       video_url: gameData.video_url,
+      recommendation_text: gameData.recommendation_text,
       manual_url: gameData.manual_url
     })
     .eq('id', gameData.game_id);
