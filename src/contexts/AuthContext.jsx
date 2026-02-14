@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
     const { showToast } = useToast();
     // useRef를 사용하여 마운트 상태 추적 (비동기 콜백에서의 상태 업데이트 방지)
     const isMounted = useRef(true);
+    const lastUserId = useRef(null); // [NEW] 이전 유저 ID 추적 (리프레시 방지)
 
     useEffect(() => {
         isMounted.current = true;
@@ -25,7 +26,7 @@ export const AuthProvider = ({ children }) => {
             try {
                 const { data: profileData, error: profileError } = await supabase
                     .from('profiles')
-                    .select('*')
+                    .select('*, is_semester_fixed') // * includes joined_semester if it exists in schema
                     .eq('id', userId)
                     .single();
 
@@ -83,10 +84,18 @@ export const AuthProvider = ({ children }) => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             if (!isMounted.current) return;
 
+            // [FIX] ID가 바뀌었을 때만 로딩(Flash) 처리
+            const currentId = session?.user?.id;
+            const prevId = lastUserId.current;
+
             setUser(session?.user ?? null);
+            lastUserId.current = currentId; // Update ref
+
             if (session?.user) {
-                // [FIX] 권한 및 프로필 정보를 가져오는 동안 로딩 상태 유지
-                setLoading(true);
+                // 로그인한 유저가 바뀌었을 때만 로딩 스피너 표시
+                if (currentId !== prevId) {
+                    setLoading(true);
+                }
                 fetchProfileAndRoles(session.user.id);
             } else {
                 setProfile(null);
@@ -129,6 +138,19 @@ export const AuthProvider = ({ children }) => {
     const logout = () => supabase.auth.signOut();
     const hasRole = (roleKey) => roles.includes(roleKey);
 
+    // 비밀번호 변경 (사용자 본인)
+    const changePassword = async (newPassword) => {
+        const { error } = await supabase.auth.updateUser({
+            password: newPassword
+        });
+        if (error) throw error;
+    };
+
+    // [NEW] 프로필 수동 갱신 (마이페이지 등에서 사용)
+    const refreshProfile = async () => {
+        if (user) await fetchProfileAndRoles(user.id);
+    };
+
     const value = {
         user,
         profile,
@@ -137,7 +159,9 @@ export const AuthProvider = ({ children }) => {
         signup,
         logout,
         hasRole,
-        loading
+        changePassword,
+        loading,
+        refreshProfile // [NEW]
     };
 
     return (

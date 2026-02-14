@@ -1,6 +1,7 @@
 // src/api.js
 import { supabase } from './lib/supabaseClient';
 import { statusToKorean, koreanToStatus } from './constants'; // [NEW] STATUS enum 헬퍼 함수
+import { calculateGameStatus } from './lib/gameStatus';
 
 // 1. 전체 게임 목록 가져오기 (V2 - Application-Side Join)
 export const fetchGames = async () => {
@@ -52,59 +53,13 @@ export const fetchGames = async () => {
     return games.map(game => {
       const gameRentals = rentalsByGame[game.id] || [];
 
-      // 1. 실시간 재고: DB의 available_count 컬럼 신뢰
-      // 만약 null이면 0 처리 (단, quantity가 있는데 0인 경우는 진짜 없는 것)
-      const realAvailableCount = game.available_count ?? 0;
-
-      // 2. 상태 결정 로직
-      let status = '대여가능';
-      let renter = null;
-      let renterId = null;
-      let dueDate = null;
-
-      // 우선순위: DIBS > RENT
-      const activeDibs = gameRentals.filter(r => r.type === 'DIBS');
-      const activeRents = gameRentals.filter(r => r.type === 'RENT');
-
-      if (activeDibs.length > 0) {
-        status = '예약됨';
-        const latestDibs = activeDibs.sort((a, b) =>
-          new Date(b.borrowed_at) - new Date(a.borrowed_at)
-        )[0];
-
-        renter = latestDibs.renter_name || latestDibs.profiles?.name;
-        renterId = latestDibs.user_id;
-        dueDate = latestDibs.due_date;
-      } else if (activeRents.length > 0) {
-        if (realAvailableCount > 0) {
-          status = '대여가능'; // 재고 남음
-        } else {
-          status = '대여 중'; // 재고 없음
-        }
-
-        const renters = activeRents.map(r => r.renter_name || r.profiles?.name).filter(Boolean);
-        renter = renters.join(', ');
-        renterId = activeRents[0].user_id;
-
-        if (activeRents.some(r => r.due_date)) {
-          const sortedByDueDate = activeRents
-            .filter(r => r.due_date)
-            .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
-          if (sortedByDueDate.length > 0) dueDate = sortedByDueDate[0].due_date;
-        }
-      } else if (realAvailableCount <= 0) {
-        status = '대여 중';
-      }
+      // [REF] 로직 캡슐화 (src/lib/gameStatus.js)
+      // 상태 결정 로직을 완전히 분리하여 안전하게 관리함
+      const statusData = calculateGameStatus(game, gameRentals);
 
       return {
         ...game,
-        status,
-        available_count: realAvailableCount,
-        renter,
-        renterId,
-        due_date: dueDate,
-        active_rental_count: gameRentals.length,
-        rentals: gameRentals
+        ...statusData
       };
     });
 
@@ -232,7 +187,7 @@ export const fetchTrending = async () => {
     const { data: trendingData, error } = await supabase
       .rpc('get_trending_games');
 
-    if (error) {
+    if (error || !trendingData || trendingData.length === 0) {
       // RPC가 아직 없거나 에러인 경우 fallback: 기존 방식(총 조회수)
       console.warn("Trending RPC Error (Fallback to total_views):", error.message);
       const { data, error: fbError } = await supabase
@@ -420,13 +375,45 @@ export const saveConfig = async (newConfig) => {
   return { status: "success" };
 };
 
-// [Admin] 유저 목록 조회
+// [Admin] 유저 목록 조회 - 역할 정보 포함 (안전한 Join 복구)
 export const fetchUsers = async () => {
-  const { data, error } = await supabase
+  // 1. 프로필 조회
+  const { data: profiles, error: profileError } = await supabase
     .from('profiles')
-    .select('id, name, student_id, phone');
-  if (error) return [];
-  return data;
+    .select('id, name, student_id, phone, is_paid, joined_semester')
+    .order('name');
+
+  if (profileError) {
+    console.error('Error fetching profiles:', profileError);
+    return [];
+  }
+
+  // 2. 역할 조회 (전체 가져오기) - 실패해도 프로필은 반환
+  let roles = [];
+  try {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('user_id, role_key');
+    if (error) throw error;
+    roles = data;
+  } catch (e) {
+    console.warn('Error fetching roles (might be RLS):', e);
+    // 역할 조회 실패 시 빈 배열로 진행
+  }
+
+  // 3. 데이터 병합
+  const roleMap = {};
+  if (roles) {
+    roles.forEach(r => {
+      if (!roleMap[r.user_id]) roleMap[r.user_id] = [];
+      roleMap[r.user_id].push(r.role_key);
+    });
+  }
+
+  return profiles.map(profile => ({
+    ...profile,
+    roles: roleMap[profile.id] || []
+  }));
 };
 
 // [Admin] 게임 수정 (단순 정보 업데이트)
@@ -812,7 +799,27 @@ export const registerMatch = async (gameId, playerIds, winnerId) => {
     console.error("Match Register Error:", error);
     return { success: false, message: error.message };
   }
-  return data; // { success: true/false, message: ... }
+  return { success: true };
+};
+
+// [Kiosk] 14. 포인트 조회
+export const fetchUserPoints = async (userId) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('current_points')
+    .eq('id', userId)
+    .single();
+
+  if (error) return 0;
+  return data?.current_points || 0;
+};
+
+// [NEW] 가입 학기 본인 수정 (1회용)
+export const updateMySemester = async (newSemester) => {
+  const { data, error } = await supabase.rpc('update_my_semester', { new_semester: newSemester });
+  if (error) throw error;
+  if (!data?.success) throw new Error(data?.message || '업데이트 실패');
+  return data;
 };
 
 // [Kiosk] 14. 키오스크 간편 반납 (RPC)
@@ -877,14 +884,4 @@ export const fetchLeaderboard = async (limit = 10) => {
 };
 
 
-// [Kiosk] 15. 유저 포인트 조회 (Helper)
-export const fetchUserPoints = async (userId) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('current_points')
-    .eq('id', userId)
-    .single();
-
-  if (error) return 0;
-  return data?.current_points || 0;
-};
+// [Kiosk] 15. 유저 포인트 조회 (Helper) -> Moved to top (line 806)

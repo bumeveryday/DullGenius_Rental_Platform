@@ -186,8 +186,48 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
         </div>
 
         <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-          <button onClick={onClose} style={styles.cancelBtn}>취소</button>
-          <button onClick={handleSubmit} style={styles.saveBtn}>저장</button>
+          <button
+            onClick={onClose}
+            style={styles.cancelBtn}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'rgba(108, 117, 125, 1)';
+              e.target.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(108, 117, 125, 0.9)';
+              e.target.style.transform = 'translateY(0)';
+            }}
+            onMouseDown={(e) => {
+              e.target.style.transform = 'translateY(0) scale(0.98)';
+            }}
+            onMouseUp={(e) => {
+              e.target.style.transform = 'translateY(-1px)';
+            }}
+          >
+            ✕ 취소
+          </button>
+          <button
+            onClick={handleSubmit}
+            style={styles.saveBtn}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'rgba(52, 152, 219, 1)';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(52, 152, 219, 0.95)';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+            }}
+            onMouseDown={(e) => {
+              e.target.style.transform = 'translateY(0) scale(0.98)';
+            }}
+            onMouseUp={(e) => {
+              e.target.style.transform = 'translateY(-1px)';
+            }}
+          >
+            ✓ 저장
+          </button>
         </div>
       </div>
     </div>
@@ -196,8 +236,8 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
 
 const styles = {
   // Most styles are now handled by CSS classes in Admin.css
-  cancelBtn: { flex: 1, padding: "12px", background: "#444", border: "1px solid #555", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", color: "#ccc" },
-  saveBtn: { flex: 1, padding: "12px", background: "#3498db", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }
+  cancelBtn: { flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.2)", background: "rgba(108, 117, 125, 0.9)", color: "white", fontWeight: "600", cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)" },
+  saveBtn: { flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.2)", background: "rgba(52, 152, 219, 0.95)", color: "white", fontWeight: "600", cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)" }
 };
 
 export default GameFormModal;

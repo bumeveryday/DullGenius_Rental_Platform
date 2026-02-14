@@ -475,6 +475,12 @@ function DashboardTab({ games, loading, onReload }) {
                 <div style={{ fontSize: "0.85em", color: "var(--admin-text-sub)", marginTop: "5px", lineHeight: "1.4" }}>
                   <span style={{ marginRight: "10px" }}>{game.renter ? `👤 ${game.renter}` : "대여자 없음"}</span>
                   <span style={{ color: "#e67e22", marginRight: "10px" }}>난이도: {game.difficulty || "-"}</span>
+                  <span title="유튜브 설명 영상" style={{ cursor: "help", opacity: game.video_url ? 1 : 0.3, marginRight: "5px" }}>
+                    {game.video_url ? "📺" : "📺❌"}
+                  </span>
+                  <span title="추천 멘트" style={{ cursor: "help", opacity: game.recommendation_text ? 1 : 0.3 }}>
+                    {game.recommendation_text ? "📝" : "📝❌"}
+                  </span>
                   <br />
                   태그: <span style={{ color: "var(--admin-primary)" }}>{game.tags || "(없음)"}</span>
                 </div>
@@ -494,13 +500,15 @@ function DashboardTab({ games, loading, onReload }) {
                   </>
                 )}
 
-                {/* 2. 반납/분실 (대여 중인 건이 하나라도 있는 경우) */}
-                {((game.rentals && game.rentals.some(r => r.type === 'RENT' && !r.returned_at)) || game.active_rental_count > 0) && (
-                  <>
-                    <button onClick={() => handleReturn(game)} style={actionBtnStyle("#27ae60")}>↩️ 반납</button>
-                    <button onClick={() => handleStatusChange(game.id, "분실", game.name)} style={actionBtnStyle("#7f8c8d")}>⚠️ 분실</button>
-                  </>
-                )}
+                {/* 2. 반납/분실 (대여 중인 건이 있고, 예약된 건이 없는 경우) */}
+                {/* [FIX] 찜 상태라면 반납/분실 버튼 숨김 처리 */}
+                {(!game.rentals || !game.rentals.some(r => r.type === 'DIBS')) &&
+                  ((game.rentals && game.rentals.some(r => r.type === 'RENT' && !r.returned_at)) || game.active_rental_count > 0) && (
+                    <>
+                      <button onClick={() => handleReturn(game)} style={actionBtnStyle("#27ae60")}>↩️ 반납</button>
+                      <button onClick={() => handleStatusChange(game.id, "분실", game.name)} style={actionBtnStyle("#7f8c8d")}>⚠️ 분실</button>
+                    </>
+                  )}
 
                 {/* 3. 현장대여 (재고가 남아있는 경우) */}
                 {game.available_count > 0 && (
@@ -619,7 +627,26 @@ function DashboardTab({ games, loading, onReload }) {
             </div>
 
             <div style={{ marginTop: "20px", textAlign: "right" }}>
-              <button onClick={() => setIsLogModalOpen(false)} style={styles.cancelBtn}>닫기</button>
+              <button
+                onClick={() => setIsLogModalOpen(false)}
+                style={styles.cancelBtn}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = 'rgba(108, 117, 125, 1)';
+                  e.target.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'rgba(108, 117, 125, 0.9)';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+                onMouseDown={(e) => {
+                  e.target.style.transform = 'translateY(0) scale(0.98)';
+                }}
+                onMouseUp={(e) => {
+                  e.target.style.transform = 'translateY(-1px)';
+                }}
+              >
+                ✕ 닫기
+              </button>
             </div>
           </div>
         </div>
@@ -677,7 +704,7 @@ const styles = {
     zIndex: 9999
   },
   modalContent: { background: "var(--admin-card-bg)", color: "var(--admin-text-main)", padding: "25px", borderRadius: "15px", width: "90%", maxWidth: "800px", boxShadow: "0 5px 20px rgba(0,0,0,0.5)", maxHeight: "90vh", overflowY: "auto" },
-  cancelBtn: { padding: "10px 20px", background: "#444", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", color: "#ccc" }
+  cancelBtn: { padding: "10px 20px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.2)", background: "rgba(108, 117, 125, 0.9)", color: "white", fontWeight: "600", cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)" }
 };
 
 export default DashboardTab;

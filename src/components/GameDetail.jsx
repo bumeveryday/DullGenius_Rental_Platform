@@ -4,6 +4,7 @@ import { fetchGames, sendMiss, fetchReviews, addReview, increaseViewCount, dibsG
 import { TEXTS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext'; // [NEW] 전역 Toast
+import ConfirmModal from './ConfirmModal'; // [NEW] 커스텀 확인 모달
 
 function GameDetail() {
   const { id } = useParams();
@@ -21,6 +22,23 @@ function GameDetail() {
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false); // [NEW] 영상 모달 상태
   const [videoId, setVideoId] = useState(null); // [NEW] 유튜브 ID
+
+  // [NEW] Confirm 모달 상태
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    type: "info"
+  });
+
+  const showConfirmModal = (title, message, onConfirm, type = "info") => {
+    setConfirmModal({ isOpen: true, title, message, onConfirm, type });
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModal({ isOpen: false, title: "", message: "", onConfirm: null, type: "info" });
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -105,37 +123,47 @@ function GameDetail() {
   // [FIX] User Flow: 사용자는 '찜하기'만 가능 (대여는 관리자/키오스크)
   const handleRent = async () => {
     if (!user) {
-      if (window.confirm("로그인이 필요합니다. 로그인 페이지로 이동할까요?")) {
+      showConfirmModal("로그인 필요", "로그인이 필요합니다. 로그인 페이지로 이동할까요?", () => {
         navigate("/login");
-      }
+      }, "info");
       return;
     }
 
-    if (!window.confirm(`'${game.name}'을(를) 찜하시겠습니까 ?\n30분 내로 동아리방에서 수령해야 합니다.`)) return;
+    showConfirmModal(
+      "찜하기 확인",
+      `'${game.name}'을(를) 찜하시겠습니까?\n30분 내로 동아리방에서 수령해야 합니다.`,
+      async () => {
+        try {
+          const result = await dibsGame(game.id, user.id); // [Changed] rentGame -> dibsGame
 
-    try {
-      const result = await dibsGame(game.id, user.id); // [Changed] rentGame -> dibsGame
-
-      if (result.success) {
-        showToast("⚡ 찜 완료! 30분 내에 수령해주세요.", {
-          showButton: true,
-          buttonText: "마이페이지로 가기",
-          onButtonClick: () => navigate('/mypage')
-        });
-        setGame({ ...game, status: "찜" }); // [UI 업데이트]
-      } else {
-        showToast(result.message || "찜하기 실패", { type: "error" });
-      }
-    } catch (e) {
-      showToast("오류 발생: " + (e.message || "알 수 없는 오류"), { type: "error" });
-    }
+          if (result.success) {
+            showToast("⚡ 찜 완료! 30분 내에 수령해주세요.", {
+              showButton: true,
+              buttonText: "마이페이지로 가기",
+              onButtonClick: () => navigate('/mypage')
+            });
+            setGame({ ...game, status: "찜" }); // [UI 업데이트]
+          } else {
+            showToast(result.message || "찜하기 실패", { type: "error" });
+          }
+        } catch (e) {
+          showToast("오류 발생: " + (e.message || "알 수 없는 오류"), { type: "error" });
+        }
+      },
+      "primary" // [NOTE] ConfirmModal에서 primary 타입 지원 확인 필요 (없으면 info로 처리됨)
+    );
   };
 
   const handleMiss = async () => {
-    if (window.confirm(TEXTS.ALERT_MISS_CONFIRM)) {
-      await sendMiss(game.id);
-      showToast(TEXTS.ALERT_MISS_SUCCESS);
-    }
+    showConfirmModal(
+      "입고 요청",
+      TEXTS.ALERT_MISS_CONFIRM,
+      async () => {
+        await sendMiss(game.id);
+        showToast(TEXTS.ALERT_MISS_SUCCESS);
+      },
+      "info"
+    );
   };
 
   const handleSubmitReview = async () => {
@@ -339,6 +367,16 @@ function GameDetail() {
           </div>
         )
       }
+
+      {/* [NEW] Confirm 모달 렌더링 */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={closeConfirmModal}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+      />
     </div >
   );
 }

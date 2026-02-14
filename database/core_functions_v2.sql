@@ -37,7 +37,29 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '이미 찜한 게임입니다.');
     END IF;
     
-    -- 3. 찜 생성 + 가용 수량 감소
+    -- 3. 회비 납부 확인 (회비 검사가 활성화된 경우에만)
+    IF is_payment_check_enabled() THEN
+        -- 사용자가 회비 면제 역할을 가지고 있지 않은 경우에만 검사
+        IF NOT is_user_payment_exempt(p_user_id) THEN
+            -- 회비 납부 여부 확인
+            DECLARE
+                v_is_paid BOOLEAN;
+            BEGIN
+                SELECT is_paid INTO v_is_paid
+                FROM public.profiles
+                WHERE id = p_user_id;
+                
+                IF NOT COALESCE(v_is_paid, false) THEN
+                    RETURN jsonb_build_object(
+                        'success', false, 
+                        'message', '회비를 납부해야 대여할 수 있습니다. 관리자에게 문의하세요.'
+                    );
+                END IF;
+            END;
+        END IF;
+    END IF;
+    
+    -- 4. 찜 생성 + 가용 수량 감소
     INSERT INTO public.rentals (game_id, user_id, game_name, type, borrowed_at, due_date)
     VALUES (p_game_id, p_user_id, v_game_name, 'DIBS', now(), now() + interval '30 minutes');
     
@@ -45,7 +67,7 @@ BEGIN
     SET available_count = available_count - 1 
     WHERE id = p_game_id;
     
-    -- 4. 로그
+    -- 5. 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
     VALUES (p_game_id, p_user_id, 'DIBS', 'User reserved game');
     

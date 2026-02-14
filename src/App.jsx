@@ -52,6 +52,8 @@ function Home() {
   const JOIN_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdoBGEPRM5TIef66Nen7Sc8pWKkAqCMi90ftM1x9QZsX_5a6g/viewform?usp=header";
 
 
+
+
   // ==========================================
   // 2. 이펙트 & 데이터 로딩 (Effects)
   // ==========================================
@@ -285,11 +287,13 @@ function Home() {
               window.lastLogoClickTime = now;
 
               if (window.logoClickCount >= 5) {
-                const confirmDev = window.confirm("🛠️ 개발자 모드로 관리자 페이지에 접속하시겠습니까?");
-                if (confirmDev) {
-                  sessionStorage.setItem('dev_admin_bypass', 'true'); // 우회 플래그 설정
-                  navigate("/admin-secret");
-                  window.logoClickCount = 0;
+                if (window.logoClickCount >= 5) {
+                  const confirmDev = window.confirm("🛠️ 개발자 모드로 관리자 페이지에 접속하시겠습니까?");
+                  if (confirmDev) {
+                    sessionStorage.setItem('dev_admin_bypass', 'true'); // 우회 플래그 설정
+                    navigate("/admin-secret");
+                    window.logoClickCount = 0;
+                  }
                 }
               }
               // }
@@ -357,7 +361,7 @@ function Home() {
             trending.length > 0 ? (
               <div style={{ display: "flex", gap: "15px", overflowX: "auto", padding: "10px 5px 20px 5px", scrollBehavior: "smooth" }}>
                 {trending.map((game, index) => (
-                  <Link to={`/ game / ${game.id} `} state={{ game }} key={game.id} style={{ textDecoration: "none", color: "inherit" }}>
+                  <Link to={`/game/${game.id}`} state={{ game }} key={game.id} style={{ textDecoration: "none", color: "inherit" }}>
                     <div className="trend-card">
                       <div className="trend-badge">{index + 1}위</div>
                       <div style={{ width: "100%", height: "140px", background: "#f8f9fa" }}>
@@ -434,6 +438,8 @@ function Home() {
           </div>
         ))}
       </div>
+
+
     </div>
   );
 }

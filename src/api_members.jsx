@@ -1,0 +1,82 @@
+// ==========================================
+// [Member Management APIs] - 회원 관리
+// ==========================================
+
+import { supabase } from './lib/supabaseClient';
+
+// [Admin] 회비 납부 상태 업데이트
+export const updatePaymentStatus = async (userId, isPaid) => {
+    const { error } = await supabase
+        .from('profiles')
+        .update({ is_paid: isPaid })
+        .eq('id', userId);
+
+    if (error) throw error;
+    return { status: "success" };
+};
+
+// [Admin] 사용자 정보 수정
+export const updateUserProfile = async (userId, updates) => {
+    const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId);
+
+    if (error) throw error;
+    return { status: "success" };
+};
+
+// [Admin] 학기 종료 - 회비 일괄 초기화
+export const resetSemesterPayments = async () => {
+    const { data, error } = await supabase.rpc('reset_semester_payments');
+    if (error) throw error;
+    return data;
+};
+
+// [Admin] 회비 검사 활성화/비활성화 토글
+export const togglePaymentCheck = async (enabled) => {
+    const { error } = await supabase
+        .from('app_config')
+        .update({ value: enabled ? 'true' : 'false' })
+        .eq('key', 'payment_check_enabled');
+
+    if (error) throw error;
+    return { status: "success" };
+};
+
+// [Admin] 사용자 역할 업데이트
+export const updateUserRoles = async (userId, roleKeys) => {
+    // 기존 역할 삭제
+    await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+    // 새 역할 추가
+    if (roleKeys && roleKeys.length > 0) {
+        const roles = roleKeys.map(roleKey => ({
+            user_id: userId,
+            role_key: roleKey
+        }));
+
+        const { error } = await supabase
+            .from('user_roles')
+            .insert(roles);
+
+        if (error) throw error;
+    }
+
+    return { status: "success" };
+};
+
+// [Admin] 사용자 역할 조회
+export const getUserRoles = async (userId) => {
+    const { data, error } = await supabase
+        .from('user_roles')
+        .select('role_key')
+        .eq('user_id', userId);
+
+    if (error) throw error;
+    return data || [];
+};
+

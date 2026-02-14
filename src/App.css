@@ -578,3 +578,29 @@ select.review-input {
     font-size: 0.95rem;
   }
 }
+
+/* =========================================
+   9. 모달 스타일 (Global Modal)
+   ========================================= */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(3px);
+  /* 배경 블러 효과 */
+}
+
+.modal-content {
+  background: white !important;
+  color: #333 !important;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  /* ConfirmModal.js에서 인라인 스타일로 오버라이드 되거나 병합됨 */
+}

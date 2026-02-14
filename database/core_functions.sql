@@ -554,6 +554,28 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '현재 대여 가능한 재고가 없습니다.');
     END IF;
 
+    -- 회비 납부 확인 (회비 검사가 활성화된 경우에만)
+    IF is_payment_check_enabled() THEN
+        -- 사용자가 회비 면제 역할을 가지고 있지 않은 경우에만 검사
+        IF NOT is_user_payment_exempt(p_user_id) THEN
+            -- 회비 납부 여부 확인
+            DECLARE
+                v_is_paid BOOLEAN;
+            BEGIN
+                SELECT is_paid INTO v_is_paid
+                FROM public.profiles
+                WHERE id = p_user_id;
+                
+                IF NOT COALESCE(v_is_paid, false) THEN
+                    RETURN jsonb_build_object(
+                        'success', false, 
+                        'message', '회비를 납부해야 대여할 수 있습니다. 관리자에게 문의하세요.'
+                    );
+                END IF;
+            END;
+        END IF;
+    END IF;
+
     INSERT INTO public.rentals (copy_id, user_id, type, borrowed_at, due_date)
     VALUES (v_copy_id, p_user_id, 'RENT', now(), now() + INTERVAL '2 days');
 

@@ -39,15 +39,15 @@ function ConfirmModal({
 
     if (!isOpen) return null;
 
-    // 타입별 색상 결정
+    // 타입별 색상 결정 (토스트와 동일)
     const getButtonColor = () => {
         switch (type) {
             case 'danger':
-                return '#e74c3c';
+                return 'rgba(231, 76, 60, 0.95)';
             case 'warning':
-                return '#f39c12';
+                return 'rgba(243, 156, 18, 0.95)';
             default:
-                return '#3498db';
+                return 'rgba(52, 152, 219, 0.95)';
         }
     };
 
@@ -81,14 +81,48 @@ function ConfirmModal({
 
                 {/* 버튼 */}
                 <div className="confirm-modal-footer" style={styles.footer}>
-                    <button onClick={onClose} style={styles.cancelBtn}>
-                        {cancelText}
+                    <button
+                        onClick={onClose}
+                        style={styles.cancelBtn}
+                        onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = 'rgba(108, 117, 125, 1)';
+                            e.target.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = 'rgba(108, 117, 125, 0.9)';
+                            e.target.style.transform = 'translateY(0)';
+                        }}
+                        onMouseDown={(e) => {
+                            e.target.style.transform = 'translateY(0) scale(0.98)';
+                        }}
+                        onMouseUp={(e) => {
+                            e.target.style.transform = 'translateY(-1px)';
+                        }}
+                    >
+                        ✕ {cancelText}
                     </button>
                     <button
                         onClick={handleConfirm}
                         style={{ ...styles.confirmBtn, backgroundColor: getButtonColor() }}
+                        onMouseEnter={(e) => {
+                            const color = getButtonColor();
+                            e.target.style.backgroundColor = color.replace('0.95', '1');
+                            e.target.style.transform = 'translateY(-1px)';
+                            e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.25)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = getButtonColor();
+                            e.target.style.transform = 'translateY(0)';
+                            e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                        }}
+                        onMouseDown={(e) => {
+                            e.target.style.transform = 'translateY(0) scale(0.98)';
+                        }}
+                        onMouseUp={(e) => {
+                            e.target.style.transform = 'translateY(-1px)';
+                        }}
                     >
-                        {confirmText}
+                        ✓ {confirmText}
                     </button>
                 </div>
             </div>
@@ -167,25 +201,26 @@ const styles = {
     cancelBtn: {
         flex: 1,
         padding: '12px 20px',
-        border: '1px solid #555',
-        backgroundColor: '#444',
-        color: '#ccc',
-        borderRadius: '8px',
-        fontSize: '1em',
-        fontWeight: '600',
-        cursor: 'pointer',
-        transition: 'all 0.2s'
-    },
-    confirmBtn: {
-        flex: 1,
-        padding: '12px 20px',
-        border: 'none',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        backgroundColor: 'rgba(108, 117, 125, 0.9)',
         color: 'white',
         borderRadius: '8px',
         fontSize: '1em',
         fontWeight: '600',
         cursor: 'pointer',
-        transition: 'all 0.2s',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+    },
+    confirmBtn: {
+        flex: 1,
+        padding: '12px 20px',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        color: 'white',
+        borderRadius: '8px',
+        fontSize: '1em',
+        fontWeight: '600',
+        cursor: 'pointer',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
     }
 };

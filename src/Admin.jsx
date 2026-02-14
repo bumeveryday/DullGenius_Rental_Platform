@@ -26,6 +26,8 @@ import DashboardTab from './admin/DashboardTab';
 import AddGameTab from './admin/AddGameTab';
 import ConfigTab from './admin/ConfigTab';
 import PointsTab from './admin/PointsTab';
+import MembersTab from './admin/MembersTab'; // [NEW]
+import SystemTab from './admin/SystemTab'; // [NEW] 시스템 설정 탭
 
 function Admin() {
   const { user, hasRole, logout, loading: authLoading } = useAuth();
@@ -120,7 +122,7 @@ function Admin() {
       }
       loadData();
     }
-  }, [user, isAdmin, loadData]);
+  }, [user?.id, isAdmin, loadData]);
 
 
   // --- 3. 로딩 및 권한 체크 ---
@@ -160,8 +162,10 @@ function Admin() {
       <div className="admin-tabs">
         <TabButton label="📋 대여 현황 / 태그" id="dashboard" activeTab={activeTab} onClick={setActiveTab} />
         <TabButton label="➕ 게임 추가" id="add" activeTab={activeTab} onClick={setActiveTab} />
-        <TabButton label="🎨 홈페이지 설정" id="config" activeTab={activeTab} onClick={setActiveTab} />
+        <TabButton label="⚙️ 시스템 설정" id="system" activeTab={activeTab} onClick={setActiveTab} /> {/* [NEW] */}
+        <TabButton label="👥 회원 관리" id="members" activeTab={activeTab} onClick={setActiveTab} />
         <TabButton label="💰 포인트 시스템" id="points" activeTab={activeTab} onClick={setActiveTab} />
+        <TabButton label="🎨 홈페이지 설정" id="config" activeTab={activeTab} onClick={setActiveTab} />
       </div>
 
       {/* 탭 컨텐츠 영역 */}
@@ -187,8 +191,16 @@ function Admin() {
           />
         )}
 
+        {activeTab === "system" && ( // [NEW]
+          <SystemTab />
+        )}
+
         {activeTab === "points" && (
           <PointsTab />
+        )}
+
+        {activeTab === "members" && ( // [NEW]
+          <MembersTab />
         )}
       </div>
     </div>

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext'; // [NEW]
+import { getAuthErrorMessage } from '../constants'; // [NEW]
 
 function Signup() {
   const navigate = useNavigate();
@@ -50,7 +51,7 @@ function Signup() {
       navigate("/");
     } catch (error) {
       console.error("Signup Error:", error);
-      showToast(`가입 실패: ${error.message}`, { type: "error" });
+      showToast(getAuthErrorMessage(error), { type: "error" });
     } finally {
       setLoading(false);
     }

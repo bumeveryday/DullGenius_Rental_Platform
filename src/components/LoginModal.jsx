@@ -68,7 +68,7 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
       });
       // 성공하면 부모가 모달을 닫음
     } catch (e) {
-      showToast(e.message || TEXTS.ALERT_AUTH_ERROR, { type: "error" });
+      showToast(getAuthErrorMessage(e) || TEXTS.ALERT_AUTH_ERROR, { type: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -163,9 +163,23 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
           </div>
 
           <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
-            <button onClick={onClose} style={styles.cancelBtn} disabled={isLoading}>{TEXTS.BTN_CANCEL}</button>
-            <button onClick={handleMemberRent} style={{ ...styles.confirmBtn, opacity: isLoading ? 0.7 : 1 }} disabled={isLoading}>
-              {isLoading ? TEXTS.BTN_RENT_LOADING : TEXTS.BTN_RENT_NOW}
+            <button
+              onClick={onClose}
+              style={styles.cancelBtn}
+              disabled={isLoading}
+              onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(108, 117, 125, 1)', e.target.style.transform = 'translateY(-1px)')}
+              onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(108, 117, 125, 0.9)', e.target.style.transform = 'translateY(0)')}
+            >
+              ✕ {TEXTS.BTN_CANCEL}
+            </button>
+            <button
+              onClick={handleMemberRent}
+              style={{ ...styles.confirmBtn, opacity: isLoading ? 0.7 : 1 }}
+              disabled={isLoading}
+              onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(52, 152, 219, 1)', e.target.style.transform = 'translateY(-1px)', e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.25)')}
+              onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(52, 152, 219, 0.95)', e.target.style.transform = 'translateY(0)', e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)')}
+            >
+              ✓ {isLoading ? TEXTS.BTN_RENT_LOADING : TEXTS.BTN_RENT_NOW}
             </button>
           </div>
         </div>
@@ -224,9 +238,24 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
           </div>
 
           <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
-            <button type="button" onClick={onClose} style={styles.cancelBtn} disabled={isLoading}>{TEXTS.BTN_CANCEL}</button>
-            <button type="submit" style={{ ...styles.confirmBtn, opacity: isLoading ? 0.7 : 1 }} disabled={isLoading}>
-              {isLoading ? TEXTS.BTN_RENT_LOADING : TEXTS.BTN_RENT_LOGIN_REQUIRED}
+            <button
+              type="button"
+              onClick={onClose}
+              style={styles.cancelBtn}
+              disabled={isLoading}
+              onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(108, 117, 125, 1)', e.target.style.transform = 'translateY(-1px)')}
+              onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(108, 117, 125, 0.9)', e.target.style.transform = 'translateY(0)')}
+            >
+              ✕ {TEXTS.BTN_CANCEL}
+            </button>
+            <button
+              type="submit"
+              style={{ ...styles.confirmBtn, opacity: isLoading ? 0.7 : 1 }}
+              disabled={isLoading}
+              onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(52, 152, 219, 1)', e.target.style.transform = 'translateY(-1px)', e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.25)')}
+              onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(52, 152, 219, 0.95)', e.target.style.transform = 'translateY(0)', e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)')}
+            >
+              ✓ {isLoading ? TEXTS.BTN_RENT_LOADING : TEXTS.BTN_RENT_LOGIN_REQUIRED}
             </button>
           </div>
         </form>
@@ -242,8 +271,8 @@ const styles = {
   label: { display: "block", textAlign: "left", fontSize: "0.85em", color: "#666", marginBottom: "5px" },
   checkboxContainer: { display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "5px 0" },
   resetBtn: { background: "none", border: "none", color: "#999", textDecoration: "underline", fontSize: "0.8em", marginTop: "10px", cursor: "pointer" },
-  cancelBtn: { flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid #ddd", background: "white", cursor: "pointer" },
-  confirmBtn: { flex: 2, padding: "12px", borderRadius: "8px", border: "none", background: "#333", color: "white", fontWeight: "bold", cursor: "pointer" }
+  cancelBtn: { flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.2)", background: "rgba(108, 117, 125, 0.9)", color: "white", fontWeight: "600", cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)" },
+  confirmBtn: { flex: 2, padding: "12px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.2)", background: "rgba(52, 152, 219, 0.95)", color: "white", fontWeight: "600", cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)" }
 };
 
 export default LoginModal;

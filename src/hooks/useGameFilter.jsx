@@ -43,7 +43,22 @@ export const useGameFilter = (games, filters) => {
 
             // 검색어 필터 (#태그 or 이름)
             if (searchTerm.startsWith("#")) {
-                if (!game.tags || !game.tags.includes(searchTerm)) return false;
+                if (!game.tags) return false;
+
+                // [Improved] 태그 검색 로직 강화
+                // 1. # 제거 후 검색 (유연성 확보)
+                // 2. 문자열/배열 모두 지원
+                const searchKeyword = searchTerm.replace(/^#/, '');
+
+                let tags = [];
+                if (Array.isArray(game.tags)) {
+                    tags = game.tags;
+                } else if (typeof game.tags === 'string') {
+                    tags = game.tags.split(/\s+/).filter(Boolean);
+                }
+
+                // 태그 중 하나라도 키워드를 포함하면 매칭
+                return tags.some(tag => tag.replace(/^#/, '').includes(searchKeyword));
             } else {
                 if (searchTerm && !game.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
             }

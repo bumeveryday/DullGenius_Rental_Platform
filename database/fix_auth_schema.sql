@@ -3,7 +3,7 @@
 
 -- 1. 혹시 모를 충돌 데이터 정리 (해당 학번의 프로필이 이미 있다면 삭제)
 -- (주의: 실제 운영 중이라면 함부로 지우면 안 되지만, 초기 개발 단계이므로 정리합니다)
-DELETE FROM public.profiles WHERE student_id = '22200084';
+-- DELETE FROM public.profiles WHERE student_id = '22200084'; -- [Safe Comment Out]
 
 -- 2. Profiles 테이블이 존재하는지 확인 (없으면 생성)
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -15,9 +15,18 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     penalty integer DEFAULT 0,
     joined_semester text,
     activity_point integer DEFAULT 0,
+    is_semester_fixed boolean DEFAULT false, -- [NEW] 가입학기 확정 여부
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
+
+-- [NEW] 기존 테이블에 컬럼 추가 (이미 테이블이 있는 경우 대비)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'is_semester_fixed') THEN
+        ALTER TABLE public.profiles ADD COLUMN is_semester_fixed boolean DEFAULT false;
+    END IF;
+END $$;
 
 -- 3. Allowed Users 테이블 확인
 CREATE TABLE IF NOT EXISTS public.allowed_users (
@@ -47,6 +56,11 @@ DECLARE
     v_meta_student_id text;
     v_meta_name text;
     v_meta_phone text;
+    
+    -- [NEW] 자동 학기 계산 변수
+    v_month integer;
+    v_year text;
+    v_auto_semester text;
 BEGIN
     -- 메타데이터에서 값 추출
     v_meta_student_id := new.raw_user_meta_data->>'student_id';
@@ -59,6 +73,19 @@ BEGIN
     FROM public.allowed_users
     WHERE student_id = v_meta_student_id;
 
+    -- [NEW] 가입 학기 자동 계산 로직
+    IF v_allowed_semester IS NOT NULL THEN
+        v_auto_semester := v_allowed_semester; -- 화이트리스트에 있으면 그거 사용
+    ELSE
+        v_month := extract(month from now());
+        v_year := to_char(now(), 'YYYY');
+        IF v_month <= 6 THEN
+            v_auto_semester := v_year || '-1';
+        ELSE
+            v_auto_semester := v_year || '-2';
+        END IF;
+    END IF;
+
     -- 프로필 생성
     INSERT INTO public.profiles (id, student_id, name, phone, joined_semester)
     VALUES (
@@ -69,8 +96,8 @@ BEGIN
         COALESCE(v_allowed_name, v_meta_name, 'Unknown'),
         -- 전화번호
         COALESCE(v_allowed_phone, v_meta_phone, ''),
-        -- 가입학기
-        COALESCE(v_allowed_semester, '2025-1')
+        -- 가입학기 (자동 계산됨)
+        v_auto_semester
     );
 
     -- 역할 부여
@@ -93,5 +120,31 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- 7. 확인 메시지
-SELECT 'Fixed Auth Schema & Triggers' as status;
+-- 7. [NEW] 본인 가입 학기 1회 수정 RPC
+CREATE OR REPLACE FUNCTION public.update_my_semester(
+    new_semester text
+) RETURNS jsonb AS $$
+DECLARE
+    v_is_fixed boolean;
+BEGIN
+    -- 현재 상태 확인
+    SELECT is_semester_fixed INTO v_is_fixed
+    FROM public.profiles
+    WHERE id = auth.uid();
+
+    IF v_is_fixed THEN
+         RETURN jsonb_build_object('success', false, 'message', '이미 가입 학기를 확정했습니다. 수정할 수 없습니다.');
+    END IF;
+
+    -- 업데이트 및 확정
+    UPDATE public.profiles
+    SET joined_semester = new_semester,
+        is_semester_fixed = true
+    WHERE id = auth.uid();
+
+    RETURN jsonb_build_object('success', true, 'message', '가입 학기가 등록되었습니다.');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 8. 확인 메시지
+SELECT 'Fixed Auth Schema & Added Semester Logic' as status;

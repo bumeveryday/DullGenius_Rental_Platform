@@ -29,15 +29,31 @@ const UserSelectModal = ({ isOpen, onClose, candidates, onSelectUser, onSelectMa
                 <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                     <button
                         onClick={onSelectManual}
-                        style={{ padding: "8px 12px", border: "1px solid #ddd", background: "white", borderRadius: "6px", cursor: "pointer" }}
+                        style={styles.actionBtn}
+                        onMouseEnter={(e) => {
+                            e.target.style.transform = 'translateY(-1px)';
+                            e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.25)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.transform = 'translateY(0)';
+                            e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                        }}
                     >
-                        비회원(수기)으로 진행
+                        ✓ 비회원(수기)으로 진행
                     </button>
                     <button
                         onClick={onClose}
-                        style={{ padding: "8px 15px", background: "#666", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}
+                        style={styles.cancelBtn}
+                        onMouseEnter={(e) => {
+                            e.target.style.transform = 'translateY(-1px)';
+                            e.target.style.backgroundColor = 'rgba(108, 117, 125, 1)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.transform = 'translateY(0)';
+                            e.target.style.backgroundColor = 'rgba(108, 117, 125, 0.9)';
+                        }}
                     >
-                        취소
+                        ✕ 취소
                     </button>
                 </div>
             </div>
@@ -79,7 +95,9 @@ const styles = {
         justifyContent: "space-between",
         alignItems: "center",
         background: "#fff"
-    }
+    },
+    actionBtn: { padding: "10px 15px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.2)", background: "rgba(52, 152, 219, 0.95)", color: "white", fontWeight: "600", cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)" },
+    cancelBtn: { padding: "10px 15px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.2)", background: "rgba(108, 117, 125, 0.9)", color: "white", fontWeight: "600", cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)" }
 };
 
 export default UserSelectModal;

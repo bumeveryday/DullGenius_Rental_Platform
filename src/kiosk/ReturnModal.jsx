@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { kioskReturn } from '../api';
 import { useToast } from '../contexts/ToastContext';
+import ConfirmModal from '../components/ConfirmModal'; // [NEW] 커스텀 확인 모달
 import './Kiosk.css';
 
 function ReturnModal({ onClose }) {
@@ -12,6 +13,23 @@ function ReturnModal({ onClose }) {
     const [processing, setProcessing] = useState(false);
     const [expandedUserId, setExpandedUserId] = useState(null); // Accordion state
     const [selectedRentals, setSelectedRentals] = useState(new Set()); // Set of rental_ids
+
+    // [NEW] Confirm 모달 상태
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: "",
+        message: "",
+        onConfirm: null,
+        type: "info"
+    });
+
+    const showConfirmModal = (title, message, onConfirm, type = "info") => {
+        setConfirmModal({ isOpen: true, title, message, onConfirm, type });
+    };
+
+    const closeConfirmModal = () => {
+        setConfirmModal({ isOpen: false, title: "", message: "", onConfirm: null, type: "info" });
+    };
 
     // Load active rentals grouped by user
     useEffect(() => {
@@ -77,74 +95,79 @@ function ReturnModal({ onClose }) {
             return;
         }
 
-        if (!window.confirm(`선택한 ${selectedRentals.size}개의 게임을 반납하시겠습니까?`)) return;
+        showConfirmModal(
+            "반납 확인",
+            `선택한 ${selectedRentals.size}개의 게임을 반납하시겠습니까?`,
+            async () => {
+                setProcessing(true);
+                let successCount = 0;
+                let failCount = 0;
+                const failedItems = []; // 실패한 항목 추적
 
-        setProcessing(true);
-        let successCount = 0;
-        let failCount = 0;
-        const failedItems = []; // 실패한 항목 추적
+                // Process each selected rental
+                for (const rentalId of selectedRentals) {
+                    // Find the rental info
+                    let targetRental = null;
+                    for (const userGroup of userRentals) {
+                        const found = userGroup.rentals.find(r => r.rental_id === rentalId);
+                        if (found) {
+                            targetRental = found;
+                            break;
+                        }
+                    }
 
-        // Process each selected rental
-        for (const rentalId of selectedRentals) {
-            // Find the rental info
-            let targetRental = null;
-            for (const userGroup of userRentals) {
-                const found = userGroup.rentals.find(r => r.rental_id === rentalId);
-                if (found) {
-                    targetRental = found;
-                    break;
+                    if (!targetRental) continue;
+
+                    try {
+                        const result = await kioskReturn(targetRental.copy_id, targetRental.profiles.id);
+                        if (result.success) {
+                            successCount++;
+                        } else {
+                            failCount++;
+                            failedItems.push({
+                                name: targetRental.game_copies.game.name,
+                                reason: result.message
+                            });
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        failCount++;
+                        failedItems.push({
+                            name: targetRental.game_copies.game.name,
+                            reason: "네트워크 오류"
+                        });
+                    }
                 }
-            }
 
-            if (!targetRental) continue;
+                setProcessing(false);
 
-            try {
-                const result = await kioskReturn(targetRental.copy_id, targetRental.profiles.id);
-                if (result.success) {
-                    successCount++;
-                } else {
-                    failCount++;
-                    failedItems.push({
-                        name: targetRental.game_copies.game.name,
-                        reason: result.message
-                    });
+                // 피드백 개선
+                if (successCount > 0) {
+                    showToast(`✅ ${successCount}개 반납 완료! 각 건당 100P 지급되었습니다.`, { type: "success" });
+
+                    // Remove returned rentals from UI
+                    const remainingUsers = userRentals
+                        .map(ug => ({
+                            ...ug,
+                            rentals: ug.rentals.filter(r => !selectedRentals.has(r.rental_id))
+                        }))
+                        .filter(ug => ug.rentals.length > 0);
+
+                    setUserRentals(remainingUsers);
+                    setSelectedRentals(new Set());
+
+                    if (remainingUsers.length === 0) {
+                        onClose();
+                    }
                 }
-            } catch (e) {
-                console.error(e);
-                failCount++;
-                failedItems.push({
-                    name: targetRental.game_copies.game.name,
-                    reason: "네트워크 오류"
-                });
-            }
-        }
 
-        setProcessing(false);
-
-        // 피드백 개선
-        if (successCount > 0) {
-            showToast(`✅ ${successCount}개 반납 완료! 각 건당 100P 지급되었습니다.`, { type: "success" });
-
-            // Remove returned rentals from UI
-            const remainingUsers = userRentals
-                .map(ug => ({
-                    ...ug,
-                    rentals: ug.rentals.filter(r => !selectedRentals.has(r.rental_id))
-                }))
-                .filter(ug => ug.rentals.length > 0);
-
-            setUserRentals(remainingUsers);
-            setSelectedRentals(new Set());
-
-            if (remainingUsers.length === 0) {
-                onClose();
-            }
-        }
-
-        if (failCount > 0) {
-            const failedNames = failedItems.map(item => `${item.name} (${item.reason})`).join(', ');
-            showToast(`❌ ${failCount}개 반납 실패: ${failedNames}`, { type: "error", duration: 8000 });
-        }
+                if (failCount > 0) {
+                    const failedNames = failedItems.map(item => `${item.name} (${item.reason})`).join(', ');
+                    showToast(`❌ ${failCount}개 반납 실패: ${failedNames}`, { type: "error", duration: 8000 });
+                }
+            },
+            "info"
+        );
     };
 
     return (
@@ -262,6 +285,15 @@ function ReturnModal({ onClose }) {
                     </button>
                 </div>
             </div>
+            {/* [NEW] Confirm 모달 렌더링 */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={closeConfirmModal}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+            />
         </div>
     );
 }

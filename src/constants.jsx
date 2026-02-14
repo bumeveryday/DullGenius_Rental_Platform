@@ -17,6 +17,9 @@ export const STATUS = {
   RENTED_NO_STOCK: { ko: '대여 중', en: 'RENTED', color: '#e74c3c' } // 재고 없음 (Red)
 };
 
+// [NEW] 기본 학기 설정 (시스템 전반에서 fallback으로 사용)
+export const DEFAULT_SEMESTER = '2025-1';
+
 // 헬퍼 함수: 영문 -> 한글
 export const statusToKorean = (enStatus) => {
   const found = Object.values(STATUS).find(s => s.en === enStatus);

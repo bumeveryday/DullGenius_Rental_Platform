@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext'; // [NEW] Context 사용
 import { useToast } from '../contexts/ToastContext'; // [NEW]
 
 const MyPage = () => {
-  const { user, profile, loading: authLoading } = useAuth(); // [NEW]
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth(); // [NEW]
   const navigate = useNavigate();
   const { showToast } = useToast(); // [NEW]
 
@@ -101,16 +101,26 @@ const MyPage = () => {
           <InfoItem label="이름" value={userName} />
           <InfoItem label="학번" value={studentId} />
           <InfoItem label="연락처" value={userPhone} />
-          {/* <InfoItem label="활동 포인트" value={`${activityPoint.toLocaleString()} P`} /> Old Point System */}
+
+          {/* [NEW] 가입 학기 표시 및 수정 */}
+          <SemesterItem
+            semester={profile?.joined_semester}
+            isFixed={profile?.is_semester_fixed}
+            onUpdate={refreshProfile} // Context 갱신 함수 전달
+          />
+
           <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
             <span style={{ fontSize: "0.85em", color: "#888" }}>보유 포인트</span>
             <span style={{ fontSize: "1.5em", fontWeight: "bold", color: "#3498db" }}>{currentPoints.toLocaleString()} P</span>
           </div>
         </div>
         <div style={styles.infoNote}>
+          * 가입 학기는 최초 1회만 수정 가능합니다.
+          <br />
           * 정보 수정이 필요한 경우 덜지니어스 임원진에게 문의해주세요.
         </div>
       </section>
+
 
       {/* 2. 대여 현황 섹션 */}
       <section style={{ ...styles.card, marginTop: "20px" }}>
@@ -290,6 +300,74 @@ const formatDate = (dateString) => {
   return `${Month}. ${Day}. (${Hour}:${Min})`;
 };
 
+import { updateMySemester } from '../api';
+import { DEFAULT_SEMESTER } from '../constants'; // [NEW]
+
+// [NEW] 학기 수정 컴포넌트
+const SemesterItem = ({ semester, isFixed, onUpdate }) => {
+  const [editing, setEditing] = useState(false);
+  const [tempSemester, setTempSemester] = useState(semester || DEFAULT_SEMESTER);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (semester) setTempSemester(semester);
+  }, [semester]);
+
+  const handleSave = async () => {
+    try {
+      if (!window.confirm(`${tempSemester}학기로 확정하시겠습니까?\n저장 후에는 수정할 수 없습니다.`)) return;
+
+      await updateMySemester(tempSemester);
+      showToast("가입 학기가 저장되었습니다.", { type: "success" });
+      setEditing(false);
+      await onUpdate(); // 부모 갱신 요청 (refreshProfile)
+    } catch (e) {
+      showToast(e.message, { type: "error" });
+    }
+  };
+
+  if (!isFixed && !editing) {
+    // 아직 확정 안됨 -> 수정 버튼 노출
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+        <span style={{ fontSize: "0.85em", color: "#888" }}>가입 학기 (미확정)</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: "1.1em", fontWeight: "bold", color: "#e67e22" }}>{semester || "-"}</span>
+          <button onClick={() => setEditing(true)} style={{ ...styles.miniBtn, background: '#f39c12' }}>수정/확정</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (editing) {
+    // 수정 모드
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+        <span style={{ fontSize: "0.85em", color: "#888" }}>가입 학기 입력</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <input
+            type="text"
+            value={tempSemester}
+            onChange={(e) => setTempSemester(e.target.value)}
+            placeholder="예: 2025-1"
+            style={{ padding: '5px', width: '80px', border: '1px solid #ddd', borderRadius: '4px' }}
+          />
+          <button onClick={handleSave} style={{ ...styles.miniBtn, background: '#2ecc71' }}>저장</button>
+          <button onClick={() => setEditing(false)} style={{ ...styles.miniBtn, background: '#95a5a6' }}>취소</button>
+        </div>
+      </div>
+    );
+  }
+
+  // 확정됨
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+      <span style={{ fontSize: "0.85em", color: "#888" }}>가입 학기</span>
+      <span style={{ fontSize: "1.1em", fontWeight: "bold", color: "#333" }}>{semester}</span>
+    </div>
+  );
+};
+
 // 스타일 객체
 const styles = {
   container: { maxWidth: "600px", margin: "0 auto", padding: "20px" },
@@ -301,6 +379,8 @@ const styles = {
 
   infoGrid: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "15px" },
   infoNote: { marginTop: "20px", fontSize: "0.8em", color: "#bdc3c7", textAlign: "right" },
+
+  miniBtn: { padding: "4px 8px", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "0.8em", fontWeight: "bold" },
 
   emptyState: { textAlign: "center", padding: "30px 0", color: "#95a5a6" },
   goRentBtn: { padding: "10px 20px", background: "#3498db", color: "white", border: "none", borderRadius: "20px", marginTop: "15px", cursor: "pointer", fontWeight: "bold" },
