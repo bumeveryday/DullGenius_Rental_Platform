@@ -11,6 +11,20 @@ export const calculateGameStatus = (game, gameRentals) => {
     // 1. 실시간 재고 (DB available_count 신뢰)
     const realAvailableCount = game.available_count ?? 0;
 
+    // [DEBUG] 바퀴벌레 포커 로얄 상태 로깅
+    if (game.name.includes("바퀴벌레")) {
+        console.log(`[DEBUG: ${game.name}]`, {
+            id: game.id,
+            status: game.status, // 기존 status (있다면)
+            available: realAvailableCount,
+            quantity: game.quantity,
+            rentals: gameRentals,
+            rentalCount: gameRentals.length,
+            dibsCount: gameRentals.filter(r => r.type === 'DIBS').length,
+            rentCount: gameRentals.filter(r => r.type === 'RENT').length
+        });
+    }
+
     // 2. 초기값
     let status = '대여가능';
     let renter = null;
@@ -20,6 +34,21 @@ export const calculateGameStatus = (game, gameRentals) => {
     // 3. 우선순위: 예약(찜) > 대여(Rent)
     const activeDibs = gameRentals.filter(r => r.type === 'DIBS');
     const activeRents = gameRentals.filter(r => r.type === 'RENT');
+
+    // [INTEGRITY CHECK] 데이터 불일치 감지
+    // (대여 중 + 대여 가능 > 총 수량)인 경우, 시스템 상 재고가 꼬인 상태임.
+    // 사용자 요청: 이 경우 '대여 중'으로 간주.
+    const isOverStock = (activeRents.length + realAvailableCount > game.quantity);
+
+    // [DEBUG]
+    if (game.name.includes("바퀴벌레")) {
+        console.log(`[DEBUG: ${game.name}]`, {
+            isOverStock: isOverStock,
+            activeRentsLength: activeRents.length,
+            realAvailableCount: realAvailableCount,
+            gameQuantity: game.quantity
+        });
+    }
 
     if (activeDibs.length > 0) {
         // [CASE 1] 예약됨 (찜)
@@ -35,11 +64,8 @@ export const calculateGameStatus = (game, gameRentals) => {
 
     } else if (activeRents.length > 0) {
         // [CASE 2] 대여 중 (Rent)
-        if (realAvailableCount > 0) {
-            status = '대여가능'; // 재고가 남았으므로 대여 가능
-        } else {
-            status = '대여 중'; // 재고 없음
-        }
+        // [USER REQUEST] 대여 중인 건이 하나라도 있으면 '대여 중'으로 표시 (다중 카피 여부 무관)
+        status = '대여 중';
 
         // 대여자 목록 (콤마로 구분)
         const renters = activeRents.map(r => r.renter_name || r.profiles?.name).filter(Boolean);
@@ -58,7 +84,7 @@ export const calculateGameStatus = (game, gameRentals) => {
 
     } else if (realAvailableCount <= 0) {
         // [CASE 3] 재고 없음 (대여 기록은 없으나 수량이 0)
-        status = '대여 중';
+        status = '대여 중'; // 사실상 품절/분실
     }
 
     return {

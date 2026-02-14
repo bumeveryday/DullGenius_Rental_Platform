@@ -471,6 +471,12 @@ function DashboardTab({ games, loading, onReload }) {
                   <span style={{ ...styles.statusBadge, background: getStatusColor(game.status) }}>
                     {game.status}
                   </span>
+                  {/* [NEW] 다중 카피 정보 표시 */}
+                  {game.quantity >= 2 && (
+                    <span style={{ marginLeft: "8px", fontSize: "0.85em", color: "var(--admin-text-sub)", fontWeight: "normal" }}>
+                      ({game.rentals ? game.rentals.filter(r => r.type === 'RENT').length : 0}/{game.quantity} 대여중)
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: "0.85em", color: "var(--admin-text-sub)", marginTop: "5px", lineHeight: "1.4" }}>
                   <span style={{ marginRight: "10px" }}>{game.renter ? `👤 ${game.renter}` : "대여자 없음"}</span>

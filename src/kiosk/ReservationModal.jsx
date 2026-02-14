@@ -38,13 +38,11 @@ function ReservationModal({ onClose }) {
                 .from('rentals')
                 .select(`
                     rental_id,
-                    copy_id,
+                    game_id,
                     borrowed_at,
                     type,
                     profiles:user_id (id, name, student_id),
-                    game_copies:copy_id (
-                        game:games (id, name, image)
-                    )
+                    game:games (id, name, image)
                 `)
                 .eq('type', 'DIBS') // 예약(찜)만 조회
                 .is('returned_at', null); // 아직 수령/취소 안된 것
@@ -57,7 +55,7 @@ function ReservationModal({ onClose }) {
             }
 
             // Group by user
-            const valid = data.filter(r => r.game_copies && r.game_copies.game && r.profiles);
+            const valid = data.filter(r => r.game && r.profiles);
             const grouped = {};
 
             valid.forEach(rental => {
@@ -113,7 +111,7 @@ function ReservationModal({ onClose }) {
                     for (const group of userReservations) {
                         const found = group.reservations.find(r => r.rental_id === rentalId);
                         if (found) {
-                            targetName = found.game_copies.game.name;
+                            targetName = found.game.name;
                             break;
                         }
                     }
@@ -252,7 +250,7 @@ function ReservationModal({ onClose }) {
                                                 />
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ fontSize: "1.1rem", fontWeight: "bold" }}>
-                                                        {rental.game_copies.game.name}
+                                                        {rental.game.name}
                                                     </div>
                                                     <div style={{ fontSize: "0.8rem", color: "#888", marginTop: "5px" }}>
                                                         예약 시간: {new Date(rental.borrowed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

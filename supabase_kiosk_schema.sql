@@ -92,21 +92,20 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- [6] RPC: 키오스크 간편 반납
 -- "반납" 버튼 누르면 즉시 포인트 지급하고 상태 변경
 CREATE OR REPLACE FUNCTION kiosk_return(
-    p_copy_id INTEGER,
+    p_game_id INTEGER, -- [MOD] copy_id -> game_id
     p_user_id UUID, -- 반납하려는 사람 (본인 혹은 키오스크 대리)
     p_condition_ok BOOLEAN DEFAULT TRUE
 ) RETURNS JSONB AS $$
 DECLARE
     v_rental_id UUID;
-    v_game_id INTEGER;
 BEGIN
-    -- 1. 현재 대여중인 정보 찾기
-    SELECT rental_id, game_id INTO v_rental_id, v_game_id
+    -- 1. 현재 대여중인 정보 찾기 (V2: game_id 기준)
+    SELECT rental_id INTO v_rental_id
     FROM rentals
-    JOIN game_copies ON rentals.copy_id = game_copies.copy_id
-    WHERE rentals.copy_id = p_copy_id 
-      AND rentals.returned_at IS NULL
-      AND (rentals.user_id = p_user_id OR p_user_id IS NULL); -- 유저 검증 (옵션)
+    WHERE game_id = p_game_id
+      AND returned_at IS NULL
+      AND (user_id = p_user_id OR p_user_id IS NULL) -- 유저 검증 (옵션)
+    LIMIT 1;
 
     IF v_rental_id IS NULL THEN
         RETURN jsonb_build_object('success', false, 'message', '반납할 대여 기록을 찾을 수 없습니다.');
@@ -117,69 +116,118 @@ BEGIN
     SET returned_at = timezone('kst', now())
     WHERE rental_id = v_rental_id;
 
-    -- 3. 상태 변경 (Game Copies)
-    UPDATE game_copies
-    SET status = 'AVAILABLE'
-    WHERE copy_id = p_copy_id;
+    -- 3. 가용 재고 증가 (V2)
+    UPDATE games
+    SET available_count = available_count + 1
+    WHERE id = p_game_id;
 
     -- 4. 반납 포인트 지급 (+100P)
     IF p_user_id IS NOT NULL THEN
-        PERFORM earn_points(p_user_id, 100, 'RETURN_ON_TIME', '키오스크 반납 (게임 ' || v_game_id || ')');
+        PERFORM earn_points(p_user_id, 100, 'RETURN_ON_TIME', '키오스크 반납 (게임 ' || p_game_id || ')');
     END IF;
 
     RETURN jsonb_build_object('success', true);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- [7] RPC: 키오스크 간편 대여 (무인 대여)
+-- [7] RPC: 키오스크 간편 대여 (무인 대여) - [DEPRECATED] 예약 수령 권장
+-- 하지만 직접 대여 기능이 필요할 경우를 위해 V2로 업데이트
 CREATE OR REPLACE FUNCTION kiosk_rental(
     p_game_id INTEGER,
     p_user_id UUID
 ) RETURNS JSONB AS $$
 DECLARE
-    v_copy_id INTEGER;
+    v_available INTEGER;
 BEGIN
-    -- 1. 대여 가능한 카피 찾기 (AVAILABLE 상태 중 하나)
-    SELECT copy_id INTO v_copy_id
-    FROM game_copies
-    WHERE game_id = p_game_id AND status = 'AVAILABLE'
-    LIMIT 1;
+    -- 1. 대여 가능한 재고 확인
+    SELECT available_count INTO v_available
+    FROM games
+    WHERE id = p_game_id;
 
-    IF v_copy_id IS NULL THEN
+    IF v_available IS NULL OR v_available <= 0 THEN
         RETURN jsonb_build_object('success', false, 'message', '현재 대여 가능한 재고가 없습니다.');
     END IF;
 
     -- 2. 대여 기록 생성 (Rentals)
-    INSERT INTO rentals (copy_id, user_id, type, borrowed_at, due_date)
+    INSERT INTO rentals (game_id, user_id, type, borrowed_at, due_date)
     VALUES (
-        v_copy_id, 
+        p_game_id, 
         p_user_id, 
         'RENT', 
         timezone('kst', now()), 
         timezone('kst', now() + INTERVAL '2 days') -- 기본 2일 대여
     );
 
-    -- 3. 상태 변경 (Game Copies)
-    UPDATE game_copies
-    SET status = 'RENTED'
-    WHERE copy_id = v_copy_id;
+    -- 3. 가용 재고 감소
+    UPDATE games
+    SET available_count = available_count - 1
+    WHERE id = p_game_id;
     
     RETURN jsonb_build_object('success', true);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- [8] RLS 정책 추가 (리더보드/내역 조회용)
--- profiles 테이블이 RLS가 켜져있다면, 다른 사람의 정보를 볼 수 없음.
--- 따라서 전체 공개(혹은 로그인 유저 공개) 정책을 추가합니다.
+-- [NEW] RPC: 키오스크 예약 수령 (v2)
+CREATE OR REPLACE FUNCTION kiosk_pickup(
+    p_rental_id UUID
+) RETURNS JSONB AS $$
+DECLARE
+    v_game_id INTEGER;
+    v_user_id UUID;
+    v_status TEXT;
+BEGIN
+    -- 1. 유효한 예약(찜)인지 확인
+    SELECT game_id, user_id, type INTO v_game_id, v_user_id, v_status
+    FROM rentals
+    WHERE rental_id = p_rental_id;
 
+    IF v_status IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', '존재하지 않는 예약입니다.');
+    END IF;
+
+    IF v_status != 'DIBS' THEN
+        RETURN jsonb_build_object('success', false, 'message', '예약(찜) 상태가 아닙니다.');
+    END IF;
+
+    -- 2. 대여로 전환 (Update Rentals) (재고는 이미 찜할 때 빠짐)
+    UPDATE rentals
+    SET 
+        type = 'RENT',
+        borrowed_at = timezone('kst', now()),
+        due_date = timezone('kst', now() + INTERVAL '2 days')
+    WHERE rental_id = p_rental_id;
+
+    -- 3. 로그 기록
+    INSERT INTO logs (game_id, user_id, action_type, details)
+    VALUES (v_game_id, v_user_id, 'RENT', 'Kiosk Pickup (Rental ID: ' || p_rental_id || ')');
+
+    RETURN jsonb_build_object('success', true);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- [8] RLS 정책 추가 (리더보드/내역 조회용)
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Public profiles are viewable by everyone" 
-ON profiles FOR SELECT USING (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'profiles' AND policyname = 'Public profiles are viewable by everyone'
+    ) THEN
+        CREATE POLICY "Public profiles are viewable by everyone" 
+        ON profiles FOR SELECT USING (true);
+    END IF;
+END
+$$;
 
--- 포인트 내역도 공개 (투명성) 혹은 본인만 보게 할 수 있으나, 
--- 관리자 페이지(Dashboard)에서는 전체를 봐야 하므로 일단 SELECT 열어둠 (혹은 admin 전용 정책 필요)
 ALTER TABLE point_transactions ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Point logs are viewable by everyone" 
-ON point_transactions FOR SELECT USING (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'point_transactions' AND policyname = 'Point logs are viewable by everyone'
+    ) THEN
+        CREATE POLICY "Point logs are viewable by everyone" 
+        ON point_transactions FOR SELECT USING (true);
+    END IF;
+END
+$$;
