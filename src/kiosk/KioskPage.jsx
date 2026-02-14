@@ -200,6 +200,17 @@ function KioskPage() {
             setIsAuthorized(true);
             setActivationCode(""); // 입력 필드 초기화
             showToast("✅ 기기 인증 완료! 키오스크 모드를 시작합니다.", { type: "success" });
+
+            // [Fullscreen] 강제 전체화면 요청 (브라우저 정책상 사용자 상호작용 필요)
+            try {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) { // Safari/Old Chrome
+                    document.documentElement.webkitRequestFullscreen();
+                }
+            } catch (err) {
+                console.warn("Fullscreen request failed:", err);
+            }
         } else {
             showToast("❌ 인증 실패. 마스터 키를 확인하세요.", { type: "error" });
             setActivationCode(""); // 실패 시에도 초기화
@@ -290,7 +301,17 @@ function KioskPage() {
                 </button>
             </div>
 
-            {/* 플로팅 반납 버튼 (어디서든 접근 가능) */}
+            {/* 플로팅 수령 버튼 (좌측 하단) */}
+            <button className="floating-receive-btn" onClick={() => setShowReservationModal(true)}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: '2.5rem' }}>📥</div>
+                    <div style={{ fontSize: '1.2rem', marginTop: '8px', fontWeight: 'bold', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
+                        수령하기
+                    </div>
+                </div>
+            </button>
+
+            {/* 플로팅 반납 버튼 (우측 하단) */}
             <button className="floating-return-btn" onClick={() => setShowReturnModal(true)}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <div style={{ fontSize: '2.5rem' }}>📦</div>
@@ -299,6 +320,8 @@ function KioskPage() {
                     </div>
                 </div>
             </button>
+
+
 
             {/* 매치 모달 */}
             {showMatchModal && <MatchModal onClose={() => {

@@ -12,14 +12,7 @@ const CATEGORIES = [
 ];
 
 function CharacterPicker({ value, onChange }) {
-    const [isExpanded, setIsExpanded] = useState(true); // 키보드 펼침/접힘 상태
-
-    // 검색어가 2글자 이상이면 키보드 자동 숨김
-    useEffect(() => {
-        if (value.length >= 2) {
-            setIsExpanded(false);
-        }
-    }, [value]);
+    const [isExpanded, setIsExpanded] = useState(true); // Restore expanded state
 
     const handleCharClick = (char) => {
         onChange(value + char);
@@ -38,55 +31,58 @@ function CharacterPicker({ value, onChange }) {
         onChange('');
     };
 
+    if (!isExpanded) {
+        return (
+            <button
+                className="char-toggle-btn collapsed"
+                onClick={() => setIsExpanded(true)}
+            >
+                ⌨️ 키보드 열기
+            </button>
+        );
+    }
+
     return (
         <div className="character-picker">
-            {/* Toggle Button */}
-            <button
-                className="char-toggle-btn"
-                onClick={() => setIsExpanded(!isExpanded)}
-            >
-                {isExpanded ? '⌨️ 키보드 숨기기 ▲' : '⌨️ 키보드 열기 ▼'}
-            </button>
-
-            {/* Keyboard Content */}
-            {isExpanded && (
-                <>
-                    {/* All Buttons in One View */}
-                    <div className="char-grid unified">
-                        {/* 초성 버튼 */}
-                        {CHOSEONG.map(char => (
-                            <button
-                                key={char}
-                                className="char-btn"
-                                onClick={() => handleCharClick(char)}
-                            >
-                                {char}
-                            </button>
-                        ))}
-
-                        {/* 카테고리 버튼 */}
-                        {CATEGORIES.map(category => (
-                            <button
-                                key={category.value}
-                                className="char-btn category-btn"
-                                onClick={() => handleCategoryClick(category.value)}
-                            >
-                                {category.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Control Buttons */}
-                    <div className="char-controls">
-                        <button className="char-control-btn" onClick={handleBackspace}>
-                            ⌫ 지우기
+            <div className="char-wrapper">
+                {/* Left: 4x4 Grid (14 consonants + 2 categories) */}
+                <div className="char-grid unified">
+                    {/* 초성 버튼 */}
+                    {CHOSEONG.map(char => (
+                        <button
+                            key={char}
+                            className="char-btn"
+                            onClick={() => handleCharClick(char)}
+                        >
+                            {char}
                         </button>
-                        <button className="char-control-btn clear" onClick={handleClear}>
-                            전체 삭제
+                    ))}
+
+                    {/* 카테고리 버튼 */}
+                    {CATEGORIES.map(category => (
+                        <button
+                            key={category.value}
+                            className="char-btn category-btn"
+                            onClick={() => handleCategoryClick(category.value)}
+                        >
+                            {category.label}
                         </button>
-                    </div>
-                </>
-            )}
+                    ))}
+                </div>
+
+                {/* Right: Vertical Controls */}
+                <div className="char-controls">
+                    <button className="char-control-btn" onClick={handleBackspace}>
+                        ⌫
+                    </button>
+                    <button className="char-control-btn clear" onClick={handleClear}>
+                        🗑️
+                    </button>
+                    <button className="char-control-btn hide" onClick={() => setIsExpanded(false)}>
+                        🔽
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }

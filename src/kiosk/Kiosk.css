@@ -135,7 +135,37 @@
     transform: scale(1.05);
 }
 
+
 .floating-return-btn:active {
+    transform: scale(0.98);
+}
+
+.floating-receive-btn {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%);
+    color: white;
+    border: none;
+    font-size: 2rem;
+    box-shadow: 0 8px 30px rgba(255, 94, 98, 0.6);
+    z-index: 10000 !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    transition: transform 0.2s;
+}
+
+.floating-receive-btn:hover {
+    transform: scale(1.05);
+}
+
+.floating-receive-btn:active {
     transform: scale(0.98);
 }
 
@@ -144,11 +174,13 @@
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    right: 0;
+    bottom: 0;
     background: #000000;
     z-index: 9999;
     cursor: none;
+    touch-action: none;
+    overscroll-behavior: none;
 }
 
 .saver-content {
@@ -317,4 +349,16 @@
 .empty-state-subtitle {
     font-size: 0.95rem;
     color: #666;
+}
+
+/* [Utilities] Hide Scrollbar */
+.no-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
 }

@@ -75,6 +75,7 @@ function ReturnModal({ onClose }) {
 
     const toggleUser = (userId) => {
         setExpandedUserId(expandedUserId === userId ? null : userId);
+        setSelectedRentals(new Set()); // 유저 전환 시 선택 초기화
     };
 
     const toggleRental = (rentalId) => {
@@ -169,7 +170,7 @@ function ReturnModal({ onClose }) {
     };
 
     return (
-        <div className="kiosk-modal-overlay" style={{ zIndex: 1000 }} onClick={onClose}>
+        <div className="kiosk-modal-overlay" style={{ zIndex: 20000 }} onClick={onClose}>
             <div className="kiosk-modal" style={{ width: "90%", height: "90%", display: "flex", flexDirection: "column" }} onClick={e => e.stopPropagation()}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
                     <h2>📦 간편 반납</h2>
@@ -183,7 +184,7 @@ function ReturnModal({ onClose }) {
                     💡 언제든 닫기를 눌러 원래 작업으로 돌아갈 수 있어요!
                 </div>
 
-                <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", minHeight: 0, WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}>
                     {loading ? (
                         <div className="skeleton-container">
                             {[1, 2, 3].map(i => (
@@ -198,15 +199,19 @@ function ReturnModal({ onClose }) {
                         </div>
                     ) : (
                         userRentals.map(ug => (
-                            <div key={ug.user.id} style={{ background: "#1a1a1a", borderRadius: "10px", overflow: "hidden" }}>
+                            <div key={ug.user.id} style={{ background: "#1a1a1a", borderRadius: "10px", position: "relative" }}>
                                 {/* User Header (Clickable) */}
                                 <button
                                     onClick={() => toggleUser(ug.user.id)}
                                     style={{
                                         width: "100%",
                                         padding: "20px",
+                                        position: "sticky",
+                                        top: 0,
+                                        zIndex: 10,
                                         background: expandedUserId === ug.user.id ? "#2a2a2a" : "#1a1a1a",
                                         border: "none",
+                                        borderRadius: expandedUserId === ug.user.id ? "10px 10px 0 0" : "10px",
                                         color: "white",
                                         fontSize: "1.2rem",
                                         fontWeight: "bold",
@@ -214,7 +219,7 @@ function ReturnModal({ onClose }) {
                                         display: "flex",
                                         justifyContent: "space-between",
                                         alignItems: "center",
-                                        transition: "background 0.2s"
+                                        transition: "background 0.2s, border-radius 0.2s"
                                     }}
                                 >
                                     <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
@@ -226,7 +231,7 @@ function ReturnModal({ onClose }) {
 
                                 {/* Rental List (Expandable) */}
                                 {expandedUserId === ug.user.id && (
-                                    <div style={{ padding: "10px 20px 20px 20px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                                    <div className="no-scrollbar" style={{ padding: "10px 20px 20px 20px", display: "flex", flexDirection: "column", gap: "10px", paddingBottom: "10px" }}>
                                         {ug.rentals.map(rental => (
                                             <label
                                                 key={rental.rental_id}
