@@ -5,7 +5,7 @@ import { useToast } from '../contexts/ToastContext'; // Toast 알림
 import MatchModal from './MatchModal';
 import RouletteModal from './RouletteModal';
 import ReturnModal from './ReturnModal';
-import RentalModal from './RentalModal';
+import ReservationModal from './ReservationModal'; // [NEW] 예약 수령 모달
 
 // [Constants]
 const MASTER_KEY = import.meta.env.VITE_KIOSK_MASTER_KEY || import.meta.env.REACT_APP_KIOSK_MASTER_KEY;
@@ -39,7 +39,7 @@ function KioskPage() {
     const [showReturnModal, setShowReturnModal] = useState(false);
     const [showMatchModal, setShowMatchModal] = useState(false);
     const [showRouletteModal, setShowRouletteModal] = useState(false);
-    const [showRentalModal, setShowRentalModal] = useState(false); // [NEW]
+    const [showReservationModal, setShowReservationModal] = useState(false); // [NEW]
 
     const idleTimerRef = useRef(null);
 
@@ -271,10 +271,10 @@ function KioskPage() {
                     <span style={{ fontSize: "1rem", marginTop: "10px", fontWeight: "normal" }}>승자 +200P / 패자 +50P</span>
                 </button>
 
-                <button className="kiosk-btn" style={{ background: "linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)" }} onClick={() => setShowRentalModal(true)}>
+                <button className="kiosk-btn" style={{ background: "linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)" }} onClick={() => setShowReservationModal(true)}>
                     <div className="btn-icon">📥</div>
-                    대여하기
-                    <span style={{ fontSize: "1rem", marginTop: "10px", fontWeight: "normal" }}>본인 검색 & 인증</span>
+                    예약 수령
+                    <span style={{ fontSize: "1rem", marginTop: "10px", fontWeight: "normal" }}>웹에서 찜한 게임 수령</span>
                 </button>
 
                 <button className="kiosk-btn btn-return" onClick={() => setShowReturnModal(true)}>
@@ -315,8 +315,8 @@ function KioskPage() {
                 setGracePeriod(3); // 반납 후 3분 유예
             }} />}
 
-            {/* [NEW] 무인 대여 모달 */}
-            {showRentalModal && <RentalModal onClose={() => setShowRentalModal(false)} />}
+            {/* [NEW] 예약 수령 모달 */}
+            {showReservationModal && <ReservationModal onClose={() => setShowReservationModal(false)} />}
         </div>
     );
 }

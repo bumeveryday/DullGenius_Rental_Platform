@@ -2,11 +2,12 @@
 // 최종 수정일: 2026.01.30 (빌드 리프레시)
 // 설명: 메인 화면(Home) 및 라우터 설정, 데이터 로딩, 필터링 로직 포함
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { fetchGames, fetchTrending, fetchConfig } from './api'; // API 함수들 임포트
 import { useGameFilter } from './hooks/useGameFilter'; // [NEW] Custom Hook
-import Admin from './Admin';         // 관리자 페이지 컴포넌트
+// import Admin from './Admin';         // [DELETE] Static Import
+const Admin = lazy(() => import('./Admin')); // [NEW] Lazy Import
 import GameDetail from './components/GameDetail'; // 상세 페이지 컴포넌트
 import { TEXTS } from './constants'; // 텍스트 수집 
 import './App.css';
@@ -458,7 +459,19 @@ function App() {
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/admin-secret" element={<Admin />} />
+            <Route
+              path="/admin-secret"
+              element={
+                <Suspense fallback={
+                  <div className="loading-container">
+                    <div className="spinner"></div>
+                    <p style={{ marginTop: "20px", color: "#666" }}>관리자 페이지 로딩 중...</p>
+                  </div>
+                }>
+                  <Admin />
+                </Suspense>
+              }
+            />
             <Route path="/kiosk" element={<KioskPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -202,11 +202,12 @@
 }
 
 /* Modal Overrides */
-.modal-overlay {
+/* Modal Overrides */
+.admin-container .modal-overlay {
   background: rgba(0, 0, 0, 0.8) !important;
 }
 
-.modal-content {
+.admin-container .modal-content {
   background: var(--admin-card-bg) !important;
   color: var(--admin-text-main) !important;
 }

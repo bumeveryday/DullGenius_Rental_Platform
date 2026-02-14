@@ -837,6 +837,7 @@ export const kioskReturn = async (copyId, userId) => {
 };
 
 // [Kiosk] 16. 키오스크 간편 대여 (RPC) [NEW]
+// [Kiosk] 16. 키오스크 간편 대여 (RPC) [NEW]
 export const kioskRental = async (gameId, userId) => {
   const { data, error } = await supabase.rpc('kiosk_rental', {
     p_game_id: gameId,
@@ -845,6 +846,19 @@ export const kioskRental = async (gameId, userId) => {
 
   if (error) {
     console.error("Kiosk Rental Error:", error);
+    return { success: false, message: error.message };
+  }
+  return data;
+};
+
+// [Kiosk] 17. 키오스크 예약 수령 (RPC) [NEW]
+export const kioskPickup = async (rentalId) => {
+  const { data, error } = await supabase.rpc('kiosk_pickup', {
+    p_rental_id: rentalId
+  });
+
+  if (error) {
+    console.error("Kiosk Pickup Error:", error);
     return { success: false, message: error.message };
   }
   return data;
