@@ -38,12 +38,10 @@ function ReturnModal({ onClose }) {
                 .from('rentals')
                 .select(`
                     rental_id,
-                    copy_id,
+                    game_id,
                     borrowed_at,
                     profiles:user_id (id, name, student_id),
-                    game_copies:copy_id (
-                        game:games (id, name, image)
-                    )
+                    game:games (id, name, image)
                 `)
                 .is('returned_at', null);
 
@@ -55,7 +53,7 @@ function ReturnModal({ onClose }) {
             }
 
             // Group by user
-            const valid = data.filter(r => r.game_copies && r.game_copies.game && r.profiles);
+            const valid = data.filter(r => r.game && r.profiles);
             const grouped = {};
 
             valid.forEach(rental => {
@@ -119,13 +117,13 @@ function ReturnModal({ onClose }) {
                     if (!targetRental) continue;
 
                     try {
-                        const result = await kioskReturn(targetRental.copy_id, targetRental.profiles.id);
+                        const result = await kioskReturn(targetRental.game_id, targetRental.profiles.id);
                         if (result.success) {
                             successCount++;
                         } else {
                             failCount++;
                             failedItems.push({
-                                name: targetRental.game_copies.game.name,
+                                name: targetRental.game.name,
                                 reason: result.message
                             });
                         }
@@ -133,7 +131,7 @@ function ReturnModal({ onClose }) {
                         console.error(e);
                         failCount++;
                         failedItems.push({
-                            name: targetRental.game_copies.game.name,
+                            name: targetRental.game.name,
                             reason: "네트워크 오류"
                         });
                     }
@@ -252,7 +250,7 @@ function ReturnModal({ onClose }) {
                                                 />
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ fontSize: "1.1rem", fontWeight: "bold" }}>
-                                                        {rental.game_copies.game.name}
+                                                        {rental.game.name}
                                                     </div>
                                                     <div style={{ fontSize: "0.8rem", color: "#888", marginTop: "5px" }}>
                                                         {new Date(rental.borrowed_at).toLocaleDateString()} 대여

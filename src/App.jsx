@@ -19,6 +19,7 @@ import MyPage from './components/MyPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext'; // [NEW] Supabase Auth
 import { ToastProvider } from './contexts/ToastContext'; // [NEW] Toast 시스템
 import KioskPage from './kiosk/KioskPage'; // [NEW] Kiosk Page
+import ProtectedRoute from './components/ProtectedRoute'; // [NEW] Protected Route
 
 
 function Home() {
@@ -50,7 +51,7 @@ function Home() {
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [playerFilter, setPlayerFilter] = useState("all");
   const filterSectionRef = useRef(null);
-  const JOIN_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdoBGEPRM5TIef66Nen7Sc8pWKkAqCMi90ftM1x9QZsX_5a6g/viewform?usp=header";
+  const JOIN_FORM_URL = "https://forms.gle/VaASrMoiC6pda75t8";
 
 
 
@@ -291,7 +292,7 @@ function Home() {
                 if (window.logoClickCount >= 5) {
                   const confirmDev = window.confirm("🛠️ 개발자 모드로 관리자 페이지에 접속하시겠습니까?");
                   if (confirmDev) {
-                    sessionStorage.setItem('dev_admin_bypass', 'true'); // 우회 플래그 설정
+                    // sessionStorage.setItem('dev_admin_bypass', 'true'); // [REMOVED] 보안 강화
                     navigate("/admin-secret");
                     window.logoClickCount = 0;
                   }
@@ -459,19 +460,21 @@ function App() {
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route
-              path="/admin-secret"
-              element={
-                <Suspense fallback={
-                  <div className="loading-container">
-                    <div className="spinner"></div>
-                    <p style={{ marginTop: "20px", color: "#666" }}>관리자 페이지 로딩 중...</p>
-                  </div>
-                }>
-                  <Admin />
-                </Suspense>
-              }
-            />
+            <Route element={<ProtectedRoute allowedRoles={['admin', 'executive']} />}>
+              <Route
+                path="/admin-secret"
+                element={
+                  <Suspense fallback={
+                    <div className="loading-container">
+                      <div className="spinner"></div>
+                      <p style={{ marginTop: "20px", color: "#666" }}>관리자 페이지 로딩 중...</p>
+                    </div>
+                  }>
+                    <Admin />
+                  </Suspense>
+                }
+              />
+            </Route>
             <Route path="/kiosk" element={<KioskPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

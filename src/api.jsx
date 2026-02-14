@@ -823,9 +823,9 @@ export const updateMySemester = async (newSemester) => {
 };
 
 // [Kiosk] 14. 키오스크 간편 반납 (RPC)
-export const kioskReturn = async (copyId, userId) => {
+export const kioskReturn = async (gameId, userId) => {
   const { data, error } = await supabase.rpc('kiosk_return', {
-    p_copy_id: copyId,
+    p_game_id: gameId,
     p_user_id: userId
   });
 

@@ -273,7 +273,7 @@ function KioskPage() {
 
                 <button className="kiosk-btn" style={{ background: "linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)" }} onClick={() => setShowReservationModal(true)}>
                     <div className="btn-icon">📥</div>
-                    예약 수령
+                    찜 수령하기
                     <span style={{ fontSize: "1rem", marginTop: "10px", fontWeight: "normal" }}>웹에서 찜한 게임 수령</span>
                 </button>
 

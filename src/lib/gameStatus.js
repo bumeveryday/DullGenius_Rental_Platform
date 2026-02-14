@@ -11,19 +11,7 @@ export const calculateGameStatus = (game, gameRentals) => {
     // 1. 실시간 재고 (DB available_count 신뢰)
     const realAvailableCount = game.available_count ?? 0;
 
-    // [DEBUG] 바퀴벌레 포커 로얄 상태 로깅
-    if (game.name.includes("바퀴벌레")) {
-        console.log(`[DEBUG: ${game.name}]`, {
-            id: game.id,
-            status: game.status, // 기존 status (있다면)
-            available: realAvailableCount,
-            quantity: game.quantity,
-            rentals: gameRentals,
-            rentalCount: gameRentals.length,
-            dibsCount: gameRentals.filter(r => r.type === 'DIBS').length,
-            rentCount: gameRentals.filter(r => r.type === 'RENT').length
-        });
-    }
+
 
     // 2. 초기값
     let status = '대여가능';
@@ -40,15 +28,7 @@ export const calculateGameStatus = (game, gameRentals) => {
     // 사용자 요청: 이 경우 '대여 중'으로 간주.
     const isOverStock = (activeRents.length + realAvailableCount > game.quantity);
 
-    // [DEBUG]
-    if (game.name.includes("바퀴벌레")) {
-        console.log(`[DEBUG: ${game.name}]`, {
-            isOverStock: isOverStock,
-            activeRentsLength: activeRents.length,
-            realAvailableCount: realAvailableCount,
-            gameQuantity: game.quantity
-        });
-    }
+
 
     if (activeDibs.length > 0) {
         // [CASE 1] 예약됨 (찜)

@@ -38,16 +38,7 @@ function Admin() {
   const isDevBypass = sessionStorage.getItem('dev_admin_bypass') === 'true'; // [CHANGED] 배포 환경에서도 허용
   const isAdmin = hasRole('admin') || hasRole('executive') || isDevBypass;
 
-  // 비로그인 또는 권한 없음 처리
-  useEffect(() => {
-    if (!authLoading && !user) {
-      showToast("관리자 로그인이 필요합니다.", { type: "warning" });
-      navigate("/login");
-    } else if (!authLoading && user && !isAdmin) {
-      showToast("접근 권한이 없습니다.", { type: "error" });
-      navigate("/");
-    }
-  }, [user, isAdmin, authLoading, navigate, showToast]);
+
 
   // --- 2. 데이터 상태 관리 (하위 탭들과 공유) ---
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -126,24 +117,6 @@ function Admin() {
 
 
   // --- 3. 로딩 및 권한 체크 ---
-  if (authLoading) {
-    return (
-      <div className="admin-auth-container">
-        <div className="spinner"></div>
-        <p style={{ marginTop: "20px", color: "var(--admin-text-sub)" }}>권한 확인 중...</p>
-      </div>
-    );
-  }
-
-  // 로그인하지 않았거나 권한이 없으면 useEffect에서 리다이렉트
-  if (!user || !isAdmin) {
-    return (
-      <div className="admin-auth-container">
-        <h2 style={{ fontSize: "2em", marginBottom: "20px" }}>🔒 관리자 전용</h2>
-        <p style={{ color: "var(--admin-text-sub)" }}>접근 권한을 확인하고 있습니다...</p>
-      </div>
-    );
-  }
 
   // --- 4. 렌더링: 관리자 메인 화면 ---
   return (
