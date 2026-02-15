@@ -212,7 +212,7 @@ function VoteView() {
         setProposals([...proposals, newProposal]);
         setProposalName('');
         setProposalLink('');
-        showToast('✅ [체험판] 게임이 제안되었습니다! (실제 저장되지 않음)', { type: "success" });
+        showToast('[체험판] 게임이 제안되었습니다! (실제 저장되지 않음)', { type: "success" });
     };
 
     return (
@@ -282,7 +282,7 @@ const ProposalCard = ({ proposal, rank }) => {
             showToast('최소 100P부터 투표 가능합니다.', { type: "warning" });
             return;
         }
-        showToast(`🗳️ [체험판] ${proposal.name}에 ${amount}P 투표했습니다!`, { type: "success" });
+        showToast(`[체험판] ${proposal.name}에 ${amount}P 투표했습니다!`, { type: "success" });
         setVoteAmount('');
     };
 

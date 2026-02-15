@@ -42,12 +42,19 @@ const useKioskData = () => {
                 const validGames = gamesData.filter(g => !g.error);
                 const validUsers = usersData || [];
 
-                setGames(validGames);
+                // [SORT] 티츄 우선 정렬
+                const sortedGames = [...validGames].sort((a, b) => {
+                    if (a.name === '티츄') return -1;
+                    if (b.name === '티츄') return 1;
+                    return 0; // 기존 순서(이름순) 유지
+                });
+
+                setGames(sortedGames);
                 setUsers(validUsers);
 
                 // 3. 안전하게 캐시 저장
                 try {
-                    localStorage.setItem('kiosk_games', JSON.stringify(validGames));
+                    localStorage.setItem('kiosk_games', JSON.stringify(sortedGames));
                     localStorage.setItem('kiosk_users', JSON.stringify(validUsers));
                 } catch (storageError) {
                     console.error("LocalStorage 저장 실패 (용량 부족 가능):", storageError);

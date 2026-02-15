@@ -1,0 +1,210 @@
+[
+  {
+    "id": "02237400-3379-4692-8168-e23262ac9682",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 3)",
+    "created_at": "2026-01-30T04:21:18.277763+00:00"
+  },
+  {
+    "id": "6b54e00b-7971-49cc-b088-4ce0fe7a8a97",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 2)",
+    "created_at": "2026-01-30T04:21:20.656422+00:00"
+  },
+  {
+    "id": "f02cdc6a-0ee1-472e-9305-5b4474cc8997",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 14)",
+    "created_at": "2026-01-30T04:21:22.69391+00:00"
+  },
+  {
+    "id": "7864f4d9-2fa4-4467-9cd8-34499e38adaf",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 14)",
+    "created_at": "2026-01-30T04:26:20.744717+00:00"
+  },
+  {
+    "id": "2105a751-2a6f-4d5b-b3bb-6d6152bc0ae5",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 12)",
+    "created_at": "2026-01-30T04:26:20.7925+00:00"
+  },
+  {
+    "id": "f3941f92-3891-4fa0-a0f6-0e71f224617e",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 8)",
+    "created_at": "2026-01-30T16:30:04.784828+00:00"
+  },
+  {
+    "id": "22848db4-8c5f-43a2-a645-281b1c1d7271",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임 3)",
+    "created_at": "2026-01-31T13:26:30.784991+00:00"
+  },
+  {
+    "id": "5b02be7a-8da5-43d8-b6cf-a4a776f1878a",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 50,
+    "type": "MATCH_REWARD",
+    "reason": "대전 참여 (게임 11)",
+    "created_at": "2026-01-31T14:17:49.973216+00:00"
+  },
+  {
+    "id": "f0c67dc8-89e9-40df-906d-4872ee8f6e73",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 200,
+    "type": "MATCH_REWARD",
+    "reason": "대전 승리 (게임 2)",
+    "created_at": "2026-02-07T00:20:23.621832+00:00"
+  },
+  {
+    "id": "17dee86e-1a57-4bc3-b93a-7bb6bf8310ab",
+    "user_id": "b7b48afe-43f1-42b4-84dc-114e8b94cbd5",
+    "amount": 50,
+    "type": "MATCH_REWARD",
+    "reason": "대전 참여 (게임 2)",
+    "created_at": "2026-02-07T00:20:23.621832+00:00"
+  },
+  {
+    "id": "0308b752-2c10-4c0d-a85a-0e529ec6b033",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 꼬치의 달인)",
+    "created_at": "2026-02-14T23:48:45.058754+00:00"
+  },
+  {
+    "id": "b702e10e-130b-4ced-bcb1-6e80f8a8647f",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 그림자 찾기)",
+    "created_at": "2026-02-14T23:48:45.152412+00:00"
+  },
+  {
+    "id": "def9cc8e-985e-48e0-b245-51d72203e2b2",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 노땡스)",
+    "created_at": "2026-02-14T23:48:45.207165+00:00"
+  },
+  {
+    "id": "5647613a-3f94-44de-84ad-5afa4b9b78e9",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 바퀴벌레 포커 로얄)",
+    "created_at": "2026-02-14T23:48:45.261783+00:00"
+  },
+  {
+    "id": "904ebdd9-d54e-48f3-b83d-cbdeda60884c",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 머핀타임)",
+    "created_at": "2026-02-14T23:48:45.30387+00:00"
+  },
+  {
+    "id": "04661210-de5d-43ea-a02f-5e340c0f80b8",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 구두룡 저택의 살인)",
+    "created_at": "2026-02-14T23:48:45.348668+00:00"
+  },
+  {
+    "id": "192f0cb5-d6ff-4c3a-ae53-be46e6d91713",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 노닥노닥 TRPG)",
+    "created_at": "2026-02-14T23:48:45.39219+00:00"
+  },
+  {
+    "id": "66d5904e-0b3a-4f8a-9fa7-93f85a5319de",
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 바퀴벌레 포커 로얄)",
+    "created_at": "2026-02-14T23:55:15.95461+00:00"
+  },
+  {
+    "id": "1aea00e3-0efe-4b90-bfdd-0729dc7bfe15",
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 사보타지)",
+    "created_at": "2026-02-14T23:55:16.079211+00:00"
+  },
+  {
+    "id": "65db7365-ff0d-4839-a4ed-3723c5031c85",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 1%의 기적)",
+    "created_at": "2026-02-14T23:55:22.907189+00:00"
+  },
+  {
+    "id": "70ca1da0-9ced-49ff-8639-1bf8bb287cd0",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 감자의 꿈)",
+    "created_at": "2026-02-14T23:55:22.951772+00:00"
+  },
+  {
+    "id": "cd51c038-965f-4d9d-b9e9-008b0765b71d",
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 그러는 너는 어떤데?)",
+    "created_at": "2026-02-14T23:56:03.363511+00:00"
+  },
+  {
+    "id": "8b93343b-89e3-45c5-b802-bd175407ba2c",
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "amount": 100,
+    "type": "RETURN_ON_TIME",
+    "reason": "키오스크 반납 (게임: 디크립토)",
+    "created_at": "2026-02-14T23:56:03.42325+00:00"
+  },
+  {
+    "id": "80bc4e9b-0e51-494c-af26-4ea686c7b36b",
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "amount": 50,
+    "type": "MATCH_REWARD",
+    "reason": "대전 참여 (게임 165)",
+    "created_at": "2026-02-14T23:58:49.039977+00:00"
+  },
+  {
+    "id": "b894ec9c-3809-46a8-a01e-7b4efe754596",
+    "user_id": "b7b48afe-43f1-42b4-84dc-114e8b94cbd5",
+    "amount": 50,
+    "type": "MATCH_REWARD",
+    "reason": "대전 참여 (게임 165)",
+    "created_at": "2026-02-14T23:58:49.039977+00:00"
+  },
+  {
+    "id": "637885ae-3391-4240-869b-1c9cecde23db",
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "amount": 50,
+    "type": "MATCH_REWARD",
+    "reason": "대전 참여 (게임 165)",
+    "created_at": "2026-02-14T23:58:49.039977+00:00"
+  }
+]

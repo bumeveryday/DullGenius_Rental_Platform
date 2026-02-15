@@ -611,24 +611,30 @@ BEGIN
 
     -- 포인트 지급 (+100P)
     IF p_user_id IS NOT NULL THEN
-        PERFORM earn_points(p_user_id, 100, 'RETURN_ON_TIME', '키오스크 반납 (게임 ' || v_game_id || ')');
+        DECLARE
+            v_game_name TEXT;
+        BEGIN
+            SELECT name INTO v_game_name FROM public.games WHERE id = (SELECT game_id FROM public.game_copies WHERE copy_id = p_copy_id);
+            PERFORM earn_points(p_user_id, 100, 'RETURN_ON_TIME', '키오스크 반납 (' || COALESCE(v_game_name, '게임:' || p_copy_id) || ')');
+        END;
     END IF;
 
     RETURN jsonb_build_object('success', true);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 4-4. 게임 매치 결과 등록 (5분 쿨타임)
+-- 4-4. 게임 매치 결과 등록 (5분 쿨타임) - [UPDATED] 다중 승자 지원
 CREATE OR REPLACE FUNCTION public.register_match_result(
     p_game_id INTEGER,
     p_player_ids UUID[],
-    p_winner_id UUID
+    p_winner_ids UUID[] -- [MOD] 단일 ID에서 배열로 변경
 ) RETURNS JSONB AS $$
 DECLARE
     v_last_played TIMESTAMP;
     v_player_id UUID;
     v_is_winner BOOLEAN;
     v_points INTEGER;
+    v_game_name TEXT;
 BEGIN
     SELECT played_at INTO v_last_played
     FROM public.matches
@@ -640,15 +646,18 @@ BEGIN
          RETURN jsonb_build_object('success', false, 'message', '너무 자주 등록할 수 없습니다. (5분 쿨타임)');
     END IF;
 
+    -- 게임 이름 조회
+    SELECT name INTO v_game_name FROM public.games WHERE id = p_game_id;
+
     INSERT INTO public.matches (game_id, players, winner_id, verified_at)
-    VALUES (p_game_id, to_jsonb(p_player_ids), p_winner_id, now());
+    VALUES (p_game_id, to_jsonb(p_player_ids), p_winner_ids[1], now()); -- 레거시 호환을 위해 첫번째 승자 저장
 
     FOREACH v_player_id IN ARRAY p_player_ids
     LOOP
-        v_is_winner := (v_player_id = p_winner_id);
+        v_is_winner := (v_player_id = ANY(p_winner_ids)); -- [MOD] 배열 포함 여부 확인
         v_points := CASE WHEN v_is_winner THEN 200 ELSE 50 END;
         PERFORM earn_points(v_player_id, v_points, 'MATCH_REWARD', 
-            CASE WHEN v_is_winner THEN '대전 승리' ELSE '대전 참여' END || ' (게임 ' || p_game_id || ')');
+            COALESCE(v_game_name, '대전') || ' ' || (CASE WHEN v_is_winner THEN '승리' ELSE '참여' END));
     END LOOP;
 
     RETURN jsonb_build_object('success', true);

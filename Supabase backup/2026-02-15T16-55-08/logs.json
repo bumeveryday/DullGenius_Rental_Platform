@@ -1,0 +1,1285 @@
+[
+  {
+    "log_id": "47921747-50a1-4be9-b775-3d19d8739f7a",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:415, RentID:1904186b-bb81-4f24-b2c1-f4ebd0cd6f37",
+    "created_at": "2026-01-29T19:08:16.248346+00:00"
+  },
+  {
+    "log_id": "faecc478-65cd-41c0-b456-06407e0b2a45",
+    "game_id": 2,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:2, RentID:bea41845-2a66-42b2-a7e0-89e170818113",
+    "created_at": "2026-01-29T19:08:20.09869+00:00"
+  },
+  {
+    "log_id": "07e616c0-7895-4909-bd4f-1cc6492f6f83",
+    "game_id": 14,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:14, RentID:395beea5-e788-4af6-b345-e8d5a727224a",
+    "created_at": "2026-01-29T19:08:25.632319+00:00"
+  },
+  {
+    "log_id": "ae34b6f1-2ed8-4bf0-9100-cab68a460d82",
+    "game_id": 14,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:14, RentID:0cc43fa8-6abc-494a-818b-3f6afb97a30c",
+    "created_at": "2026-01-29T19:24:52.313774+00:00"
+  },
+  {
+    "log_id": "ef734b43-4d15-49fb-a111-4b13c4e77cd9",
+    "game_id": 12,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:12, RentID:1ab5a50d-1f2c-4f2c-9e24-a8221fc51267",
+    "created_at": "2026-01-29T19:24:56.559098+00:00"
+  },
+  {
+    "log_id": "e8f57d1b-ee95-4253-804c-cf28fd9d3980",
+    "game_id": 8,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:8, RentID:137b7ef6-2fae-4c09-8879-bdadc4800a10",
+    "created_at": "2026-01-30T07:25:23.619195+00:00"
+  },
+  {
+    "log_id": "72e13574-415d-4ba5-a351-602a3ba778f4",
+    "game_id": 8,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN Direct, RentID:a111f443-3165-43e2-b8e4-f861e94b658d, Name:김범근",
+    "created_at": "2026-01-30T07:26:24.710288+00:00"
+  },
+  {
+    "log_id": "23798d93-e5f7-4e83-a7e6-eef95d8d001f",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:415, RentID:b2202dcc-2753-42c8-a4d1-b99b5a90e7c5",
+    "created_at": "2026-01-31T02:45:24.434788+00:00"
+  },
+  {
+    "log_id": "031157a4-c338-4971-9bdd-0b27f4d8169f",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:415, RentID:55f0b8fb-3f2d-4235-b014-ee0df9a124bc",
+    "created_at": "2026-02-06T13:47:12.071338+00:00"
+  },
+  {
+    "log_id": "3a3a901b-e147-4550-8ea6-9827337fe9db",
+    "game_id": 24,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:24, RentID:0c44c672-eaa4-4d20-81fc-719da4222b43",
+    "created_at": "2026-02-06T13:47:16.772071+00:00"
+  },
+  {
+    "log_id": "9d9c0a66-6cd7-46a9-b8fe-1986cd874436",
+    "game_id": 27,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:440, RentID:f185dbac-d785-4195-8d39-962aed4a8353",
+    "created_at": "2026-02-06T13:47:20.600974+00:00"
+  },
+  {
+    "log_id": "25a0bb61-8799-42e6-8a57-6acbb17fbec6",
+    "game_id": 3,
+    "user_id": "b7b48afe-43f1-42b4-84dc-114e8b94cbd5",
+    "action_type": "DIBS",
+    "details": "Copy:415, RentID:4fe47601-10a1-47dc-9532-8158d153983f",
+    "created_at": "2026-02-07T13:42:55.028039+00:00"
+  },
+  {
+    "log_id": "f7ce2ed0-51dd-4bca-86c2-85ae18b9f453",
+    "game_id": 8,
+    "user_id": "b7b48afe-43f1-42b4-84dc-114e8b94cbd5",
+    "action_type": "DIBS",
+    "details": "Copy:8, RentID:4bf5c646-4fc8-49c6-9666-c15aa214cbc8",
+    "created_at": "2026-02-07T13:44:04.461918+00:00"
+  },
+  {
+    "log_id": "b740d188-b04f-4d1d-b806-22062fd38026",
+    "game_id": 8,
+    "user_id": null,
+    "action_type": "RENT",
+    "details": "ADMIN Direct, RentID:5cbbac9d-b1e5-4937-a0c9-e5d6178be032, Name:관리자",
+    "created_at": "2026-02-07T14:13:57.722514+00:00"
+  },
+  {
+    "log_id": "93038bf7-34fe-41a3-939a-2b1a408b56b8",
+    "game_id": 8,
+    "user_id": null,
+    "action_type": "RENT",
+    "details": "ADMIN Direct, RentID:6dac9ba6-50ee-4fc2-b6ff-d5a71f6c4938, Name:관리자",
+    "created_at": "2026-02-07T14:14:00.695766+00:00"
+  },
+  {
+    "log_id": "ff66ea9f-94f3-4117-8cfd-4570e9e691d3",
+    "game_id": 8,
+    "user_id": "b7b48afe-43f1-42b4-84dc-114e8b94cbd5",
+    "action_type": "RENT",
+    "details": "ADMIN Direct, RentID:620ba59c-ad29-471e-8db0-41b9099d20f8, Name:권준서",
+    "created_at": "2026-02-07T14:42:30.542728+00:00"
+  },
+  {
+    "log_id": "de52d24c-c658-4c6f-a325-7225d59c1bef",
+    "game_id": 1,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:413, RentID:10bf0003-d1cf-4db7-ad88-c84c6ce28ed6",
+    "created_at": "2026-02-07T14:42:46.911093+00:00"
+  },
+  {
+    "log_id": "c08f8827-3cd2-4360-aac9-baa52c8dd846",
+    "game_id": 5,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:5, RentID:a48da73a-83be-44d3-af72-b2f522ef927e",
+    "created_at": "2026-02-07T14:42:50.901943+00:00"
+  },
+  {
+    "log_id": "8bc52a33-9120-4091-a01f-6f9b80123f54",
+    "game_id": 8,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN Return",
+    "created_at": "2026-02-07T21:59:02.645307+00:00"
+  },
+  {
+    "log_id": "d37be282-ea01-4414-b0d8-c1c35bcdd70c",
+    "game_id": 2,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:2, RentID:e28b25ee-30f0-4036-82f9-c45f38bf2885",
+    "created_at": "2026-02-07T22:11:35.790847+00:00"
+  },
+  {
+    "log_id": "ad79d67e-91ad-4063-9798-2824d316b5a1",
+    "game_id": 6,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:6, RentID:d059ad1f-7dc9-4f81-bd3c-3f8bd4211229",
+    "created_at": "2026-02-07T22:11:38.854209+00:00"
+  },
+  {
+    "log_id": "c64c2d20-e8f0-4d05-a6dd-f9f8749847e4",
+    "game_id": 2,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-07T22:11:45.380412+00:00"
+  },
+  {
+    "log_id": "90a92626-e939-4ebe-b61f-9d18faf591ca",
+    "game_id": 6,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-07T22:11:45.430699+00:00"
+  },
+  {
+    "log_id": "2e0eafe6-f191-4d15-a004-2f4344152fba",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:415, RentID:24196cfa-9035-4190-b28b-78e4212d2148",
+    "created_at": "2026-02-07T22:15:41.167162+00:00"
+  },
+  {
+    "log_id": "dafab960-d43d-457b-8ac6-c0b918ca9584",
+    "game_id": 5,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "Copy:5, RentID:f5c03483-eb66-443b-bc24-0c524a11d577",
+    "created_at": "2026-02-07T22:15:55.694398+00:00"
+  },
+  {
+    "log_id": "079cba31-0e5b-49e1-b8e7-59e86bf0e985",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-07T22:16:03.667239+00:00"
+  },
+  {
+    "log_id": "fc91b945-de01-4bcd-813c-cda46bf692ff",
+    "game_id": 5,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-07T22:16:03.716036+00:00"
+  },
+  {
+    "log_id": "4fdc49d6-0b81-4f9a-9481-082a7c17f8c9",
+    "game_id": 93,
+    "user_id": null,
+    "action_type": "RENT",
+    "details": "ADMIN: DirectRentTest_2927",
+    "created_at": "2026-02-07T22:17:53.011297+00:00"
+  },
+  {
+    "log_id": "212d4669-8a8d-4153-b3cb-f3f34448940f",
+    "game_id": 27,
+    "user_id": null,
+    "action_type": "RENT",
+    "details": "ADMIN: DirectRentTest_1035",
+    "created_at": "2026-02-07T22:27:01.154115+00:00"
+  },
+  {
+    "log_id": "bc08dacc-58f4-4285-a711-4500f37d5e83",
+    "game_id": 27,
+    "user_id": null,
+    "action_type": "RENT",
+    "details": "ADMIN: DirectRentTest_7264",
+    "created_at": "2026-02-07T22:27:47.36447+00:00"
+  },
+  {
+    "log_id": "ee783602-19f0-4411-9871-e107345440f5",
+    "game_id": 27,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN Return",
+    "created_at": "2026-02-07T22:27:47.579144+00:00"
+  },
+  {
+    "log_id": "8979cc7b-9787-4afd-9b26-3d6cf0bbcdce",
+    "game_id": 4,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "CopyID:4",
+    "created_at": "2026-02-08T09:30:32.773633+00:00"
+  },
+  {
+    "log_id": "ca71c54b-5a80-49f1-92c3-bcf56299106a",
+    "game_id": 8,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "CopyID:8",
+    "created_at": "2026-02-08T09:30:35.889054+00:00"
+  },
+  {
+    "log_id": "c6a0a35c-1a75-4022-b6a4-62fe883fea9c",
+    "game_id": 8,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-08T09:30:42.206089+00:00"
+  },
+  {
+    "log_id": "c898ea2a-4bbb-41d6-9993-ee25638b7e52",
+    "game_id": 4,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-08T09:30:42.261057+00:00"
+  },
+  {
+    "log_id": "1a3c82b8-13e2-49fe-9dcc-a3c19b01e88c",
+    "game_id": 9,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "CopyID:9",
+    "created_at": "2026-02-08T09:35:30.009888+00:00"
+  },
+  {
+    "log_id": "197f680c-ed02-477c-9b6d-01d3cfe1859a",
+    "game_id": 11,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "CopyID:11",
+    "created_at": "2026-02-08T09:35:33.744568+00:00"
+  },
+  {
+    "log_id": "df073712-19ec-43ae-95c1-e7584866bc12",
+    "game_id": 9,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-08T09:35:38.467921+00:00"
+  },
+  {
+    "log_id": "37562845-e53d-4096-9828-b90699625914",
+    "game_id": 11,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-08T09:35:38.46845+00:00"
+  },
+  {
+    "log_id": "90f495cf-8615-4d33-99f8-b3808e5f32b1",
+    "game_id": 8,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:24.568853+00:00"
+  },
+  {
+    "log_id": "0e2f079e-4b47-42ad-b48b-d09c89ab08a8",
+    "game_id": 4,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:24.674137+00:00"
+  },
+  {
+    "log_id": "53630402-3a34-4023-b1d4-1c9aaf8015f9",
+    "game_id": 2,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:24.725498+00:00"
+  },
+  {
+    "log_id": "005c1831-b5d6-45b9-87e3-0d8a47d71aba",
+    "game_id": 6,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:24.770196+00:00"
+  },
+  {
+    "log_id": "075206dd-9e6a-40f1-ae9a-88b5e70ca3a6",
+    "game_id": 3,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:24.829281+00:00"
+  },
+  {
+    "log_id": "d10605f9-5738-465f-9716-5ffaf6234f90",
+    "game_id": 5,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:24.875543+00:00"
+  },
+  {
+    "log_id": "1b523761-be27-4545-b1b3-badedf0b0c71",
+    "game_id": 9,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:24.916774+00:00"
+  },
+  {
+    "log_id": "1ec81f70-b16f-4c78-b1e0-4c3cfd662d80",
+    "game_id": 11,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:24.963554+00:00"
+  },
+  {
+    "log_id": "b279624a-617e-420b-8428-6e3c5f62b608",
+    "game_id": 27,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:30.181769+00:00"
+  },
+  {
+    "log_id": "1c4eedb8-4036-4e3e-9636-3924ef3333eb",
+    "game_id": 93,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:33.60548+00:00"
+  },
+  {
+    "log_id": "aa8d1e73-b056-46a7-bf18-52482ac2fefe",
+    "game_id": 2,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-08T12:20:42.038437+00:00"
+  },
+  {
+    "log_id": "cb7cd60b-527a-4b2f-a807-e388d0a042e4",
+    "game_id": 9,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-08T12:20:46.315856+00:00"
+  },
+  {
+    "log_id": "0e724774-ee43-4111-976d-4b0748449a1b",
+    "game_id": 14,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-08T12:20:48.881262+00:00"
+  },
+  {
+    "log_id": "c3be62cb-ac93-437a-bc01-70993f75a831",
+    "game_id": 2,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-08T12:20:55.280403+00:00"
+  },
+  {
+    "log_id": "7f2f1d0d-bb9d-4d67-83ba-3b43e429367e",
+    "game_id": 9,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-08T12:20:55.28064+00:00"
+  },
+  {
+    "log_id": "243707f1-2e48-43d3-ad11-cf144ab78942",
+    "game_id": 14,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-08T12:20:55.286887+00:00"
+  },
+  {
+    "log_id": "af49c2fb-9e6d-46ca-be20-43fdabe803d3",
+    "game_id": 2,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:58.216826+00:00"
+  },
+  {
+    "log_id": "e0ecc6ca-596d-4457-91a2-1080819af6ad",
+    "game_id": 9,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:58.260057+00:00"
+  },
+  {
+    "log_id": "e5a24d46-20ad-4c04-bc32-a6f604d4d3b3",
+    "game_id": 14,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:20:58.299631+00:00"
+  },
+  {
+    "log_id": "cc715c8e-88b7-4d40-8c0e-eaa174d9013e",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-08T12:23:04.232633+00:00"
+  },
+  {
+    "log_id": "29bda7e1-ba8f-4440-a9ad-f46882b97558",
+    "game_id": 7,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-08T12:23:07.229387+00:00"
+  },
+  {
+    "log_id": "306693ab-7090-4fed-9ee5-1ea54e853bd0",
+    "game_id": 15,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-08T12:23:10.467691+00:00"
+  },
+  {
+    "log_id": "33dc47ac-b52f-440f-8cd0-2305a828d7c9",
+    "game_id": 15,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-08T12:23:17.621015+00:00"
+  },
+  {
+    "log_id": "60ee1a81-d369-4d8c-8b4c-44a25c2bc6a6",
+    "game_id": 7,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-08T12:23:17.621396+00:00"
+  },
+  {
+    "log_id": "0efb767a-7609-4a82-8961-8a41d93b3101",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-08T12:23:17.621151+00:00"
+  },
+  {
+    "log_id": "5ba02c5a-30ba-4b3d-81a1-4ecf0fdc0043",
+    "game_id": 15,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:23:21.182401+00:00"
+  },
+  {
+    "log_id": "ca17920c-a5ef-4d37-b514-cf8fac6d21da",
+    "game_id": 7,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:23:21.225336+00:00"
+  },
+  {
+    "log_id": "4093cd9e-7389-4ad2-97e9-c135f47fad49",
+    "game_id": 3,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:23:21.268323+00:00"
+  },
+  {
+    "log_id": "da9debf3-4c10-4475-8d33-c1184f62b019",
+    "game_id": 2,
+    "user_id": null,
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근 01054039204",
+    "created_at": "2026-02-08T12:23:38.549316+00:00"
+  },
+  {
+    "log_id": "f4f860d0-e8e5-4c4c-9861-203739b48a67",
+    "game_id": 2,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-08T12:23:43.185474+00:00"
+  },
+  {
+    "log_id": "8ad27c75-5c10-4e3b-8af5-a6a6ebeabbdf",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-08T12:28:07.819236+00:00"
+  },
+  {
+    "log_id": "7bde5b20-3c09-4946-818c-372d4f85cfee",
+    "game_id": 193,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-08T12:28:15.315319+00:00"
+  },
+  {
+    "log_id": "c1902624-8a0e-435e-a451-d2f6e82a6ad3",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-08T15:00:26.472577+00:00"
+  },
+  {
+    "log_id": "a67801a7-967c-4ac6-853c-daae3a12a5b7",
+    "game_id": 193,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-08T15:00:26.472576+00:00"
+  },
+  {
+    "log_id": "531822ab-bd2d-4331-ae8e-512ed422a307",
+    "game_id": 3,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-09T01:56:52.117407+00:00"
+  },
+  {
+    "log_id": "d5e4175b-da2d-42db-a474-8c2957c41e1f",
+    "game_id": 193,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-09T01:56:52.186992+00:00"
+  },
+  {
+    "log_id": "a9272989-9129-4c49-82e7-1086eb4405c0",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-09T04:32:04.108234+00:00"
+  },
+  {
+    "log_id": "a62cc4e1-8d36-4118-ab67-dc03e96c9afd",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-09T04:32:17.139155+00:00"
+  },
+  {
+    "log_id": "7e8e41e5-8724-42df-9d88-8825c72a6451",
+    "game_id": 3,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-09T04:40:24.192195+00:00"
+  },
+  {
+    "log_id": "b59bb9c3-7d0d-4619-90c7-8b8deaf4dc77",
+    "game_id": 2,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-09T04:57:21.527072+00:00"
+  },
+  {
+    "log_id": "09509b79-89bd-4c9a-86d9-2f2e9bc171a7",
+    "game_id": 2,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-09T04:58:03.230141+00:00"
+  },
+  {
+    "log_id": "577edc43-ff00-4312-a569-d7f59676c9c3",
+    "game_id": 2,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-09T05:05:04.419756+00:00"
+  },
+  {
+    "log_id": "3f64488f-be4d-47c0-95b9-d9dd3ecfd7a8",
+    "game_id": 1,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-09T05:05:12.595888+00:00"
+  },
+  {
+    "log_id": "3cf5faf9-8865-4c80-986c-7cdb5479f71a",
+    "game_id": 5,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-09T05:05:15.938506+00:00"
+  },
+  {
+    "log_id": "b236f319-6ce6-472b-bb23-e55a9646d927",
+    "game_id": 5,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-09T05:05:29.640899+00:00"
+  },
+  {
+    "log_id": "248af855-3077-458b-a571-36cf11dd3116",
+    "game_id": 1,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-09T05:05:29.640899+00:00"
+  },
+  {
+    "log_id": "6390c0dd-b581-4188-9c1d-be0e5e53becb",
+    "game_id": 5,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-09T05:05:33.03661+00:00"
+  },
+  {
+    "log_id": "d5a0daf2-f11e-459b-8844-983cd8132fb0",
+    "game_id": 1,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-09T05:05:33.089153+00:00"
+  },
+  {
+    "log_id": "6898c978-6511-4712-b332-90687abf4cc7",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-10T00:34:42.857133+00:00"
+  },
+  {
+    "log_id": "5b298396-fff8-4b1b-8dc7-08eba31b2095",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-10T00:34:54.152901+00:00"
+  },
+  {
+    "log_id": "95923cf1-0375-4698-ad3f-234d66c5bb04",
+    "game_id": 3,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-10T00:34:58.079686+00:00"
+  },
+  {
+    "log_id": "52a2605f-6e49-46a0-8e13-8730e485be78",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-10T00:35:04.809064+00:00"
+  },
+  {
+    "log_id": "74c70a52-89c1-4f03-b11f-6e3ddfa234e7",
+    "game_id": 10,
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-10T00:37:25.41885+00:00"
+  },
+  {
+    "log_id": "dcad97c3-a143-4d5f-ab31-ea00d5d1823f",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-10T01:51:23.585174+00:00"
+  },
+  {
+    "log_id": "5f2ff01a-35b1-4e53-9e32-8eefe0c1275a",
+    "game_id": 10,
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "action_type": "RENT",
+    "details": "ADMIN: 테스트",
+    "created_at": "2026-02-10T01:51:27.067409+00:00"
+  },
+  {
+    "log_id": "be434784-fa37-4a15-9539-aebdfd69f70c",
+    "game_id": 3,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-10T01:51:41.348873+00:00"
+  },
+  {
+    "log_id": "48588162-73f4-4c20-bb2e-a47d32745d81",
+    "game_id": 10,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-10T01:51:43.375188+00:00"
+  },
+  {
+    "log_id": "ecd92ca4-b110-4763-8e5a-5927c9634903",
+    "game_id": 3,
+    "user_id": "b7b48afe-43f1-42b4-84dc-114e8b94cbd5",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-10T01:51:48.3902+00:00"
+  },
+  {
+    "log_id": "283c00e0-2554-4a19-b9cc-c74dfa7db315",
+    "game_id": 1,
+    "user_id": "b7b48afe-43f1-42b4-84dc-114e8b94cbd5",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-10T01:51:52.942292+00:00"
+  },
+  {
+    "log_id": "622836a4-2f0d-43e1-bf6d-bd38eadc7d41",
+    "game_id": 3,
+    "user_id": "b7b48afe-43f1-42b4-84dc-114e8b94cbd5",
+    "action_type": "RENT",
+    "details": "ADMIN: 권준서",
+    "created_at": "2026-02-10T01:53:38.513149+00:00"
+  },
+  {
+    "log_id": "3f6b1539-859c-46e3-870c-ece8cb079946",
+    "game_id": 1,
+    "user_id": "b7b48afe-43f1-42b4-84dc-114e8b94cbd5",
+    "action_type": "RENT",
+    "details": "ADMIN: 권준서",
+    "created_at": "2026-02-10T01:53:38.513155+00:00"
+  },
+  {
+    "log_id": "4c8a0e98-3ccc-43a1-b604-bb37d4ce6e13",
+    "game_id": 3,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-10T01:53:40.989594+00:00"
+  },
+  {
+    "log_id": "fd3f8d0a-e104-49e6-8b8c-c40b622c651e",
+    "game_id": 1,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-10T01:53:41.038376+00:00"
+  },
+  {
+    "log_id": "4314e97f-3ed9-4af9-a2fc-9efc18b858b1",
+    "game_id": 16,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-10T01:56:46.56097+00:00"
+  },
+  {
+    "log_id": "b2163ee5-6c86-46d7-a115-ac36b5edbe21",
+    "game_id": 7,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-10T01:56:49.882432+00:00"
+  },
+  {
+    "log_id": "10c74ba5-530f-473d-8eb9-8b40d97141d8",
+    "game_id": 16,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-10T10:52:06.718238+00:00"
+  },
+  {
+    "log_id": "def4f10b-9f3d-45ad-9d0c-3b37b5c22d7f",
+    "game_id": 7,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-10T10:52:06.718191+00:00"
+  },
+  {
+    "log_id": "28e0620e-b467-4a63-9538-188860405fb3",
+    "game_id": 7,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-10T10:52:09.476928+00:00"
+  },
+  {
+    "log_id": "5e98eb75-5e94-41d3-a41c-64ac2e0b79d5",
+    "game_id": 16,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-10T10:52:09.556801+00:00"
+  },
+  {
+    "log_id": "b76307c4-5ad9-4f7c-b5d2-46ef0e402f33",
+    "game_id": 2,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T07:25:53.38846+00:00"
+  },
+  {
+    "log_id": "79695bb0-ba5b-43ae-8b0f-c943f60dd74d",
+    "game_id": 2,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-14T07:26:44.877331+00:00"
+  },
+  {
+    "log_id": "6ebb2ded-cc92-4c19-a1f0-81643fb62722",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T07:29:15.345437+00:00"
+  },
+  {
+    "log_id": "38d37221-9e5b-466d-b653-a38f6f9f863f",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-14T07:29:30.353023+00:00"
+  },
+  {
+    "log_id": "3ed12387-a288-4b05-938a-a48b6e2df1f6",
+    "game_id": 2,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-14T07:34:07.487782+00:00"
+  },
+  {
+    "log_id": "4b942d00-454a-4fc8-8fe3-320da7e2bf3d",
+    "game_id": 3,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-14T07:34:07.550366+00:00"
+  },
+  {
+    "log_id": "c9a25ce2-3fdd-4563-9956-c11eca622a02",
+    "game_id": 14,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T09:45:41.245773+00:00"
+  },
+  {
+    "log_id": "8ffdfa69-c7cc-4911-a1dd-d44a92d9be9f",
+    "game_id": 12,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T09:45:44.78961+00:00"
+  },
+  {
+    "log_id": "50f23985-7f41-47b0-b59b-00663c79f10a",
+    "game_id": 12,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-14T09:45:59.603731+00:00"
+  },
+  {
+    "log_id": "f384e8a0-2d26-4ccc-8902-760540827dcd",
+    "game_id": 14,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "ADMIN: 김범근",
+    "created_at": "2026-02-14T09:45:59.601898+00:00"
+  },
+  {
+    "log_id": "9e6d7c81-9253-4992-aa86-01395ce7d654",
+    "game_id": 12,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-14T09:46:01.734726+00:00"
+  },
+  {
+    "log_id": "c77d6225-0388-4a43-8cd7-3d77737dadb9",
+    "game_id": 14,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-14T09:46:01.782088+00:00"
+  },
+  {
+    "log_id": "7f7b7664-7ee2-4818-bb64-25c0feb54195",
+    "game_id": 12,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T09:52:42.693503+00:00"
+  },
+  {
+    "log_id": "36c79907-a722-4c82-af8c-5404c2bdd15f",
+    "game_id": 7,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T09:54:58.689831+00:00"
+  },
+  {
+    "log_id": "ca98e9bd-572b-4a1f-81c6-9e8c77c148d2",
+    "game_id": 49,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T09:55:07.062059+00:00"
+  },
+  {
+    "log_id": "9a6b44a5-86ea-48a0-a8a7-3c42da582154",
+    "game_id": 58,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T09:55:17.393475+00:00"
+  },
+  {
+    "log_id": "9929d09a-10df-4549-ada5-0f01a35de04c",
+    "game_id": 58,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "Kiosk Pickup (Rental ID: 9c7a8a41-cc99-402e-98fa-7e0711346d46)",
+    "created_at": "2026-02-14T10:29:01.085877+00:00"
+  },
+  {
+    "log_id": "1f158b3a-e2b0-4b04-b4c3-30fd9b2ca0cb",
+    "game_id": 49,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "Kiosk Pickup (Rental ID: 16067f20-98b8-419f-a445-5dbc764a0306)",
+    "created_at": "2026-02-14T10:29:01.151269+00:00"
+  },
+  {
+    "log_id": "dd0175db-d5bb-405a-99cd-80a12150d99d",
+    "game_id": 7,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "Kiosk Pickup (Rental ID: 49ab35a0-f4af-4cd4-85bf-014623d85538)",
+    "created_at": "2026-02-14T10:29:01.191461+00:00"
+  },
+  {
+    "log_id": "d516148b-e083-498e-891d-823f7d66ef1d",
+    "game_id": 12,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "Kiosk Pickup (Rental ID: a1de7c21-d739-45fd-85bd-f6d3e6de8701)",
+    "created_at": "2026-02-14T10:29:01.232519+00:00"
+  },
+  {
+    "log_id": "d5f26171-6309-4ef5-86a5-1d63498ed87c",
+    "game_id": 10,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T14:04:42.822312+00:00"
+  },
+  {
+    "log_id": "fbd98904-e718-49ba-ae60-472caa510db6",
+    "game_id": 15,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T14:04:45.762388+00:00"
+  },
+  {
+    "log_id": "d5280568-1b0e-48b2-a854-4022b1fa3339",
+    "game_id": 16,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T14:04:50.066406+00:00"
+  },
+  {
+    "log_id": "e319e321-f327-440d-88c2-fcd5f480030b",
+    "game_id": 10,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "Kiosk Pickup (Rental ID: 7a1dac0f-2cd8-45bf-923d-f397f827af9a)",
+    "created_at": "2026-02-14T14:05:06.034925+00:00"
+  },
+  {
+    "log_id": "0183afb8-deba-4d57-9ec3-e096574c3588",
+    "game_id": 16,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "Kiosk Pickup (Rental ID: e0405c6a-7eb5-47e8-89e2-d2082bacaaa2)",
+    "created_at": "2026-02-14T14:05:06.104946+00:00"
+  },
+  {
+    "log_id": "8bfc8d48-f2d0-4642-a301-2c7e85a6a845",
+    "game_id": 15,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "RENT",
+    "details": "Kiosk Pickup (Rental ID: 2d40fcdd-1538-4d54-9a5b-199cee248ab8)",
+    "created_at": "2026-02-14T14:05:06.168472+00:00"
+  },
+  {
+    "log_id": "dc081bc2-b926-43d4-8730-e48b777f8387",
+    "game_id": 1,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T14:48:58.67612+00:00"
+  },
+  {
+    "log_id": "2a3de591-e40a-44f8-9352-74c056f7654d",
+    "game_id": 3,
+    "user_id": "ee24c496-ac06-40bb-ac09-9aebb4277526",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T14:49:02.413129+00:00"
+  },
+  {
+    "log_id": "6cd52694-4487-4e6d-8f47-6ac7d9ec6f07",
+    "game_id": 58,
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T14:49:13.139037+00:00"
+  },
+  {
+    "log_id": "3c5cc698-8559-4994-bf47-29fffe995374",
+    "game_id": 74,
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T14:49:16.808868+00:00"
+  },
+  {
+    "log_id": "89539a64-a65e-4cb5-8232-1e60945b97d4",
+    "game_id": 8,
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T14:55:46.524212+00:00"
+  },
+  {
+    "log_id": "0fc11dcd-b9a6-4709-aeb6-9e55d3b361d8",
+    "game_id": 30,
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T14:55:49.904686+00:00"
+  },
+  {
+    "log_id": "3b165ee7-1288-475d-8ce4-c14b23f666fe",
+    "game_id": 8,
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "action_type": "RENT",
+    "details": "Kiosk Pickup (Rental ID: fc78cd55-3f2f-4aee-b73b-a2a1ed8f195a)",
+    "created_at": "2026-02-14T14:55:57.443691+00:00"
+  },
+  {
+    "log_id": "f15fd326-c636-4d60-a732-e51452406c02",
+    "game_id": 30,
+    "user_id": "bf57e403-6565-4c61-97cc-bc1108b38a64",
+    "action_type": "RENT",
+    "details": "Kiosk Pickup (Rental ID: 29143b19-cdbc-49a7-917a-7cecf7323655)",
+    "created_at": "2026-02-14T14:55:57.502809+00:00"
+  },
+  {
+    "log_id": "b924ee8a-8798-4c86-9378-62cc87f36acb",
+    "game_id": 8,
+    "user_id": null,
+    "action_type": "RETURN",
+    "details": "ADMIN: Unknown",
+    "created_at": "2026-02-14T15:27:52.52413+00:00"
+  },
+  {
+    "log_id": "a5997cc8-a48a-43e7-8eff-a6d856910a13",
+    "game_id": 8,
+    "user_id": null,
+    "action_type": "DIBS",
+    "details": "User reserved game",
+    "created_at": "2026-02-14T15:23:37.576459+00:00"
+  },
+  {
+    "log_id": "5d9d2fda-0887-4537-ba8e-692bacaf9d2f",
+    "game_id": 8,
+    "user_id": null,
+    "action_type": "RENT",
+    "details": "ADMIN: 카이쬬",
+    "created_at": "2026-02-14T15:23:54.011605+00:00"
+  },
+  {
+    "log_id": "c86d6b5b-034f-41f6-98b4-f752facf2e6b",
+    "game_id": null,
+    "user_id": null,
+    "action_type": "SEARCH",
+    "details": {
+      "query": "12"
+    },
+    "created_at": "2026-02-14T16:18:52.722453+00:00"
+  },
+  {
+    "log_id": "cebc54c4-4259-4d2c-860d-cc418f88ba67",
+    "game_id": null,
+    "user_id": null,
+    "action_type": "SEARCH",
+    "details": {
+      "query": "12칩"
+    },
+    "created_at": "2026-02-14T16:18:53.364203+00:00"
+  },
+  {
+    "log_id": "035f1456-516e-4eb4-91a6-c4a61d893bf8",
+    "game_id": null,
+    "user_id": null,
+    "action_type": "FILTER_CHANGE",
+    "details": {
+      "players": "all",
+      "category": "보드게임",
+      "difficulty": "전체",
+      "only_available": false
+    },
+    "created_at": "2026-02-14T16:49:24.625975+00:00"
+  },
+  {
+    "log_id": "9788ca6f-ccbf-46dc-8b10-fcbf477e6162",
+    "game_id": null,
+    "user_id": null,
+    "action_type": "FILTER_CHANGE",
+    "details": {
+      "players": "all",
+      "category": "보드게임",
+      "difficulty": "전략",
+      "only_available": false
+    },
+    "created_at": "2026-02-14T16:49:28.368017+00:00"
+  },
+  {
+    "log_id": "8277844c-3d40-402d-b668-6f69410593dc",
+    "game_id": null,
+    "user_id": null,
+    "action_type": "FILTER_CHANGE",
+    "details": {
+      "players": "all",
+      "category": "보드게임",
+      "difficulty": "초중급",
+      "only_available": false
+    },
+    "created_at": "2026-02-14T16:49:32.392991+00:00"
+  },
+  {
+    "log_id": "d000b3e0-c410-45dc-a8d2-228a048be7d0",
+    "game_id": null,
+    "user_id": null,
+    "action_type": "FILTER_CHANGE",
+    "details": {
+      "players": "8+",
+      "category": "보드게임",
+      "difficulty": "초중급",
+      "only_available": false
+    },
+    "created_at": "2026-02-14T16:49:35.6784+00:00"
+  },
+  {
+    "log_id": "7e56db50-d096-434c-88d2-3fc4bbb02b1f",
+    "game_id": null,
+    "user_id": null,
+    "action_type": "SEARCH",
+    "details": {
+      "query": "asdfw v"
+    },
+    "created_at": "2026-02-14T16:49:49.145655+00:00"
+  },
+  {
+    "log_id": "43aebc80-f545-4bd2-9101-6e8d7a2ddc9b",
+    "game_id": null,
+    "user_id": null,
+    "action_type": "SEARCH_EMPTY",
+    "details": {
+      "query": "asdfw v"
+    },
+    "created_at": "2026-02-14T16:49:49.166231+00:00"
+  },
+  {
+    "log_id": "6decde8f-e957-43ed-b09d-95e6688c90d4",
+    "game_id": null,
+    "user_id": null,
+    "action_type": "SEARCH_EMPTY",
+    "details": {
+      "query": "정글"
+    },
+    "created_at": "2026-02-14T16:49:57.217648+00:00"
+  },
+  {
+    "log_id": "e50dfb02-acad-46f9-bf53-2edf15afc13c",
+    "game_id": null,
+    "user_id": null,
+    "action_type": "SEARCH",
+    "details": {
+      "query": "정글"
+    },
+    "created_at": "2026-02-14T16:49:57.22744+00:00"
+  },
+  {
+    "log_id": "ef1f966c-4bf8-4908-ad76-00426b77aca4",
+    "game_id": 16,
+    "user_id": null,
+    "action_type": "RESOURCE_CLICK",
+    "details": {
+      "url": "https://www.youtube.com/watch?v=aGfk4Y8uWy0&pp=ygU264W465Wh7IqkIOuztOuTnOqyjOyehCDshKTrqoUg7L2U66as7JWE67O065Oc6rKM7J6E7KaI",
+      "type": "YouTube Video"
+    },
+    "created_at": "2026-02-14T16:50:35.245498+00:00"
+  }
+]

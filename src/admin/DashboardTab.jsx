@@ -139,7 +139,7 @@ function DashboardTab({ games, loading, onReload }) {
       async () => {
         try {
           await editGame({ game_id: targetGame.id, ...formData });
-          showToast("✅ 수정되었습니다.", { type: "success" });
+          showToast("수정되었습니다.", { type: "success" });
           setIsEditModalOpen(false);
           onReload();
         } catch (e) {
@@ -234,7 +234,7 @@ function DashboardTab({ games, loading, onReload }) {
         const res = await approveDibsByRenter(renterNameInput, matchedUser?.id);
 
         if (res.count > 0) {
-          showToast(`✅ ${res.message}`, { type: "success" });
+          showToast(`${res.message}`, { type: "success" });
 
           if (res.failed > 0 && res.failedGames && res.failedGames.length > 0) {
             const failedList = res.failedGames.map(f => `${f.gameName} (${f.error})`).join(', ');
@@ -357,7 +357,7 @@ function DashboardTab({ games, loading, onReload }) {
 
           // [개선] 상세한 피드백
           if (res.count > 0) {
-            showToast(`✅ ${res.message}`, { type: "success" });
+            showToast(`${res.message}`, { type: "success" });
             // [FIX] 캐시 무효화 + 강제 새로고침
             localStorage.removeItem('games_cache');
             await onReload();
@@ -382,7 +382,7 @@ function DashboardTab({ games, loading, onReload }) {
 
         // [개선] 상세한 피드백
         if (res.count > 0) {
-          showToast(`✅ ${res.message}`, { type: "success" });
+          showToast(`${res.message}`, { type: "success" });
 
           // 실패한 게임이 있으면 추가 알림
           if (res.failed > 0 && res.failedGames && res.failedGames.length > 0) {

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { fetchMyRentals, fetchUserPoints, fetchPointHistory } from '../api';
+import { fetchMyRentals, fetchUserPoints, fetchPointHistory, withdrawAccount } from '../api';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext'; // [NEW] Context 사용
 import { useToast } from '../contexts/ToastContext'; // [NEW]
 
 const MyPage = () => {
-  const { user, profile, loading: authLoading, refreshProfile } = useAuth(); // [NEW]
+  const { user, profile, loading: authLoading, refreshProfile, logout } = useAuth(); // [NEW]
   const navigate = useNavigate();
   const { showToast } = useToast(); // [NEW]
 
@@ -81,6 +81,31 @@ const MyPage = () => {
       loadData();
     }
   }, [user]);
+
+  // [NEW] 회원 탈퇴 처리
+  const handleWithdraw = async () => {
+    if (!user) return;
+
+    const confirm1 = window.confirm("정말로 탈퇴하시겠습니까?\n계정은 비활성화되지만, 동아리 운영을 위해 대여 기록과 기본 정보는 보존됩니다.");
+    if (!confirm1) return;
+
+    const confirm2 = window.confirm("마지막 확인입니다.\n재가입하더라도 이전 대여 기록이나 포인트는 연동되지 않습니다.\n그래도 진행하시겠습니까?");
+    if (!confirm2) return;
+
+    try {
+      const result = await withdrawAccount(user.id);
+      if (result.success) {
+        showToast("그동안 이용해 주셔서 감사합니다. 회원 탈퇴가 완료되었습니다.", { type: "success" });
+        await logout(); // 로그아웃 처리
+        navigate("/");  // 홈으로 이동
+      } else {
+        showToast(result.message || "탈퇴 처리 중 오류가 발생했습니다.", { type: "error" });
+      }
+    } catch (e) {
+      console.error("Withdrawal error:", e);
+      showToast("서버 오류로 탈퇴를 처리할 수 없습니다.", { type: "error" });
+    }
+  };
 
   // 로딩 중일 때
   if (authLoading) return <div style={{ padding: "50px", textAlign: "center" }}>인증 정보 확인 중...</div>;
@@ -222,6 +247,15 @@ const MyPage = () => {
         )}
       </section>
 
+      {/* 4. 회원 탈퇴 섹션 [NEW] */}
+      <div style={styles.withdrawalSection}>
+        <button
+          onClick={handleWithdraw}
+          style={styles.withdrawalBtn}
+        >
+          회원 탈퇴하기
+        </button>
+      </div>
 
       {/* [NEW] 유튜브 모달 */}
       {
@@ -393,7 +427,11 @@ const styles = {
 
   rentalStatus: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "5px" },
   dDayBadge: { padding: "5px 10px", borderRadius: "15px", color: "white", fontSize: "0.85em", fontWeight: "bold" },
-  dueDateText: { fontSize: "0.8em", color: "#e74c3c", fontWeight: "bold" }
+  dueDateText: { fontSize: "0.8em", color: "#e74c3c", fontWeight: "bold" },
+
+  // [NEW] 회원 탈퇴 섹션 스타일
+  withdrawalSection: { marginTop: "40px", paddingTop: "20px", borderTop: "1px solid #eee", textAlign: "center" },
+  withdrawalBtn: { background: "none", border: "none", color: "#95a5a6", fontSize: "0.85em", textDecoration: "underline", cursor: "pointer", padding: "10px" }
 };
 
 export default MyPage;

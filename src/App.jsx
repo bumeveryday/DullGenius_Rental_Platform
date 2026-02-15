@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { fetchGames, fetchTrending, fetchConfig } from './api'; // API 함수들 임포트
+import { fetchGames, fetchTrending, fetchConfig, sendLog } from './api'; // API 함수들 임포트
 import { useGameFilter } from './hooks/useGameFilter'; // [NEW] Custom Hook
 // import Admin from './Admin';         // [DELETE] Static Import
 const Admin = lazy(() => import('./Admin')); // [NEW] Lazy Import
@@ -63,6 +63,10 @@ function Home() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchTerm(inputValue);
+      // [NEW] 검색어 로그 기록 (구조화)
+      if (inputValue.trim()) {
+        sendLog(null, 'SEARCH', { query: inputValue.trim() });
+      }
     }, 300);
     return () => clearTimeout(timer);
   }, [inputValue]);
@@ -159,6 +163,19 @@ function Home() {
     loadData();
   }, []);
 
+  // ==========================================
+  // 3. 필터링 로직 (Custom Hook 사용) [IMPROVED]
+  // ==========================================
+  const filteredGames = useGameFilter(games, {
+    searchTerm,
+    selectedCategory,
+    onlyAvailable,
+    difficultyFilter,
+    playerFilter
+  });
+
+  const categories = ["전체", ...new Set(games.map(g => g.category).filter(Boolean))];
+
   useEffect(() => {
     const isFiltered = searchTerm || selectedCategory !== "전체" || difficultyFilter !== "전체" || playerFilter !== "all" || onlyAvailable;
 
@@ -168,6 +185,32 @@ function Home() {
       }, 100);
     }
   }, [searchTerm, selectedCategory, difficultyFilter, playerFilter, onlyAvailable, pageLoading]);
+
+  // [NEW] 필터 시너지 로그 (검색 제외한 필터만 변경 시, 디바운스 적용)
+  useEffect(() => {
+    if (pageLoading) return;
+
+    const hasFilter = selectedCategory !== "전체" || difficultyFilter !== "전체" || playerFilter !== "all" || onlyAvailable;
+    if (!hasFilter) return;
+
+    const timer = setTimeout(() => {
+      sendLog(null, 'FILTER_CHANGE', {
+        category: selectedCategory,
+        difficulty: difficultyFilter,
+        players: playerFilter,
+        only_available: onlyAvailable
+      });
+    }, 1000); // 필터는 1초간 멈췄을 때만 기록
+
+    return () => clearTimeout(timer);
+  }, [selectedCategory, difficultyFilter, playerFilter, onlyAvailable, pageLoading]);
+
+  // [NEW] 검색 결과 없음 로그 (구조화)
+  useEffect(() => {
+    if (searchTerm && filteredGames.length === 0 && !pageLoading) {
+      sendLog(null, 'SEARCH_EMPTY', { query: searchTerm });
+    }
+  }, [searchTerm, filteredGames.length, pageLoading]);
 
   // ==========================================
   // 3. 핸들러 함수 (Event Handlers)
@@ -194,20 +237,7 @@ function Home() {
   };
 
   // ==========================================
-  // 4. 필터링 로직 (Custom Hook 사용) [IMPROVED]
-  // ==========================================
-  const filteredGames = useGameFilter(games, {
-    searchTerm,
-    selectedCategory,
-    onlyAvailable,
-    difficultyFilter,
-    playerFilter
-  });
-
-  const categories = ["전체", ...new Set(games.map(g => g.category).filter(Boolean))];
-
-  // ==========================================
-  // 5. 화면 렌더링 (UI Rendering)
+  // 4. 핸들러 함수 (Event Handlers)
   // ==========================================
 
   if (pageLoading) return (

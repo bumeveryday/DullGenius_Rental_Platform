@@ -179,7 +179,7 @@ function MembersTab() {
             async () => {
                 try {
                     await updatePaymentStatus(member.id, newStatus);
-                    showToast('✅ 회비 상태가 변경되었습니다.', { type: 'success' });
+                    showToast('회비 상태가 변경되었습니다.', { type: 'success' });
                     loadMembers();
                 } catch (e) {
                     showToast('회비 상태 변경 실패: ' + e.message, { type: 'error' });
@@ -228,7 +228,7 @@ function MembersTab() {
         if (!roleEditModal.member) return;
         try {
             await updateUserRoles(roleEditModal.member.id, roleEditModal.selectedRoles);
-            showToast('✅ 역할이 수정되었습니다.', { type: 'success' });
+            showToast('역할이 수정되었습니다.', { type: 'success' });
             // 목록 갱신 (JS Join으로 복구되었으므로 즉시 반영됨)
             loadMembers();
             handleCloseRoleEdit();
@@ -500,7 +500,7 @@ function MembersTab() {
                                             if (!val) return;
                                             try {
                                                 await updateUserProfile(roleEditModal.member.id, { joined_semester: val });
-                                                showToast('✅ 가입 학기가 수정되었습니다.', { type: 'success' });
+                                                showToast('가입 학기가 수정되었습니다.', { type: 'success' });
                                                 loadMembers(); // 리스트 갱신
                                                 // 모달 닫지는 않음 (연속 작업 가능)
                                             } catch (e) {
@@ -530,7 +530,7 @@ function MembersTab() {
                                             const val = document.getElementById('edit-phone-input').value;
                                             try {
                                                 await updateUserProfile(roleEditModal.member.id, { phone: val });
-                                                showToast('✅ 전화번호가 수정되었습니다.', { type: 'success' });
+                                                showToast('전화번호가 수정되었습니다.', { type: 'success' });
                                                 loadMembers(); // 리스트 갱신
                                             } catch (e) {
                                                 showToast('수정 실패: ' + e.message, { type: 'error' });

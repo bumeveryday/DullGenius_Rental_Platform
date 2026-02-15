@@ -21,7 +21,7 @@ function MatchModal({ onClose }) {
     // Selections
     const [selectedGame, setSelectedGame] = useState(null);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
-    const [selectedWinner, setSelectedWinner] = useState(null);
+    const [selectedWinnerIds, setSelectedWinnerIds] = useState(new Set()); // [MOD] 다중 승자 지원
 
     // Processing State
     const [processing, setProcessing] = useState(false);
@@ -44,9 +44,27 @@ function MatchModal({ onClose }) {
     const togglePlayer = (user) => {
         if (selectedPlayers.find(u => u.id === user.id)) {
             setSelectedPlayers(selectedPlayers.filter(u => u.id !== user.id));
+            // 참여자 선택 해제 시 승자 목록에서도 제거
+            const newWinnerIds = new Set(selectedWinnerIds);
+            newWinnerIds.delete(user.id);
+            setSelectedWinnerIds(newWinnerIds);
         } else {
             setSelectedPlayers([...selectedPlayers, user]);
         }
+    };
+
+    const toggleWinner = (userId) => {
+        const newWinners = new Set(selectedWinnerIds);
+        if (newWinners.has(userId)) {
+            newWinners.delete(userId);
+        } else {
+            newWinners.add(userId);
+        }
+        setSelectedWinnerIds(newWinners);
+    };
+
+    const clearWinners = () => {
+        setSelectedWinnerIds(new Set());
     };
 
     const handleRegister = async () => {
@@ -70,20 +88,28 @@ function MatchModal({ onClose }) {
         }
 
         // 3. 승자가 참여자 목록에 있는지 확인
-        if (selectedWinner && !selectedPlayers.find(p => p.id === selectedWinner.id)) {
+        const winnerIds = Array.from(selectedWinnerIds);
+        const invalidWinners = winnerIds.filter(id => !selectedPlayers.find(p => p.id === id));
+        if (invalidWinners.length > 0) {
             showToast("승자는 참여자 중 한 명이어야 합니다.", { type: "error" });
             return;
         }
 
         setProcessing(true);
         try {
-            const winnerId = selectedWinner ? selectedWinner.id : null;
-            const result = await registerMatch(selectedGame.id, playerIds, winnerId);
+            const result = await registerMatch(selectedGame.id, playerIds, winnerIds);
 
             if (result.success) {
-                const winnerName = selectedWinner ? selectedWinner.name : '무승부';
-                const pointInfo = selectedWinner ? "+200P" : "각 +50P";
-                showToast(`✅ 매치 등록 완료! 승자: ${winnerName} (${pointInfo})`, { type: "success" });
+                const winnerCount = winnerIds.length;
+                let msg = `✅ 매치 등록 완료! `;
+                if (winnerCount === 0) msg += "무승부 (+50P)";
+                else if (winnerCount === 1) {
+                    const winnerName = selectedPlayers.find(p => p.id === winnerIds[0])?.name;
+                    msg += `승자: ${winnerName} (+200P)`;
+                } else {
+                    msg += `${winnerCount}명 공동 승리! (+200P)`;
+                }
+                showToast(msg, { type: "success" });
                 onClose();
             } else {
                 showToast("실패: " + result.message, { type: "error" });
@@ -181,22 +207,22 @@ function MatchModal({ onClose }) {
             case 3: // Winner Selection
                 return (
                     <>
-                        <div style={{ marginBottom: "10px", color: "#ccc" }}>이번 판의 승자는 누구인가요? (+200P)</div>
+                        <div style={{ marginBottom: "10px", color: "#ccc" }}>이번 판의 승자는 누구인가요? (+200P, 여러 명 선택 가능)</div>
                         <div className="grid-3-col" style={{ maxHeight: "50vh", gridTemplateColumns: "1fr 1fr" }}>
                             <button
-                                className={`kiosk-list-btn ${selectedWinner === null ? 'active' : ''}`}
-                                onClick={() => setSelectedWinner(null)}
-                                style={{ border: selectedWinner === null ? "2px solid #aaa" : "1px solid #333" }}
+                                className={`kiosk-list-btn ${selectedWinnerIds.size === 0 ? 'active' : ''}`}
+                                onClick={clearWinners}
+                                style={{ border: selectedWinnerIds.size === 0 ? "2px solid #aaa" : "1px solid #333" }}
                             >
                                 🤝 무승부 / 협력
                             </button>
                             {selectedPlayers.map(user => {
-                                const isSelected = selectedWinner?.id === user.id;
+                                const isSelected = selectedWinnerIds.has(user.id);
                                 return (
                                     <button
                                         key={user.id}
                                         className={`kiosk-list-btn ${isSelected ? 'active' : ''}`}
-                                        onClick={() => setSelectedWinner(user)}
+                                        onClick={() => toggleWinner(user.id)}
                                         style={{ border: isSelected ? "2px solid gold" : "1px solid #333" }}
                                     >
                                         <div className="list-label">{user.name}</div>

@@ -181,13 +181,13 @@ function KioskPage() {
     const handleActivation = async () => {
         // 환경 변수 미설정 검증
         if (!MASTER_KEY) {
-            showToast("⚠️ 시스템 오류: 마스터 키가 설정되지 않았습니다. 관리자에게 문의하세요.", { type: "error" });
+            showToast("시스템 오류: 마스터 키가 설정되지 않았습니다. 관리자에게 문의하세요.", { type: "error" });
             return;
         }
 
         // 빈 입력 검증
         if (!activationCode.trim()) {
-            showToast("❌ 마스터 키를 입력해주세요.", { type: "error" });
+            showToast("마스터 키를 입력해주세요.", { type: "error" });
             return;
         }
 
@@ -199,7 +199,7 @@ function KioskPage() {
 
             setIsAuthorized(true);
             setActivationCode(""); // 입력 필드 초기화
-            showToast("✅ 기기 인증 완료! 키오스크 모드를 시작합니다.", { type: "success" });
+            showToast("기기 인증 완료! 키오스크 모드를 시작합니다.", { type: "success" });
 
             // [Fullscreen] 강제 전체화면 요청 (브라우저 정책상 사용자 상호작용 필요)
             try {
@@ -212,7 +212,7 @@ function KioskPage() {
                 console.warn("Fullscreen request failed:", err);
             }
         } else {
-            showToast("❌ 인증 실패. 마스터 키를 확인하세요.", { type: "error" });
+            showToast("인증 실패. 마스터 키를 확인하세요.", { type: "error" });
             setActivationCode(""); // 실패 시에도 초기화
         }
     };

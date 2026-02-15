@@ -46,7 +46,7 @@ function RentalModal({ onClose }) {
         const targetId = selectedUser.student_id?.trim();
 
         if (inputId !== targetId) {
-            showToast("⛔ 학번이 일치하지 않습니다.", { type: "error" });
+            showToast("학번이 일치하지 않습니다.", { type: "error" });
             setAuthInput("");
             return;
         }
@@ -55,7 +55,7 @@ function RentalModal({ onClose }) {
         try {
             const result = await kioskRental(selectedGame.id, selectedUser.id);
             if (result.success) {
-                showToast(`✅ 대여 성공! (${selectedGame.name})`, { type: "success" });
+                showToast(`대여 성공! (${selectedGame.name})`, { type: "success" });
                 onClose();
             } else {
                 // 구체적인 에러 메시지
@@ -64,7 +64,7 @@ function RentalModal({ onClose }) {
             }
         } catch (error) {
             console.error("대여 실패:", error);
-            showToast("❌ 네트워크 오류가 발생했습니다. 다시 시도해주세요.", { type: "error" });
+            showToast("네트워크 오류가 발생했습니다. 다시 시도해주세요.", { type: "error" });
         }
     };
 

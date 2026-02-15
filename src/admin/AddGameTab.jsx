@@ -73,7 +73,7 @@ function AddGameTab({ onGameAdded }) {
           async () => {
             try {
               await addGameCopy(existGame.id, ""); // 위치는 공란 or Default
-              showToast("✅ 기존 게임에 재고가 추가되었습니다!", { type: "success" });
+              showToast("기존 게임에 재고가 추가되었습니다!", { type: "success" });
               setIsModalOpen(false);
               setResults([]);
               setKeyword("");
@@ -96,7 +96,7 @@ function AddGameTab({ onGameAdded }) {
             // id는 DB에서 생성되므로 제거하고 보냄
             const { id, ...rest } = formData;
             await addGame({ ...rest, location: "" });
-            showToast("✅ 추가되었습니다!", { type: "success" });
+            showToast("추가되었습니다!", { type: "success" });
             setIsModalOpen(false);
             setResults([]);
             setKeyword("");

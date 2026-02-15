@@ -79,7 +79,7 @@ function ConfigTab({ config, onReload }) {
       async () => {
         try {
           await saveConfig(items);
-          showToast("✅ 저장되었습니다.", { type: "success" });
+          showToast("저장되었습니다.", { type: "success" });
           if (onReload) onReload(); // 부모 컴포넌트 데이터 갱신
         } catch (e) {
           showToast("저장 실패: " + e, { type: "error" });

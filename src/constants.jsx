@@ -102,10 +102,10 @@ export const TEXTS = {
   ADMIN_RENT_PROMPT: `[${"{gameName}"}] 현장 대여자 이름(전화번호)을 입력하세요.\n예: 김철수(010-1234-5678)`,
 
   ADMIN_RENT_CONFIRM_HeadsUp: `[${"{gameName}"}] 대여 처리하시겠습니까?\n\n입력값: ${"{renterName}"}`,
-  ADMIN_RENT_CONFIRM_SUCCESS: `\n✅ 회원 매칭 성공! (ID: ${"{userId}"})`,
-  ADMIN_RENT_CONFIRM_FAIL: `\n❌ 회원 매칭 실패 (단순 텍스트로 기록됩니다)`,
+  ADMIN_RENT_CONFIRM_SUCCESS: `\n회원 매칭 성공! (ID: ${"{userId}"})`,
+  ADMIN_RENT_CONFIRM_FAIL: `\n회원 매칭 실패 (단순 텍스트로 기록됩니다)`,
 
-  ADMIN_RENT_SUCCESS: `✅ 대여 처리되었습니다.`,
+  ADMIN_RENT_SUCCESS: `대여 처리되었습니다.`,
 
   // 6. 사용자 모달 및 알림 메시지 (LoginModal, GameDetail)
   USER_MODAL_TITLE: "🎲 찜하기",
@@ -130,7 +130,7 @@ export const TEXTS = {
   ALERT_AUTH_ERROR: "처리 중 오류가 발생했습니다: ",
 
   // GameDetail 알림
-  ALERT_RENT_SUCCESS: "✅ 예약 완료! 30분 내에 수령해주세요.",
+  ALERT_RENT_SUCCESS: "예약 완료! 30분 내에 수령해주세요.",
   ALERT_MISS_CONFIRM: "이 게임을 하고 싶으셨나요? 운영진에게 수요를 알릴까요?",
   ALERT_MISS_SUCCESS: "📩 전달되었습니다! 다음 구매 때 참고할게요.",
   ALERT_REVIEW_SUCCESS: "✨ 리뷰가 등록되었습니다!",

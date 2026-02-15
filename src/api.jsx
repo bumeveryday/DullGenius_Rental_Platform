@@ -786,13 +786,13 @@ export const fetchPointHistory = async (userId) => {
   return data;
 };
 
-// [Kiosk] 13. 매치 결과 등록 (RPC)
-export const registerMatch = async (gameId, playerIds, winnerId) => {
-  // playerIds: array of UUIDs
+// [Kiosk] 13. 매치 결과 등록 (RPC) - [MOD] winnerIds 배열 지원
+export const registerMatch = async (gameId, playerIds, winnerIds) => {
+  // playerIds, winnerIds: array of UUIDs
   const { data, error } = await supabase.rpc('register_match_result', {
     p_game_id: gameId,
     p_player_ids: playerIds,
-    p_winner_id: winnerId
+    p_winner_ids: winnerIds
   });
 
   if (error) {
@@ -897,5 +897,32 @@ export const fetchLeaderboard = async (limit = 10) => {
   return data;
 };
 
+// [Member] 14. 회원 탈퇴 (Withdraw) [NEW]
+export const withdrawAccount = async (userId) => {
+  const { data, error } = await supabase.rpc('withdraw_user', {
+    p_user_id: userId
+  });
+
+  if (error) {
+    console.error("Withdraw Error:", error);
+    throw error;
+  }
+  return data;
+};
 
 // [Kiosk] 15. 유저 포인트 조회 (Helper) -> Moved to top (line 806)
+// [NEW] 중앙 집중식 로그 전송 함수 (RPC & JSONB 사용)
+export const sendLog = async (gameId, actionType, details) => {
+  try {
+    // [FIX] 상세 정보를 JSON 객체로 구조화 (통계 분석 용이성)
+    const structuredDetails = typeof details === 'object' ? details : { value: details };
+
+    await supabase.rpc('send_user_log', {
+      p_game_id: gameId || null,
+      p_action_type: actionType,
+      p_details: structuredDetails
+    });
+  } catch (error) {
+    console.warn("Logging failed:", error.message);
+  }
+};

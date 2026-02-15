@@ -1,0 +1,49 @@
+[
+  {
+    "key": "recommendations",
+    "value": [
+      {
+        "key": "default_1",
+        "color": "#f1c40f",
+        "label": "팀모임 추천 보드게임 추천",
+        "value": "#팀모임"
+      },
+      {
+        "key": "default_2",
+        "color": "#e67e22",
+        "label": "룸메와 즐기기 좋은 보드게임 추천",
+        "value": "#룸메"
+      },
+      {
+        "key": "default_3",
+        "color": "#e74c3c",
+        "label": "초 고난도, 3학점 게임 추천",
+        "value": "#3학점"
+      },
+      {
+        "key": "default_4",
+        "color": "#9b59b6",
+        "label": "25년도 새로 들어온 신규 보드게임 ",
+        "value": "#25"
+      },
+      {
+        "key": "btn_1770689009905",
+        "color": "#8f5a00",
+        "label": "25년도 머더 미스터리부 선정 명작 머더들",
+        "value": "#머더부"
+      },
+      {
+        "key": "btn_1770689026907",
+        "color": "#000000",
+        "label": "새새와 함께하는 마피아 게임 추천!",
+        "value": "#마피아"
+      }
+    ],
+    "updated_at": "2026-02-10T02:05:20.247+00:00"
+  },
+  {
+    "key": "payment_check_enabled",
+    "value": true,
+    "updated_at": "2026-02-14T07:57:51.753442+00:00"
+  }
+]

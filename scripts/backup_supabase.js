@@ -5,7 +5,6 @@ const { createClient } = require('@supabase/supabase-js');
 // === Configuration ===
 const TABLES_TO_BACKUP = [
     'games',
-    'game_copies',
     'rentals',
     'reviews',
     'logs',

@@ -19,44 +19,54 @@ export const AuthProvider = ({ children }) => {
     const isMounted = useRef(true);
     const lastUserId = useRef(null); // [NEW] 이전 유저 ID 추적 (리프레시 방지)
 
+    // [FIX] fetchProfileAndRoles를 useEffect 밖으로 이동하여 다른 함수에서도 사용 가능하게 함
+    const fetchProfileAndRoles = async (userId) => {
+        try {
+            const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('*, is_semester_fixed')
+                .eq('id', userId)
+                .single();
+
+            if (profileError) {
+                if (profileError.code === 'PGRST116') {
+                    console.warn('탈퇴했거나 정보가 없는 회원입니다. 자동 로그아웃 처리합니다.');
+                    await supabase.auth.signOut();
+                    setUser(null);
+                    setProfile(null);
+                    setRoles([]);
+                    return;
+                }
+                throw profileError;
+            }
+            if (isMounted.current) setProfile(profileData);
+
+            const { data: roleData, error: roleError } = await supabase
+                .from('user_roles')
+                .select(`
+                    role_key,
+                    roles (display_name, permissions)
+                `)
+                .eq('user_id', userId);
+
+            if (roleError) throw roleError;
+
+            const roleKeys = roleData.map(r => r.role_key);
+            if (isMounted.current) setRoles(roleKeys);
+
+        } catch (error) {
+            console.error('Error fetching user data:', error.message);
+            showToast("사용자 정보를 불러오는데 실패했습니다.", { type: "error" });
+        } finally {
+            if (isMounted.current) setLoading(false);
+        }
+    };
+
     useEffect(() => {
         isMounted.current = true;
 
-        const fetchProfileAndRoles = async (userId) => {
-            try {
-                const { data: profileData, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('*, is_semester_fixed') // * includes joined_semester if it exists in schema
-                    .eq('id', userId)
-                    .single();
-
-                if (profileError) throw profileError;
-                if (isMounted.current) setProfile(profileData);
-
-                const { data: roleData, error: roleError } = await supabase
-                    .from('user_roles')
-                    .select(`
-                      role_key,
-                      roles (display_name, permissions)
-                    `)
-                    .eq('user_id', userId);
-
-                if (roleError) throw roleError;
-
-                const roleKeys = roleData.map(r => r.role_key);
-                if (isMounted.current) setRoles(roleKeys);
-
-            } catch (error) {
-                console.error('Error fetching user data:', error.message);
-                showToast("사용자 정보를 불러오는데 실패했습니다.", { type: "error" });
-            } finally {
-                if (isMounted.current) setLoading(false);
-            }
-        };
-
         const initSession = async () => {
             try {
-                // 1. 현재 세션 확인
                 const { data: { session }, error } = await supabase.auth.getSession();
                 if (error) throw error;
 
@@ -71,7 +81,6 @@ export const AuthProvider = ({ children }) => {
             } catch (err) {
                 console.error("Session check failed:", err);
                 if (isMounted.current) {
-                    // 세션 체크 실패해도 앱은 로드되어야 함 (로그아웃 상태로 간주)
                     setUser(null);
                     setLoading(false);
                 }
@@ -80,19 +89,16 @@ export const AuthProvider = ({ children }) => {
 
         initSession();
 
-        // 2. 인증 상태 변경 감지
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             if (!isMounted.current) return;
 
-            // [FIX] ID가 바뀌었을 때만 로딩(Flash) 처리
             const currentId = session?.user?.id;
             const prevId = lastUserId.current;
 
             setUser(session?.user ?? null);
-            lastUserId.current = currentId; // Update ref
+            lastUserId.current = currentId;
 
             if (session?.user) {
-                // 로그인한 유저가 바뀌었을 때만 로딩 스피너 표시
                 if (currentId !== prevId) {
                     setLoading(true);
                 }
@@ -116,6 +122,14 @@ export const AuthProvider = ({ children }) => {
             password,
         });
         if (error) throw error;
+
+        /* 
+           [NOTE] Rename & Archive 전략:
+           탈퇴 시 이메일이 변경되므로, 위 signInWithPassword 단계에서 이미 걸러짐.
+           따라서 data.user가 존재한다면 active 유저임이 보장됨.
+           별도의 status 체크 로직 불필요.
+        */
+
         return data;
     };
 
@@ -131,6 +145,12 @@ export const AuthProvider = ({ children }) => {
                 }
             }
         });
+
+        // 1. 이미 가입된 유저인 경우 -> 에러 처리 (클라이언트에서 로그인 유도)
+        if (error && error.message.includes("already registered")) {
+            throw new Error("이미 가입된 학번입니다. 로그인해주세요.");
+        }
+
         if (error) throw error;
         return data;
     };

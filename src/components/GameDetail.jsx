@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { fetchGames, sendMiss, fetchReviews, addReview, increaseViewCount, dibsGame, fetchMyRentals } from '../api';
+import { fetchGames, sendMiss, fetchReviews, addReview, increaseViewCount, dibsGame, fetchMyRentals, sendLog } from '../api';
 import { TEXTS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext'; // [NEW] 전역 Toast
@@ -48,24 +48,31 @@ function GameDetail() {
   useEffect(() => {
     if (id) increaseViewCount(id);
     const loadData = async () => {
+      let targetGame = game;
+
       // 1. 캐시/API로 게임 정보 찾기
-      if (!game) {
+      if (!targetGame) {
         setLoading(true);
         const cachedGames = localStorage.getItem('games_cache');
         if (cachedGames) {
           const games = JSON.parse(cachedGames);
           const found = games.find(g => String(g.id) === String(id));
-          if (found) setGame(found);
+          if (found) {
+            targetGame = found;
+            setGame(found);
+          }
         }
-        if (!game) {
+
+        if (!targetGame) {
           const gamesData = await fetchGames();
-          const foundGame = gamesData.find(g => String(g.id) === String(id));
-          setGame(foundGame);
+          const found = gamesData.find(g => String(g.id) === String(id));
+          if (found) {
+            targetGame = found;
+            setGame(found);
+          }
         }
       }
 
-
-      // 2. 리뷰 로딩
       setIsReviewsLoading(true);
       // [FIX] 중복 제거 및 필터링은 API 내부에서 처리됨
       const reviewsData = await fetchReviews(id);
@@ -73,6 +80,11 @@ function GameDetail() {
 
       setIsReviewsLoading(false);
       setLoading(false);
+
+      // [NEW] 품절 상품 조회 로그 기록 (구조화)
+      if (targetGame && targetGame.status !== "대여가능") {
+        sendLog(id, 'OUT_OF_STOCK_VIEW', { current_status: targetGame.status });
+      }
     };
     loadData();
   }, [id]);
@@ -110,6 +122,12 @@ function GameDetail() {
   };
 
   const openVideo = (url) => {
+    // [NEW] 리소스 클릭 로그 (구조화)
+    sendLog(game.id, 'RESOURCE_CLICK', {
+      type: 'YouTube Video',
+      url: url
+    });
+
     const vid = getYoutubeId(url);
     if (vid) {
       setVideoId(vid);
@@ -137,7 +155,7 @@ function GameDetail() {
           const result = await dibsGame(game.id, user.id); // [Changed] rentGame -> dibsGame
 
           if (result.success) {
-            showToast("⚡ 찜 완료! 30분 내에 수령해주세요.", {
+            showToast("찜 완료! 30분 내에 수령해주세요.", {
               showButton: true,
               buttonText: "마이페이지로 가기",
               onButtonClick: () => navigate('/mypage')
@@ -218,7 +236,13 @@ function GameDetail() {
           )}
           {game.manual_url && (
             <button
-              onClick={() => window.open(game.manual_url, '_blank')}
+              onClick={() => {
+                sendLog(game.id, 'RESOURCE_CLICK', {
+                  type: 'Manual PDF',
+                  url: game.manual_url
+                });
+                window.open(game.manual_url, '_blank');
+              }}
               style={{ padding: "6px 12px", borderRadius: "15px", border: "1px solid #3498db", background: "white", color: "#3498db", cursor: "pointer", fontSize: "0.9em", display: "flex", alignItems: "center", gap: "5px" }}
             >
               📖 설명서 보기

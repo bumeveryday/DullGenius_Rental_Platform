@@ -7,8 +7,13 @@ import { getAuthErrorMessage } from '../constants'; // [NEW]
 
 function Signup() {
   const navigate = useNavigate();
-  const { signup } = useAuth();
-  const { showToast } = useToast(); // [NEW]
+  const { signup } = useAuth(); // restoreAccount 제거
+  const { showToast } = useToast();
+  const isMountedRef = React.useRef(true);
+
+  React.useEffect(() => {
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   const [formData, setFormData] = useState({
     // email 제거 (학번으로 자동 생성)
@@ -23,6 +28,12 @@ function Signup() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+  /* 
+    [NOTE] Rename & Archive 전략으로 변경됨에 따라 복구 로직 제거.
+    탈퇴 시 학번/이메일이 변경되므로, 같은 학번으로 재가입 시 신규 가입으로 처리됨.
+    따라서 '이미 가입된 학번' 에러는 정말 중복된 경우에만 발생함.
+  */
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,13 +58,13 @@ function Signup() {
         phone
       });
 
-      showToast("가입 성공! 이제 학번으로 로그인하세요.", { type: "success" });
+      showToast("가입 성공! 환영합니다.", { type: "success" });
       navigate("/");
     } catch (error) {
       console.error("Signup Error:", error);
       showToast(getAuthErrorMessage(error), { type: "error" });
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
     }
   };
 

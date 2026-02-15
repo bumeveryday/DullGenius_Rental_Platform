@@ -43,17 +43,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- [5] RPC: 매치 결과 등록 (5분 쿨타임)
+-- [5] RPC: 매치 결과 등록 (5분 쿨타임) - [UPDATED] 다중 승자 지원
 CREATE OR REPLACE FUNCTION register_match_result(
     p_game_id INTEGER,
     p_player_ids UUID[], -- 참여자 ID 배열
-    p_winner_id UUID -- 승자 ID (없으면 NULL)
+    p_winner_ids UUID[] -- [MOD] 승자 ID 배열
 ) RETURNS JSONB AS $$
 DECLARE
     v_last_played TIMESTAMP;
     v_player_id UUID;
     v_is_winner BOOLEAN;
     v_points INTEGER;
+    v_game_name TEXT;
 BEGIN
     -- 1. 쿨타임 체크 (가장 최근 해당 게임 매치 시간 확인)
     SELECT played_at INTO v_last_played
@@ -67,21 +68,24 @@ BEGIN
          RETURN jsonb_build_object('success', false, 'message', '너무 자주 등록할 수 없습니다. (5분 쿨타임)');
     END IF;
 
+    -- 게임 이름 조회
+    SELECT name INTO v_game_name FROM games WHERE id = p_game_id;
+
     -- 2. 매치 기록 저장
     INSERT INTO matches (game_id, players, winner_id, verified_at)
-    VALUES (p_game_id, to_jsonb(p_player_ids), p_winner_id, timezone('kst', now()));
+    VALUES (p_game_id, to_jsonb(p_player_ids), p_winner_ids[1], timezone('kst', now()));
 
-    -- 3. 포인트 지급 (승자 200, 패자 50)
+    -- 3. 포인트 지급 (승자 200, 참여 50)
     FOREACH v_player_id IN ARRAY p_player_ids
     LOOP
-        v_is_winner := (v_player_id = p_winner_id);
+        v_is_winner := (v_player_id = ANY(p_winner_ids));
         
         IF v_is_winner THEN
             v_points := 200;
-            PERFORM earn_points(v_player_id, v_points, 'MATCH_REWARD', '대전 승리 (게임 ' || p_game_id || ')');
+            PERFORM earn_points(v_player_id, v_points, 'MATCH_REWARD', COALESCE(v_game_name, '대전') || ' 승리');
         ELSE
             v_points := 50;
-            PERFORM earn_points(v_player_id, v_points, 'MATCH_REWARD', '대전 참여 (게임 ' || p_game_id || ')');
+            PERFORM earn_points(v_player_id, v_points, 'MATCH_REWARD', COALESCE(v_game_name, '대전') || ' 참여');
         END IF;
     END LOOP;
 
@@ -98,6 +102,7 @@ CREATE OR REPLACE FUNCTION kiosk_return(
 ) RETURNS JSONB AS $$
 DECLARE
     v_rental_id UUID;
+    v_game_name TEXT;
 BEGIN
     -- 1. 현재 대여중인 정보 찾기 (V2: game_id 기준)
     SELECT rental_id INTO v_rental_id
@@ -111,6 +116,9 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '반납할 대여 기록을 찾을 수 없습니다.');
     END IF;
 
+    -- 게임 이름 조회
+    SELECT name INTO v_game_name FROM games WHERE id = p_game_id;
+
     -- 2. 반납 처리 (Rentals)
     UPDATE rentals
     SET returned_at = timezone('kst', now())
@@ -123,7 +131,7 @@ BEGIN
 
     -- 4. 반납 포인트 지급 (+100P)
     IF p_user_id IS NOT NULL THEN
-        PERFORM earn_points(p_user_id, 100, 'RETURN_ON_TIME', '키오스크 반납 (게임 ' || p_game_id || ')');
+        PERFORM earn_points(p_user_id, 100, 'RETURN_ON_TIME', '키오스크 반납 (' || COALESCE(v_game_name, '게임:' || p_game_id) || ')');
     END IF;
 
     RETURN jsonb_build_object('success', true);

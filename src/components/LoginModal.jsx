@@ -207,14 +207,15 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
           <input
             placeholder="학번 (예: 22400001)"
             value={guestId}
-            onChange={(e) => setGuestId(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (/^\d{0,8}$/.test(val)) setGuestId(val);
+            }}
             style={styles.input}
-            type="number"
+            type="text"
+            inputMode="numeric"
             maxLength={8}
             autoComplete="username"
-            onInput={(e) => {
-              if (e.target.value.length > 8) e.target.value = e.target.value.slice(0, 8);
-            }}
           />
           <input
             placeholder="연락처 (010-0000-0000)"

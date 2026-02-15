@@ -7,12 +7,17 @@ import { getAuthErrorMessage } from '../constants'; // [NEW] 에러 메시지 �
 
 function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // [NEW] login 함수 가져오기
+  const { login, restoreAccount } = useAuth(); // [NEW] restoreAccount 추가
   const { showToast } = useToast(); // [NEW]
 
   const [studentId, setStudentId] = useState(""); // [CHANGE] 이메일 -> 학번
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const isMountedRef = React.useRef(true);
+
+  React.useEffect(() => {
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,10 +34,27 @@ function Login() {
 
     } catch (error) {
       console.error("Login Error:", error);
-      // 구체적인 에러 메시지 표시 (디버깅용 -> 사용자 친화적 문구로 변경)
-      showToast(getAuthErrorMessage(error), { type: "error" });
+
+      // [NEW] 탈퇴한 회원 복구 로직
+      if (error.code === 'WITHDRAWN_USER') {
+        const confirmRestore = window.confirm("탈퇴한 계정입니다. 계정을 복구하시겠습니까?");
+        if (confirmRestore) {
+          try {
+            await restoreAccount(`${studentId}@handong.ac.kr`, password); // 복구 시도
+            showToast("계정이 복구되었습니다! 환영합니다.", { type: "success" });
+            navigate("/");
+            return;
+          } catch (restoreError) {
+            console.error("Restore Error:", restoreError);
+            showToast("계정 복구 실패: " + restoreError.message, { type: "error" });
+          }
+        }
+      } else {
+        // 구체적인 에러 메시지 표시 (디버깅용 -> 사용자 친화적 문구로 변경)
+        showToast(getAuthErrorMessage(error), { type: "error" });
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
     }
   };
 
