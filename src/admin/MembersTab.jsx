@@ -77,6 +77,7 @@ function MembersTab() {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('name'); // 'name', 'student_id', 'is_paid'
     const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
+    const [showWithdrawn, setShowWithdrawn] = useState(false); // [NEW] 탈퇴 회원 보기 토글
     const [memberRoles, setMemberRoles] = useState({}); // { userId: ['admin', 'payment_exempt'] }
     const [roleEditModal, setRoleEditModal] = useState({ isOpen: false, member: null, selectedRoles: [] });
 
@@ -138,6 +139,9 @@ function MembersTab() {
     const filteredAndSortedMembers = useMemo(() => {
         return members
             .filter(member => {
+                // 1. 탈퇴 회원 필터링
+                if (!showWithdrawn && member.status === 'withdrawn') return false;
+
                 if (!searchTerm) return true;
                 const term = searchTerm.toLowerCase();
                 return (
@@ -240,7 +244,33 @@ function MembersTab() {
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3>👥 회원 관리 (총 {members.length}명)</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <h3 style={{ margin: 0 }}>👥 회원 관리 (총 {members.length}명)</h3>
+                    {/* [NEW] 탈퇴 회원 토글을 여기로 이동하여 시인성 확보 */}
+                    <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        fontSize: '0.9em',
+                        userSelect: 'none',
+                        background: showWithdrawn ? 'rgba(231, 76, 60, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        border: showWithdrawn ? '1px solid #e74c3c' : '1px solid var(--admin-border)',
+                        transition: 'all 0.2s'
+                    }}>
+                        <input
+                            type="checkbox"
+                            checked={showWithdrawn}
+                            onChange={(e) => setShowWithdrawn(e.target.checked)}
+                            style={{ cursor: 'pointer' }}
+                        />
+                        <span style={{ color: showWithdrawn ? '#e74c3c' : 'var(--admin-text-sub)', fontWeight: 'bold' }}>
+                            탈퇴한 회원 보기
+                        </span>
+                    </label>
+                </div>
                 <button onClick={loadMembers} style={styles.refreshBtn}>🔄 새로고침</button>
             </div>
 
@@ -315,7 +345,10 @@ function MembersTab() {
 
                                     return (
                                         <tr key={member.id}>
-                                            <td style={{ fontWeight: 'bold' }}>{member.name || '-'}</td>
+                                            <td style={{ fontWeight: 'bold', color: member.status === 'withdrawn' ? '#999' : 'inherit' }}>
+                                                {member.name || '-'}
+                                                {member.status === 'withdrawn' && <span style={{ fontSize: '0.8em', color: '#e74c3c', marginLeft: '5px' }}>(탈퇴)</span>}
+                                            </td>
                                             <td>{member.student_id || '-'}</td>
                                             <td style={{ fontSize: '0.9em' }}>
                                                 <div style={{ fontWeight: 'bold', color: '#2c3e50' }}>{calculateDuration(member.joined_semester)}</div>

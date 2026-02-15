@@ -380,7 +380,7 @@ export const fetchUsers = async () => {
   // 1. 프로필 조회
   const { data: profiles, error: profileError } = await supabase
     .from('profiles')
-    .select('id, name, student_id, phone, is_paid, joined_semester')
+    .select('id, name, student_id, phone, is_paid, joined_semester, status')
     .order('name');
 
   if (profileError) {
