@@ -20,6 +20,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'; // [NEW] Supabas
 import { ToastProvider } from './contexts/ToastContext'; // [NEW] Toast 시스템
 import KioskPage from './kiosk/KioskPage'; // [NEW] Kiosk Page
 import ProtectedRoute from './components/ProtectedRoute'; // [NEW] Protected Route
+import InfoBar from './components/InfoBar'; // [NEW] InfoBar Component
 
 
 function Home() {
@@ -39,7 +40,7 @@ function Home() {
   // ==========================================
 
   const [games, setGames] = useState([]);
-  const [showGuide, setShowGuide] = useState(false);
+  // const [showGuide, setShowGuide] = useState(false); // [DELETE] InfoBar로 통합
   const [trending, setTrending] = useState([]);
   const [config, setConfig] = useState(null);
   const [pageLoading, setPageLoading] = useState(true);
@@ -347,21 +348,8 @@ function Home() {
         </div>
       </header>
 
-      {/*심플한 텍스트 안내 배너 */}
-      <div className="guide-wrapper">
-        <button
-          className="guide-toggle-btn"
-          onClick={() => setShowGuide(!showGuide)}
-        >
-          <span>💡 <strong>이용 안내 & 공지사항</strong></span>
-          <span>{showGuide ? "▲ 접기" : "▼ 펼치기"}</span>
-        </button>
-        {showGuide && (
-          <div className="guide-textarea-view">
-            {TEXTS.MAIN_GUIDE}
-          </div>
-        )}
-      </div>
+      {/* [MODIFIED] InfoBar를 상단으로 이동 & 기존 가이드 제거 */}
+      <InfoBar games={games} />
 
       {/* --- [대시보드: 추천 테마 + 인기 급상승] --- */}
       <div className="trending-wrapper dashboard-container">
@@ -415,6 +403,7 @@ function Home() {
           )}
         </div>
       </div>
+
 
       <div ref={filterSectionRef}>
         <FilterBar

@@ -926,3 +926,61 @@ export const sendLog = async (gameId, actionType, details) => {
     console.warn("Logging failed:", error.message);
   }
 };
+
+// ==========================================
+// [Admin] 18. 파손 신고 / 게임 신청 관리 [NEW]
+// ==========================================
+
+// 파손 신고 목록 조회
+export const fetchDamageReports = async () => {
+  const { data, error } = await supabase
+    .from('damage_reports')
+    .select(`
+      *,
+      profiles:user_id (name, student_id)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error("파손 신고 로딩 실패:", error);
+    return [];
+  }
+  return data;
+};
+
+// 파손 신고 상태 변경
+export const updateDamageReportStatus = async (reportId, newStatus) => {
+  const { error } = await supabase
+    .from('damage_reports')
+    .update({ status: newStatus })
+    .eq('id', reportId);
+
+  if (error) throw error;
+};
+
+// 게임 신청 목록 조회
+export const fetchGameRequests = async () => {
+  const { data, error } = await supabase
+    .from('game_requests')
+    .select(`
+      *,
+      profiles:user_id (name, student_id)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error("게임 신청 로딩 실패:", error);
+    return [];
+  }
+  return data;
+};
+
+// 게임 신청 상태 변경
+export const updateGameRequestStatus = async (requestId, newStatus) => {
+  const { error } = await supabase
+    .from('game_requests')
+    .update({ status: newStatus })
+    .eq('id', requestId);
+
+  if (error) throw error;
+};

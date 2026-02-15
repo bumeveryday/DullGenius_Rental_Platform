@@ -98,7 +98,7 @@ function ReservationModal({ onClose }) {
 
         showConfirmModal(
             "예약 수령 확인",
-            `선택한 ${selectedRentalIds.size}개의 게임을 수령하시겠습니까?`,
+            `선택한 ${selectedRentalIds.size}개의 게임을 수령하시겠습니까?\n\n[대여 안내]\n• 반납 기한: 내일 밤 12시까지\n• 분실/파손 시: 사이트에서 즉시 신고해주세요\n\n재밌게 즐기세요! 🎲`,
             async () => {
                 setProcessing(true);
                 let successCount = 0;

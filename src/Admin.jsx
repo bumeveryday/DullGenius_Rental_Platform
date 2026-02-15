@@ -28,6 +28,7 @@ import ConfigTab from './admin/ConfigTab';
 import PointsTab from './admin/PointsTab';
 import MembersTab from './admin/MembersTab'; // [NEW]
 import SystemTab from './admin/SystemTab'; // [NEW] 시스템 설정 탭
+import ReportsTab from './admin/ReportsTab'; // [NEW] 신고/신청 관리 탭
 
 function Admin() {
   const { user, hasRole, logout, loading: authLoading } = useAuth();
@@ -134,6 +135,7 @@ function Admin() {
       {/* 탭 버튼 영역 */}
       <div className="admin-tabs">
         <TabButton label="📋 대여 현황 / 태그" id="dashboard" activeTab={activeTab} onClick={setActiveTab} />
+        <TabButton label="📢 신고/신청 관리" id="reports" activeTab={activeTab} onClick={setActiveTab} />
         <TabButton label="➕ 게임 추가" id="add" activeTab={activeTab} onClick={setActiveTab} />
         <TabButton label="⚙️ 시스템 설정" id="system" activeTab={activeTab} onClick={setActiveTab} /> {/* [NEW] */}
         <TabButton label="👥 회원 관리" id="members" activeTab={activeTab} onClick={setActiveTab} />
@@ -149,6 +151,10 @@ function Admin() {
             loading={loading}
             onReload={loadData}
           />
+        )}
+
+        {activeTab === "reports" && (
+          <ReportsTab />
         )}
 
         {activeTab === "add" && (
