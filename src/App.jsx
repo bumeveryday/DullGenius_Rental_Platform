@@ -51,7 +51,6 @@ function Home() {
   const [difficultyFilter, setDifficultyFilter] = useState("전체");
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [playerFilter, setPlayerFilter] = useState("all");
-  const [viewMode, setViewMode] = useState(() => localStorage.getItem("game_view_mode") || "grid2"); // [NEW] 레이아웃 모드 (localStorage 연동)
   const filterSectionRef = useRef(null);
   const JOIN_FORM_URL = "https://forms.gle/VaASrMoiC6pda75t8";
 
@@ -166,6 +165,34 @@ function Home() {
   }, []);
 
   // ==========================================
+  // [NEW] 스크롤 위치 저장 및 복원 (Scroll Restoration)
+  // ==========================================
+
+  // 1. 스크롤 위치 저장: 사용자가 스크롤할 때마다 위치 기록
+  useEffect(() => {
+    const handleScroll = () => {
+      // 메인 홈(Home) 컴포넌트일 때만 기록 (필터링 중이 아닐 때 혹은 전체 화면 기준)
+      sessionStorage.setItem('home_scroll_y', window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // 2. 스크롤 위치 복원: 데이터 로딩 완료 후 이전 위치로 이동
+  useEffect(() => {
+    if (!pageLoading) {
+      const savedScrollY = sessionStorage.getItem('home_scroll_y');
+      if (savedScrollY) {
+        // 브라우저가 레이아웃을 계산할 시간을 주기 위해 약간의 지연 후 이동
+        setTimeout(() => {
+          window.scrollTo(0, parseInt(savedScrollY, 10));
+        }, 50);
+      }
+    }
+  }, [pageLoading]);
+
+  // ==========================================
   // 3. 필터링 로직 (Custom Hook 사용) [IMPROVED]
   // ==========================================
   const filteredGames = useGameFilter(games, {
@@ -181,7 +208,14 @@ function Home() {
   useEffect(() => {
     const isFiltered = searchTerm || selectedCategory !== "전체" || difficultyFilter !== "전체" || playerFilter !== "all" || onlyAvailable;
 
+    // [MODIFIED] 스크롤 복원 중에는 필터 스크롤을 방해하지 않도록 함 (초기 로딩 시 제외)
     if (isFiltered && !pageLoading) {
+      const savedScrollY = sessionStorage.getItem('home_scroll_y');
+      // 만약 최근에 복원된 스크롤 위치가 있다면 필터 스크롤 스킵 (상세 보고 돌아온 경우)
+      if (savedScrollY && Math.abs(window.scrollY - parseInt(savedScrollY, 10)) < 100) {
+        return;
+      }
+
       setTimeout(() => {
         filterSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
@@ -206,11 +240,6 @@ function Home() {
 
     return () => clearTimeout(timer);
   }, [selectedCategory, difficultyFilter, playerFilter, onlyAvailable, pageLoading]);
-
-  // [NEW] 레이아웃 설정 변경 시 localStorage 저장
-  useEffect(() => {
-    localStorage.setItem("game_view_mode", viewMode);
-  }, [viewMode]);
 
   // [NEW] 검색 결과 없음 로그 (구조화)
   useEffect(() => {
@@ -418,7 +447,6 @@ function Home() {
           difficultyFilter={difficultyFilter} setDifficultyFilter={setDifficultyFilter}
           playerFilter={playerFilter} setPlayerFilter={setPlayerFilter}
           onlyAvailable={onlyAvailable} setOnlyAvailable={setOnlyAvailable}
-          viewMode={viewMode} setViewMode={setViewMode}
           categories={categories}
           onReset={resetFilters}
         />
@@ -428,7 +456,7 @@ function Home() {
         총 <strong>{filteredGames.length}</strong>개의 게임을 찾았습니다.
       </div>
 
-      <div className={`game-list ${viewMode}`}>
+      <div className="game-list">
         {filteredGames.map((game) => (
           <div key={game.id} style={{ border: "1px solid #eee", borderRadius: "10px", overflow: "hidden", boxShadow: "0 2px 5px rgba(0,0,0,0.05)", background: "white" }}>
             <Link to={`/game/${game.id}`} state={{ game }} style={{ textDecoration: 'none', color: 'inherit', display: "block" }}>
