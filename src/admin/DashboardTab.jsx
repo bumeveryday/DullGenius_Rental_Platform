@@ -558,7 +558,15 @@ function DashboardTab({ games, loading, onReload }) {
                   </thead>
                   <tbody>
                     {gameLogs.map((log, idx) => {
-                      const valStr = String(log.value || "");
+                      // [FIX] details(value)가 객체인 경우와 문자열인 경우를 모두 처리 (JSONB 호환성)
+                      let valStr = "";
+                      if (log.value && typeof log.value === 'object') {
+                        // 객체(JSONB)인 경우: message, status, query 등 상황에 맞는 값 추출
+                        valStr = log.value.message || log.value.status || log.value.query || JSON.stringify(log.value);
+                      } else {
+                        valStr = String(log.value || "");
+                      }
+
                       let mainText = valStr;
                       let userInfo = null;
                       let isNonMember = false;

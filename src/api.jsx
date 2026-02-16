@@ -241,13 +241,8 @@ export const fetchConfig = async () => {
 
 // 5. 아쉬워요 (수요조사)
 export const sendMiss = async (gameId) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  await supabase.from('logs').insert([{
-    game_id: gameId,
-    user_id: user?.id || null,
-    action_type: 'MISS',
-    details: '입고 요청'
-  }]);
+  // [FIX] details를 문자열이 아닌 JSON 구조로 변경하여 JSONB 호환성 확보
+  await sendLog(gameId, 'MISS', { message: '입고 요청' });
   return { result: "success" };
 };
 
@@ -466,11 +461,7 @@ export const adminUpdateGame = async (gameId, newStatus, renterName, userId) => 
     } else {
       // 그 외 상태(분실, 수리중 등)는 available_count 조정
       // 예: 분실 시 quantity 감소
-      await supabase.from('logs').insert([{
-        game_id: gameId,
-        action_type: 'STATUS_CHANGE',
-        details: newStatus
-      }]);
+      await sendLog(gameId, 'STATUS_CHANGE', { status: newStatus });
       return { status: "success" };
     }
   } catch (e) {

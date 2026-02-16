@@ -51,6 +51,7 @@ function Home() {
   const [difficultyFilter, setDifficultyFilter] = useState("전체");
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [playerFilter, setPlayerFilter] = useState("all");
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem("game_view_mode") || "grid2"); // [NEW] 레이아웃 모드 (localStorage 연동)
   const filterSectionRef = useRef(null);
   const JOIN_FORM_URL = "https://forms.gle/VaASrMoiC6pda75t8";
 
@@ -205,6 +206,11 @@ function Home() {
 
     return () => clearTimeout(timer);
   }, [selectedCategory, difficultyFilter, playerFilter, onlyAvailable, pageLoading]);
+
+  // [NEW] 레이아웃 설정 변경 시 localStorage 저장
+  useEffect(() => {
+    localStorage.setItem("game_view_mode", viewMode);
+  }, [viewMode]);
 
   // [NEW] 검색 결과 없음 로그 (구조화)
   useEffect(() => {
@@ -412,6 +418,7 @@ function Home() {
           difficultyFilter={difficultyFilter} setDifficultyFilter={setDifficultyFilter}
           playerFilter={playerFilter} setPlayerFilter={setPlayerFilter}
           onlyAvailable={onlyAvailable} setOnlyAvailable={setOnlyAvailable}
+          viewMode={viewMode} setViewMode={setViewMode}
           categories={categories}
           onReset={resetFilters}
         />
@@ -421,7 +428,7 @@ function Home() {
         총 <strong>{filteredGames.length}</strong>개의 게임을 찾았습니다.
       </div>
 
-      <div className="game-list" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "20px" }}>
+      <div className={`game-list ${viewMode}`}>
         {filteredGames.map((game) => (
           <div key={game.id} style={{ border: "1px solid #eee", borderRadius: "10px", overflow: "hidden", boxShadow: "0 2px 5px rgba(0,0,0,0.05)", background: "white" }}>
             <Link to={`/game/${game.id}`} state={{ game }} style={{ textDecoration: 'none', color: 'inherit', display: "block" }}>

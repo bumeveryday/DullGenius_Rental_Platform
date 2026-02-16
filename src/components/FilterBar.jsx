@@ -9,6 +9,7 @@ function FilterBar({
   difficultyFilter, setDifficultyFilter,
   playerFilter, setPlayerFilter,
   onlyAvailable, setOnlyAvailable,
+  viewMode, setViewMode,
   categories,
   onReset,
   // 관리자 전용 Props
@@ -80,6 +81,18 @@ function FilterBar({
         <option value="5">5인</option>
         <option value="6+">6인 이상</option>
         <option value="8+">8인 이상</option>
+      </select>
+
+      {/* [NEW] 보기 레이아웃 선택 */}
+      <select
+        value={viewMode}
+        onChange={(e) => setViewMode(e.target.value)}
+        className={isAdmin ? "admin-select view-mode-select" : "view-mode-select"}
+        style={isAdmin ? {} : styles.select}
+        aria-label="보기 레이아웃 선택"
+      >
+        <option value="grid2">📱 2개씩 보기</option>
+        <option value="grid1">📱 1개씩 보기</option>
       </select>
 
       {/* 6. 대여 가능만 보기 체크박스 */}
