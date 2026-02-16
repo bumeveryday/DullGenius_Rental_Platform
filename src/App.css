@@ -297,9 +297,55 @@ a {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #999;
-  border: 2px dashed #eee;
 }
+
+/* [REFINED] Scroll Hint Styles */
+.scroll-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -5px;
+  margin-bottom: 35px;
+  color: #95a5a6;
+  font-size: 0.85em;
+  animation: fadeIn 1s ease-in-out, quietFloat 3s infinite ease-in-out;
+}
+
+.scroll-text {
+  font-weight: 400;
+  letter-spacing: -0.2px;
+  margin-bottom: 2px;
+  opacity: 0.8;
+}
+
+.scroll-arrow {
+  font-size: 1.2em;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+@keyframes quietFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 
 /* 작은 스피너 */
 .mini-spinner {

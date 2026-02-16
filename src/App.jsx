@@ -22,6 +22,12 @@ import KioskPage from './kiosk/KioskPage'; // [NEW] Kiosk Page
 import ProtectedRoute from './components/ProtectedRoute'; // [NEW] Protected Route
 import InfoBar from './components/InfoBar'; // [NEW] InfoBar Component
 
+const ScrollHint = () => (
+  <div className="scroll-hint">
+    <span className="scroll-text">아래로 스크롤하여 보드게임을 확인해보세요</span>
+    <div className="scroll-arrow">⌄</div>
+  </div>
+);
 
 function Home() {
   const navigate = useNavigate();
@@ -385,6 +391,9 @@ function Home() {
 
       {/* [MODIFIED] InfoBar를 상단으로 이동 & 기존 가이드 제거 */}
       <InfoBar games={games} />
+
+      {/* [NEW] 스크롤 힌트 추가 */}
+      <ScrollHint />
 
       {/* --- [대시보드: 추천 테마 + 인기 급상승] --- */}
       <div className="trending-wrapper dashboard-container">

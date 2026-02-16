@@ -18,17 +18,12 @@ function InfoBar({ games }) {
                 {/* 좌측: 핵심 정보 */}
                 <div style={styles.leftSection}>
                     <div style={styles.title}>{CLUB_INFO.name}</div>
-                    <div style={styles.infoRow}>
-                        <span>🕒 {CLUB_INFO.officeHour}</span>
-                        <span style={styles.divider}>|</span>
-                        <span>📍 {CLUB_INFO.location}</span>
-                    </div>
                 </div>
 
                 {/* 우측: 버튼 그룹 */}
                 <div style={styles.rightSection}>
-                    <button onClick={() => openModal('guide')} style={styles.textBtn}>
-                        이용 안내
+                    <button onClick={() => openModal('guide')} style={styles.highlightBtn}>
+                        📖 이용 안내
                     </button>
                     <button onClick={() => openModal('intro')} style={styles.textBtn}>
                         동아리 소개
@@ -104,6 +99,22 @@ const styles = {
         borderRadius: '5px',
         transition: 'background 0.2s',
         fontWeight: '500'
+    },
+    highlightBtn: {
+        background: 'linear-gradient(135deg, #3498db, #2980b9)',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '0.9rem',
+        color: 'white',
+        padding: '10px 20px',
+        borderRadius: '25px',
+        transition: 'all 0.3s ease',
+        fontWeight: '600',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        boxShadow: '0 4px 15px rgba(52, 152, 219, 0.25)',
+        letterSpacing: '-0.5px'
     },
     iconBtn: {
         background: 'white',
