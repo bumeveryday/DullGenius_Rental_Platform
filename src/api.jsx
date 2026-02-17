@@ -271,9 +271,9 @@ export const searchNaver = async (query) => {
     // 개발 환경(npm start): setupProxy.js가 가로채는 '/v1' 경로 사용
     // 배포 환경(Netlify): Serverless Function 경로 사용
     if (import.meta.env.DEV) {
-      url = `/ v1 / search / shop.json ? query = ${encodeURIComponent(query)}& display=10`;
+      url = `/v1/search/shop.json?query=${encodeURIComponent(query)}&display=10`;
     } else {
-      url = `/.netlify / functions / naver - proxy ? query = ${encodeURIComponent(query)} `;
+      url = `/.netlify/functions/naver-proxy?query=${encodeURIComponent(query)}`;
     }
 
     const response = await fetch(url);

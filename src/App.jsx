@@ -180,15 +180,14 @@ function Home() {
   // ==========================================
 
   // 1. 스크롤 위치 저장: 사용자가 스크롤할 때마다 위치 기록
-  useEffect(() => {
-    const handleScroll = () => {
-      // 메인 홈(Home) 컴포넌트일 때만 기록 (필터링 중이 아닐 때 혹은 전체 화면 기준)
-      sessionStorage.setItem('home_scroll_y', window.scrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // 1. 스크롤 위치 저장: 사용자가 스크롤할 때마다 위치 기록 -> [REMOVED] 클릭 시 저장으로 변경
+  // useEffect(() => {
+  //   const handleScroll = () => {
+  //     sessionStorage.setItem('home_scroll_y', window.scrollY);
+  //   };
+  //   window.addEventListener('scroll', handleScroll, { passive: true });
+  //   return () => window.removeEventListener('scroll', handleScroll);
+  // }, []);
 
   // 2. 스크롤 위치 복원: 데이터 로딩 완료 후 이전 위치로 이동
   useEffect(() => {
@@ -476,7 +475,12 @@ function Home() {
         {filteredGames.map((game, idx) => (
           <div key={game.id} className="game-card-animation" style={{ animationDelay: `${idx * 0.05}s` }}>
             <div style={{ border: "1px solid #eee", borderRadius: "10px", overflow: "hidden", boxShadow: "0 2px 5px rgba(0,0,0,0.05)", background: "white" }}>
-              <Link to={`/game/${game.id}`} state={{ game }} style={{ textDecoration: 'none', color: 'inherit', display: "block" }}>
+              <Link
+                to={`/game/${game.id}`}
+                state={{ game }}
+                style={{ textDecoration: 'none', color: 'inherit', display: "block" }}
+                onClick={() => sessionStorage.setItem('home_scroll_y', window.scrollY)} // [NEW] 클릭 시 스크롤 위치 저장
+              >
                 <div style={{ width: "100%", height: "200px", overflow: "hidden", background: "#f9f9f9", position: "relative" }}>
                   {game.image ? (
                     <img src={game.image} alt={game.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
