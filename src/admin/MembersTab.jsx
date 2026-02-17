@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { fetchUsers } from '../api';
-import { updatePaymentStatus, updateUserProfile, getUserRoles, updateUserRoles } from '../api_members';
+import { updatePaymentStatus, updateUserProfile, getUserRoles, updateUserRoles, resetUserPassword } from '../api_members';
 import { useToast } from '../contexts/ToastContext';
 import { supabase } from '../lib/supabaseClient';
 import ConfirmModal from '../components/ConfirmModal';
@@ -195,13 +195,17 @@ function MembersTab() {
 
     const handleResetPassword = (member) => {
         showConfirmModal(
-            '비밀번호 재설정 안내',
-            `${member.name}님의 비밀번호를 재설정하려면:\n\n1. Supabase SQL Editor 접속\n2. database/manual_password_reset.sql 파일 열기\n3. 학번 '${member.student_id}'로 검색하여 실행\n\n비밀번호가 '12345678'로 재설정됩니다.`,
-            () => {
-                navigator.clipboard.writeText(member.student_id);
-                showToast(`📋 학번 '${member.student_id}'이(가) 클립보드에 복사되었습니다.`, { type: 'info' });
+            '비밀번호 초기화',
+            `${member.name}님의 비밀번호를 '12345678'로 초기화하시겠습니까?\n(이 작업은 되돌릴 수 없습니다.)`,
+            async () => {
+                try {
+                    await resetUserPassword(member.id);
+                    showToast(`✅ ${member.name}님의 비밀번호가 '12345678'로 초기화되었습니다.`, { type: 'success' });
+                } catch (e) {
+                    showToast('비밀번호 초기화 실패: ' + e.message, { type: 'error' });
+                }
             },
-            'info'
+            'warning'
         );
     };
 

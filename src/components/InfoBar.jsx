@@ -87,7 +87,9 @@ const styles = {
     rightSection: {
         display: 'flex',
         gap: '10px',
-        alignItems: 'center'
+        alignItems: 'center',
+        flexWrap: 'wrap', // [NEW] 줄바꿈 허용 (모바일 대응)
+        justifyContent: 'flex-end' // [NEW] 우측 정렬 유지
     },
     textBtn: {
         background: 'none',

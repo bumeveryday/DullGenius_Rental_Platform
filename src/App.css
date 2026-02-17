@@ -233,7 +233,8 @@ a {
   .dashboard-container {
     flex-direction: column;
     /* 위아래로 쌓기 */
-    gap: 40px;
+    gap: 20px;
+    /* [MODIFIED] 간격 축소 */
   }
 
   /* 섹션 너비 꽉 채우기 */
@@ -252,7 +253,9 @@ a {
   /* 게임 리스트 카드 크기 조정: 모바일에서는 무조건 2열 */
   .game-list {
     grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
+    gap: 10px;
+    /* [MODIFIED] 간격 축소 */
+    padding-bottom: 30px;
   }
 
   /* 게임 카드 등장 애니메이션 (슈우욱) */

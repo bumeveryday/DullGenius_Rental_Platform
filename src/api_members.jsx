@@ -80,3 +80,11 @@ export const getUserRoles = async (userId) => {
     return data || [];
 };
 
+// [Admin] 비밀번호 강제 초기화 (12345678)
+export const resetUserPassword = async (userId) => {
+    const { data, error } = await supabase.rpc('reset_user_password', { target_user_id: userId });
+    if (error) throw error;
+    if (!data.success) throw new Error(data.message);
+    return data;
+};
+
