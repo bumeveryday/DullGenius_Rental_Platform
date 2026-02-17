@@ -686,5 +686,139 @@ select.review-input {
   color: #333 !important;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  /* ConfirmModal.js에서 인라인 스타일로 오버라이드 되거나 병합됨 */
+}
+
+/* =========================================
+   10. InfoBar Components (New)
+   ========================================= */
+.infobar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px 25px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  border: 1px solid #eee;
+}
+
+.infobar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.infobar-title {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.infobar-right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  /* [FIX] Wrap buttons on mobile */
+  justify-content: flex-end;
+}
+
+.infobar-btn-highlight {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.25);
+  letter-spacing: -0.5px;
+}
+
+.infobar-btn-text {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #555;
+  padding: 5px 10px;
+  border-radius: 5px;
+  transition: background 0.2s;
+  font-weight: 500;
+}
+
+.infobar-btn-icon {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 0.9rem;
+  color: #444;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.1s;
+}
+
+/* Header Logo Styles */
+.logo-header {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  user-select: none;
+}
+
+.logo-img {
+  height: 1.2em;
+  width: auto;
+  object-fit: contain;
+}
+
+/* =========================================
+   Mobile Overrides for Overflow Prevention
+   ========================================= */
+@media (max-width: 768px) {
+  .logo-header {
+    font-size: 1.8em;
+    /* [FIX] Reduce font size */
+    flex-wrap: wrap;
+    /* [FIX] Allow wrapping if needed */
+    gap: 10px;
+  }
+
+  .infobar-container {
+    padding: 15px;
+    /* [FIX] Reduce padding */
+    flex-direction: column;
+    /* [FIX] Stack vertical */
+    align-items: flex-start;
+  }
+
+  .infobar-right {
+    width: 100%;
+    justify-content: flex-start;
+    /* Align buttons left when stacked */
+  }
+
+  /* Buttons smaller on mobile */
+  .infobar-btn-highlight,
+  .infobar-btn-text,
+  .infobar-btn-icon {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+  }
 }

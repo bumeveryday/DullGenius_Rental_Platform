@@ -335,22 +335,11 @@ function Home() {
 
       {/* --- [헤더 영역] --- */}
       <header style={{ marginBottom: "30px", textAlign: "center" }}>
-        <h1
-          className="logo-header"
-          style={{
-            fontSize: "2.5em",
-            marginBottom: "10px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "15px",
-            userSelect: "none"
-          }}
-        >
+        <h1 className="logo-header">
           <img
             src={logo}
             alt="덜지니어스 로고"
+            className="logo-img"
             onClick={(e) => {
               // 1. 기본 동작: 메인으로 이동
               if (location.pathname !== "/") {
@@ -383,11 +372,6 @@ function Home() {
                 }
               }
               // }
-            }}
-            style={{
-              height: "1.2em",
-              width: "auto",
-              objectFit: "contain"
             }}
           />
           <span onClick={() => window.location.reload()}>덜지니어스 대여소</span>

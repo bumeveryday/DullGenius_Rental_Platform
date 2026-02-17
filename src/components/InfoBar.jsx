@@ -14,27 +14,27 @@ function InfoBar({ games }) {
 
     return (
         <>
-            <div style={styles.container}>
+            <div className="infobar-container">
                 {/* 좌측: 핵심 정보 */}
-                <div style={styles.leftSection}>
-                    <div style={styles.title}>{CLUB_INFO.name}</div>
+                <div className="infobar-left">
+                    <div className="infobar-title">{CLUB_INFO.name}</div>
                 </div>
 
                 {/* 우측: 버튼 그룹 */}
-                <div style={styles.rightSection}>
-                    <button onClick={() => openModal('guide')} style={styles.highlightBtn}>
+                <div className="infobar-right">
+                    <button onClick={() => openModal('guide')} className="infobar-btn-highlight">
                         📖 이용 안내
                     </button>
-                    <button onClick={() => openModal('intro')} style={styles.textBtn}>
+                    <button onClick={() => openModal('intro')} className="infobar-btn-text">
                         동아리 소개
                     </button>
-                    <button onClick={() => openModal('terms')} style={styles.textBtn}>
+                    <button onClick={() => openModal('terms')} className="infobar-btn-text">
                         이용 약관
                     </button>
-                    <button onClick={() => openModal('request')} style={styles.iconBtn}>
+                    <button onClick={() => openModal('request')} className="infobar-btn-icon">
                         🎲 게임 신청
                     </button>
-                    <button onClick={() => openModal('report')} style={styles.iconBtn}>
+                    <button onClick={() => openModal('report')} className="infobar-btn-icon">
                         🚨 파손/문의
                     </button>
                 </div>
@@ -50,89 +50,6 @@ function InfoBar({ games }) {
     );
 }
 
-const styles = {
-    container: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        background: '#f8f9fa',
-        borderRadius: '12px',
-        padding: '20px 25px',
-        marginBottom: '30px',
-        flexWrap: 'wrap',
-        gap: '15px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-        border: '1px solid #eee'
-    },
-    leftSection: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '5px'
-    },
-    title: {
-        fontWeight: 'bold',
-        fontSize: '1.1rem',
-        color: '#333'
-    },
-    infoRow: {
-        display: 'flex',
-        alignItems: 'center',
-        color: '#666',
-        fontSize: '0.95rem'
-    },
-    divider: {
-        margin: '0 10px',
-        color: '#ddd'
-    },
-    rightSection: {
-        display: 'flex',
-        gap: '10px',
-        alignItems: 'center',
-        flexWrap: 'wrap', // [NEW] 줄바꿈 허용 (모바일 대응)
-        justifyContent: 'flex-end' // [NEW] 우측 정렬 유지
-    },
-    textBtn: {
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-        fontSize: '0.9rem',
-        color: '#555',
-        padding: '5px 10px',
-        borderRadius: '5px',
-        transition: 'background 0.2s',
-        fontWeight: '500'
-    },
-    highlightBtn: {
-        background: 'linear-gradient(135deg, #3498db, #2980b9)',
-        border: 'none',
-        cursor: 'pointer',
-        fontSize: '0.9rem',
-        color: 'white',
-        padding: '10px 20px',
-        borderRadius: '25px',
-        transition: 'all 0.3s ease',
-        fontWeight: '600',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        boxShadow: '0 4px 15px rgba(52, 152, 219, 0.25)',
-        letterSpacing: '-0.5px'
-    },
-    iconBtn: {
-        background: 'white',
-        border: '1px solid #ddd',
-        borderRadius: '20px',
-        padding: '5px 12px',
-        fontSize: '0.9rem',
-        textDecoration: 'none',
-        color: '#444',
-        fontWeight: 'bold',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '5px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-        transition: 'transform 0.1s'
-    }
-};
+
 
 export default InfoBar;
