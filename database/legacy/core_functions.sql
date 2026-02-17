@@ -213,7 +213,7 @@ BEGIN
 
     -- 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
-    VALUES (p_game_id, p_user_id, 'DIBS', 'CopyID:' || v_copy_id);
+    VALUES (p_game_id, p_user_id, 'DIBS', jsonb_build_object('copy_id', v_copy_id));
 
     RETURN jsonb_build_object('success', true, 'rental_id', v_rental_id);
 END;
@@ -272,7 +272,7 @@ BEGIN
 
     -- 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
-    VALUES (p_game_id, p_user_id, 'RENT', 'CopyID:' || v_copy_id);
+    VALUES (p_game_id, p_user_id, 'RENT', jsonb_build_object('copy_id', v_copy_id));
 
     RETURN jsonb_build_object('success', true, 'rental_id', v_rental_id);
 END;
@@ -341,7 +341,7 @@ BEGIN
 
     -- 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
-    VALUES (p_game_id, p_user_id, 'RENT', 'ADMIN: ' || p_renter_name);
+    VALUES (p_game_id, p_user_id, 'RENT', jsonb_build_object('message', 'ADMIN RENT', 'renter', p_renter_name));
 
     RETURN jsonb_build_object('success', true);
 END;
@@ -407,7 +407,7 @@ BEGIN
     
     -- 5. 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
-    VALUES (v_game_id, p_user_id, 'RENT', 'ADMIN: ' || p_renter_name || ' (copy:' || p_copy_id || ')');
+    VALUES (v_game_id, p_user_id, 'RENT', jsonb_build_object('message', 'ADMIN RENT', 'renter', p_renter_name, 'copy_id', p_copy_id));
     
     RETURN jsonb_build_object('success', true, 'copy_id', p_copy_id, 'game_name', v_game_name);
 END;
@@ -440,7 +440,7 @@ BEGIN
 
     -- 로그
     INSERT INTO public.logs (game_id, action_type, details)
-    VALUES (p_game_id, 'RETURN', 'ADMIN Return');
+    VALUES (p_game_id, 'RETURN', jsonb_build_object('message', 'ADMIN Return'));
 
     RETURN jsonb_build_object('success', true);
 END;
@@ -490,7 +490,7 @@ BEGIN
     
     -- 5. 로그
     INSERT INTO public.logs (game_id, action_type, details)
-    VALUES (v_game_id, 'RETURN', 'ADMIN Return (copy:' || p_copy_id || ')');
+    VALUES (v_game_id, 'RETURN', jsonb_build_object('message', 'ADMIN Return', 'copy_id', p_copy_id));
     
     RETURN jsonb_build_object('success', true, 'copy_id', p_copy_id);
 END;

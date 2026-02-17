@@ -254,6 +254,25 @@ a {
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
   }
+
+  /* 게임 카드 등장 애니메이션 (슈우욱) */
+  .game-card-animation {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: shooookUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+}
+
+@keyframes shooookUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .loading-container {
@@ -299,41 +318,39 @@ a {
   justify-content: center;
 }
 
-/* [REFINED] Scroll Hint Styles */
-.scroll-hint {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: -5px;
-  margin-bottom: 35px;
+/* [NEW] Main Search Bar Styles */
+.main-search-wrapper {
+  max-width: 600px;
+  margin: 0 auto 30px auto;
+  padding: 0 20px;
+  animation: fadeIn 1s ease-in-out;
+}
+
+.main-search-input {
+  width: 100%;
+  padding: 14px 25px;
+  border-radius: 30px;
+  border: 1px solid #e1e8ed;
+  background: white;
+  font-size: 1.05rem;
+  color: #2c3e50;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.main-search-input:focus,
+.main-search-input:not(:placeholder-shown) {
+  border-color: #3498db;
+  box-shadow: 0 10px 25px rgba(52, 152, 219, 0.2);
+  transform: translateY(-4px);
+  background: #fdfeff;
+}
+
+.main-search-input::placeholder {
   color: #95a5a6;
-  font-size: 0.85em;
-  animation: fadeIn 1s ease-in-out, quietFloat 3s infinite ease-in-out;
-}
-
-.scroll-text {
   font-weight: 400;
-  letter-spacing: -0.2px;
-  margin-bottom: 2px;
-  opacity: 0.8;
-}
-
-.scroll-arrow {
-  font-size: 1.2em;
-  line-height: 1;
-  opacity: 0.6;
-}
-
-@keyframes quietFloat {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(6px);
-  }
+  letter-spacing: -0.5px;
 }
 
 @keyframes fadeIn {

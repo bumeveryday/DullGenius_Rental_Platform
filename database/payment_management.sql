@@ -31,7 +31,7 @@ BEGIN
     
     -- 로그 기록
     INSERT INTO public.logs (action_type, details)
-    VALUES ('SEMESTER_RESET', '학기 초기화: ' || v_reset_count || '명의 회비 상태 초기화');
+    VALUES ('SEMESTER_RESET', jsonb_build_object('message', '학기 초기화', 'reset_count', v_reset_count));
     
     RETURN jsonb_build_object(
         'success', true, 

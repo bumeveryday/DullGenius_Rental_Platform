@@ -13,7 +13,8 @@ function FilterBar({
   onReset,
   // 관리자 전용 Props
   isAdmin = false,
-  renterFilter, setRenterFilter
+  renterFilter, setRenterFilter,
+  hideSearch = false
 }) {
   return (
     <div
@@ -22,14 +23,16 @@ function FilterBar({
     >
 
       {/* 1. 검색창 (게임 이름/태그) */}
-      <input
-        type="text"
-        placeholder="🔍 검색 (태그는 #)"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        className={isAdmin ? "admin-input search-input" : ""}
-        style={isAdmin ? {} : styles.inputSearch}
-      />
+      {!hideSearch && (
+        <input
+          type="text"
+          placeholder="🔍 검색 (태그는 #)"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          className={isAdmin ? "admin-input search-input" : ""}
+          style={isAdmin ? {} : styles.inputSearch}
+        />
+      )}
 
       {/* 2. [관리자 전용] 대여자 검색 */}
       {isAdmin && (

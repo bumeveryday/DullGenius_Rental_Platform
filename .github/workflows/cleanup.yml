@@ -9,8 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Call Supabase Cleanup RPC
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.VITE_SUPABASE_URL || secrets.REACT_APP_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_ANON_KEY || secrets.REACT_APP_SUPABASE_ANON_KEY }}
         run: |
-          curl -X POST '${{ secrets.VITE_SUPABASE_URL || secrets.REACT_APP_SUPABASE_URL || secrets.SUPABASE_URL }}/rest/v1/rpc/cleanup_expired_dibs' \
-          -H "ApiKey: ${{ secrets.VITE_SUPABASE_ANON_KEY || secrets.REACT_APP_SUPABASE_ANON_KEY || secrets.SUPABASE_ANON_KEY }}" \
-          -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY || secrets.REACT_APP_SUPABASE_ANON_KEY || secrets.SUPABASE_ANON_KEY }}" \
+          curl -X POST "${SUPABASE_URL}/rest/v1/rpc/cleanup_expired_dibs" \
+          -H "ApiKey: ${SUPABASE_ANON_KEY}" \
+          -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
           -H "Content-Type: application/json"
+

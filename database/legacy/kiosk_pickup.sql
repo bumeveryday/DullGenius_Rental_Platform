@@ -32,7 +32,7 @@ BEGIN
 
     -- 3. 로그 기록
     INSERT INTO logs (game_id, user_id, action_type, details)
-    VALUES (v_game_id, v_user_id, 'RENT', 'Kiosk Pickup (Rental ID: ' || p_rental_id || ')');
+    VALUES (v_game_id, v_user_id, 'RENT', jsonb_build_object('message', 'Kiosk Pickup', 'rental_id', p_rental_id));
 
     RETURN jsonb_build_object('success', true);
 END;

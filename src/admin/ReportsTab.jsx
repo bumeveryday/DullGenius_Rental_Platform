@@ -65,6 +65,7 @@ function ReportsTab() {
                     <h3>{isRequest ? '🎲 게임 신청 상세' : '🚨 파손 신고 상세'}</h3>
                     <div style={styles.modalBody}>
                         <p><strong>작성자:</strong> {selectedReport.profiles?.name} ({selectedReport.profiles?.student_id})</p>
+                        <p><strong>연락처:</strong> {selectedReport.profiles?.phone || '없음'}</p>
                         <p><strong>날짜:</strong> {formatDate(selectedReport.created_at)}</p>
                         <p><strong>{isRequest ? '희망 게임:' : '게임명:'}</strong> {isRequest ? selectedReport.game_title : selectedReport.game_name}</p>
                         <hr style={{ borderColor: '#ddd', margin: '15px 0' }} />
@@ -108,6 +109,7 @@ function ReportsTab() {
                             <tr>
                                 <th>날짜</th>
                                 <th>작성자</th>
+                                <th>연락처</th>
                                 {activeSubTab === 'damage' ? (
                                     <>
                                         <th>게임명</th>
@@ -132,6 +134,7 @@ function ReportsTab() {
                                         <tr key={report.id}>
                                             <td>{formatDate(report.created_at)}</td>
                                             <td>{report.profiles?.name || '알수없음'} <span style={{ fontSize: '0.8em', color: '#888' }}>({report.profiles?.student_id})</span></td>
+                                            <td>{report.profiles?.phone || '-'}</td>
                                             <td>{report.game_name}</td>
                                             <td>
                                                 <button
@@ -168,6 +171,7 @@ function ReportsTab() {
                                         <tr key={request.id}>
                                             <td>{formatDate(request.created_at)}</td>
                                             <td>{request.profiles?.name || '알수없음'} <span style={{ fontSize: '0.8em', color: '#888' }}>({request.profiles?.student_id})</span></td>
+                                            <td>{request.profiles?.phone || '-'}</td>
                                             <td>{request.game_title}</td>
                                             <td>
                                                 <button

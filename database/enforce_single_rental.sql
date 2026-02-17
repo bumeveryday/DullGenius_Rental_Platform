@@ -57,7 +57,7 @@ BEGIN
 
     -- 5. 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
-    VALUES (p_game_id, p_user_id, 'DIBS', 'CopyID:' || v_copy_id);
+    VALUES (p_game_id, p_user_id, 'DIBS', jsonb_build_object('copy_id', v_copy_id));
 
     RETURN jsonb_build_object('success', true, 'rental_id', v_rental_id);
 END;
@@ -150,7 +150,7 @@ BEGIN
 
     -- 5. 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
-    VALUES (p_game_id, p_user_id, 'RENT', 'CopyID:' || v_copy_id);
+    VALUES (p_game_id, p_user_id, 'RENT', jsonb_build_object('copy_id', v_copy_id));
 
     RETURN jsonb_build_object('success', true, 'rental_id', v_rental_id);
 END;

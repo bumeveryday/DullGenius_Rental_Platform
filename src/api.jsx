@@ -71,10 +71,10 @@ export const fetchGames = async () => {
 
 // 2. 찜하기/대여하기 (RPC)
 export const rentGame = async (gameId, userId) => {
-  // [Updated] 대여 확정 (다음날 밤 11:59까지)
-  const { data, error } = await supabase.rpc('rent_any_copy', {
+  const { data, error } = await supabase.rpc('rent_game', {
     p_game_id: gameId,
-    p_user_id: userId
+    p_user_id: userId,
+    p_renter_name: '회원'
   });
   if (error) throw error;
   return data;
@@ -90,7 +90,17 @@ export const dibsGame = async (gameId, userId) => {
   return data;
 };
 
-// 6. 리뷰 목록 가져오기
+// 6. 찜 취소 (V2)
+export const cancelDibsGame = async (gameId, userId) => {
+  const { data, error } = await supabase.rpc('cancel_dibs', {
+    p_game_id: gameId,
+    p_user_id: userId
+  });
+  if (error) throw error;
+  return data;
+};
+
+// 7. 리뷰 목록 가져오기
 export const fetchReviews = async (gameId) => {
   // author_name이 reviews 테이블에 있으므로 그냥 가져오면 됨
   let query = supabase
@@ -189,7 +199,7 @@ export const fetchTrending = async () => {
 
     if (error || !trendingData || trendingData.length === 0) {
       // RPC가 아직 없거나 에러인 경우 fallback: 기존 방식(총 조회수)
-      console.warn("Trending RPC Error (Fallback to total_views):", error.message);
+      if (error) console.warn("Trending RPC Error (Fallback to total_views):", error.message);
       const { data, error: fbError } = await supabase
         .from('games')
         .select('*')
@@ -928,7 +938,7 @@ export const fetchDamageReports = async () => {
     .from('damage_reports')
     .select(`
       *,
-      profiles:user_id (name, student_id)
+      profiles:user_id (name, student_id, phone)
     `)
     .order('created_at', { ascending: false });
 
@@ -955,7 +965,7 @@ export const fetchGameRequests = async () => {
     .from('game_requests')
     .select(`
       *,
-      profiles:user_id (name, student_id)
+      profiles:user_id (name, student_id, phone)
     `)
     .order('created_at', { ascending: false });
 

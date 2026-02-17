@@ -69,7 +69,7 @@ BEGIN
     
     -- 5. 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
-    VALUES (p_game_id, p_user_id, 'DIBS', 'User reserved game');
+    VALUES (p_game_id, p_user_id, 'DIBS', jsonb_build_object('message', 'User reserved game'));
     
     RETURN jsonb_build_object('success', true, 'message', '찜 완료');
 END;
@@ -101,8 +101,13 @@ BEGIN
     SET available_count = available_count + 1 
     WHERE id = p_game_id;
     
+    -- 3. 로그 추가
+    INSERT INTO public.logs (game_id, user_id, action_type, details)
+    VALUES (p_game_id, p_user_id, 'CANCEL_DIBS', jsonb_build_object('message', 'User cancelled dibs'));
+    
     RETURN jsonb_build_object('success', true, 'message', '찜 취소 완료');
 END;
+
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
@@ -138,7 +143,7 @@ BEGIN
     
     -- 4. 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
-    VALUES (p_game_id, p_user_id, 'RENT', 'User rented game: ' || p_renter_name);
+    VALUES (p_game_id, p_user_id, 'RENT', jsonb_build_object('message', 'User rented game', 'renter', p_renter_name));
     
     RETURN jsonb_build_object('success', true, 'message', '대여 완료');
 END;
@@ -172,7 +177,7 @@ BEGIN
     
     -- 3. 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
-    VALUES (p_game_id, p_user_id, 'RETURN', 'User returned game');
+    VALUES (p_game_id, p_user_id, 'RETURN', jsonb_build_object('message', 'User returned game'));
     
     RETURN jsonb_build_object('success', true, 'message', '반납 완료');
 END;
@@ -224,7 +229,7 @@ BEGIN
     
     -- 4. 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
-    VALUES (p_game_id, p_user_id, 'RENT', 'ADMIN: ' || p_renter_name);
+    VALUES (p_game_id, p_user_id, 'RENT', jsonb_build_object('message', 'ADMIN RENT', 'renter', p_renter_name));
     
     RETURN jsonb_build_object('success', true, 'message', '대여 완료');
 END;
@@ -266,7 +271,7 @@ BEGIN
     
     -- 3. 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
-    VALUES (p_game_id, p_user_id, 'RETURN', 'ADMIN: ' || COALESCE(p_renter_name, 'Unknown'));
+    VALUES (p_game_id, p_user_id, 'RETURN', jsonb_build_object('message', 'ADMIN RETURN', 'renter', COALESCE(p_renter_name, 'Unknown')));
     
     RETURN jsonb_build_object('success', true, 'message', v_affected || '건 반납 완료');
 END;
@@ -276,7 +281,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ========================================
 -- 7. 만료된 찜 자동 취소 (스케줄러용)
 -- ========================================
-CREATE OR REPLACE FUNCTION public.cancel_expired_dibs()
+CREATE OR REPLACE FUNCTION public.cleanup_expired_dibs()
 RETURNS jsonb AS $$
 DECLARE
     v_count INTEGER;

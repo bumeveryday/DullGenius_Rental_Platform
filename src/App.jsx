@@ -22,10 +22,15 @@ import KioskPage from './kiosk/KioskPage'; // [NEW] Kiosk Page
 import ProtectedRoute from './components/ProtectedRoute'; // [NEW] Protected Route
 import InfoBar from './components/InfoBar'; // [NEW] InfoBar Component
 
-const ScrollHint = () => (
-  <div className="scroll-hint">
-    <span className="scroll-text">아래로 스크롤하여 보드게임을 확인해보세요</span>
-    <div className="scroll-arrow">⌄</div>
+const MainSearchBar = ({ value, onChange }) => (
+  <div className="main-search-wrapper">
+    <input
+      type="text"
+      className="main-search-input"
+      placeholder="🔍 검색하거나, 아래로 스크롤하세요"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
   </div>
 );
 
@@ -214,17 +219,18 @@ function Home() {
   useEffect(() => {
     const isFiltered = searchTerm || selectedCategory !== "전체" || difficultyFilter !== "전체" || playerFilter !== "all" || onlyAvailable;
 
-    // [MODIFIED] 스크롤 복원 중에는 필터 스크롤을 방해하지 않도록 함 (초기 로딩 시 제외)
     if (isFiltered && !pageLoading) {
-      const savedScrollY = sessionStorage.getItem('home_scroll_y');
-      // 만약 최근에 복원된 스크롤 위치가 있다면 필터 스크롤 스킵 (상세 보고 돌아온 경우)
-      if (savedScrollY && Math.abs(window.scrollY - parseInt(savedScrollY, 10)) < 100) {
-        return;
-      }
-
       setTimeout(() => {
-        filterSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+        const offset = 10; // 상단 검색바와의 적절한 간격
+        const element = filterSectionRef.current;
+        if (element) {
+          const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+          window.scrollTo({
+            top: elementPosition - offset,
+            behavior: 'smooth'
+          });
+        }
+      }, 50);
     }
   }, [searchTerm, selectedCategory, difficultyFilter, playerFilter, onlyAvailable, pageLoading]);
 
@@ -392,11 +398,11 @@ function Home() {
       {/* [MODIFIED] InfoBar를 상단으로 이동 & 기존 가이드 제거 */}
       <InfoBar games={games} />
 
-      {/* [NEW] 스크롤 힌트 추가 */}
-      <ScrollHint />
+      {/* [NEW] 메인 검색바 추가 (기존 스크롤 힌트 대체) */}
+      <MainSearchBar value={inputValue} onChange={setInputValue} />
 
       {/* --- [대시보드: 추천 테마 + 인기 급상승] --- */}
-      <div className="trending-wrapper dashboard-container">
+      <div className={`trending-wrapper dashboard-container ${(searchTerm || selectedCategory !== "전체") ? 'hidden' : ''}`}>
         <div className="dashboard-left">
           <h2 style={{ fontSize: "1.5em", marginBottom: "15px" }}>🎯 상황별 추천</h2>
           {config === null ? (
@@ -458,6 +464,7 @@ function Home() {
           onlyAvailable={onlyAvailable} setOnlyAvailable={setOnlyAvailable}
           categories={categories}
           onReset={resetFilters}
+          hideSearch={true}
         />
       </div>
 
@@ -465,41 +472,43 @@ function Home() {
         총 <strong>{filteredGames.length}</strong>개의 게임을 찾았습니다.
       </div>
 
-      <div className="game-list">
-        {filteredGames.map((game) => (
-          <div key={game.id} style={{ border: "1px solid #eee", borderRadius: "10px", overflow: "hidden", boxShadow: "0 2px 5px rgba(0,0,0,0.05)", background: "white" }}>
-            <Link to={`/game/${game.id}`} state={{ game }} style={{ textDecoration: 'none', color: 'inherit', display: "block" }}>
-              <div style={{ width: "100%", height: "200px", overflow: "hidden", background: "#f9f9f9", position: "relative" }}>
-                {game.image ? (
-                  <img src={game.image} alt={game.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc" }}>이미지 없음</div>
-                )}
-                {(game.status !== "대여가능") && (
-                  <div style={{
-                    position: "absolute", top: "10px", right: "10px",
-                    background: game.status === "대여가능" ? "rgba(46, 204, 113, 0.9)" : "rgba(231, 76, 60, 0.9)",
-                    color: "white", padding: "4px 10px", borderRadius: "12px", fontSize: "0.8em", fontWeight: "bold",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                  }}>
-                    {game.status}
-                    {game.status === "대여가능" && game.available_count > 0 && ` (${game.available_count})`}
-                  </div>
-                )}
-              </div>
+      <div className="game-list" key={searchTerm + selectedCategory}>
+        {filteredGames.map((game, idx) => (
+          <div key={game.id} className="game-card-animation" style={{ animationDelay: `${idx * 0.05}s` }}>
+            <div style={{ border: "1px solid #eee", borderRadius: "10px", overflow: "hidden", boxShadow: "0 2px 5px rgba(0,0,0,0.05)", background: "white" }}>
+              <Link to={`/game/${game.id}`} state={{ game }} style={{ textDecoration: 'none', color: 'inherit', display: "block" }}>
+                <div style={{ width: "100%", height: "200px", overflow: "hidden", background: "#f9f9f9", position: "relative" }}>
+                  {game.image ? (
+                    <img src={game.image} alt={game.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc" }}>이미지 없음</div>
+                  )}
+                  {(game.status !== "대여가능") && (
+                    <div style={{
+                      position: "absolute", top: "10px", right: "10px",
+                      background: game.status === "대여가능" ? "rgba(46, 204, 113, 0.9)" : "rgba(231, 76, 60, 0.9)",
+                      color: "white", padding: "4px 10px", borderRadius: "12px", fontSize: "0.8em", fontWeight: "bold",
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                    }}>
+                      {game.status}
+                      {game.status === "대여가능" && game.available_count > 0 && ` (${game.available_count})`}
+                    </div>
+                  )}
+                </div>
 
-              <div style={{ padding: "15px" }}>
-                <h3 className="text-truncate" style={{ margin: "0 0 5px 0", fontSize: "1.1em", fontWeight: "bold" }}>{game.name}</h3>
-                <div style={{ fontSize: "0.85em", color: "#888", marginBottom: "10px", display: "flex", justifyContent: "space-between" }}>
-                  <span className="text-truncate" style={{ maxWidth: "60%" }}>{game.genre}</span>
-                  <span>{game.players ? `👥 ${game.players} ` : ""}</span>
+                <div style={{ padding: "15px" }}>
+                  <h3 className="text-truncate" style={{ margin: "0 0 5px 0", fontSize: "1.1em", fontWeight: "bold" }}>{game.name}</h3>
+                  <div style={{ fontSize: "0.85em", color: "#888", marginBottom: "10px", display: "flex", justifyContent: "space-between" }}>
+                    <span className="text-truncate" style={{ maxWidth: "60%" }}>{game.genre}</span>
+                    <span>{game.players ? `👥 ${game.players} ` : ""}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9em", alignItems: "center" }}>
+                    <span style={{ background: "#f1f2f6", padding: "2px 8px", borderRadius: "5px", color: "#555", fontSize: "0.8em" }}>{game.category}</span>
+                    {game.difficulty ? <span style={{ color: "#e67e22", fontWeight: "bold" }}>🔥 {game.difficulty}</span> : <span style={{ color: "#ddd" }}>-</span>}
+                  </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9em", alignItems: "center" }}>
-                  <span style={{ background: "#f1f2f6", padding: "2px 8px", borderRadius: "5px", color: "#555", fontSize: "0.8em" }}>{game.category}</span>
-                  {game.difficulty ? <span style={{ color: "#e67e22", fontWeight: "bold" }}>🔥 {game.difficulty}</span> : <span style={{ color: "#ddd" }}>-</span>}
-                </div>
-              </div>
-            </Link>
+              </Link>
+            </div>
           </div>
         ))}
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { fetchGames, sendMiss, fetchReviews, addReview, increaseViewCount, dibsGame, fetchMyRentals, sendLog } from '../api';
+import { fetchGames, sendMiss, fetchReviews, addReview, increaseViewCount, dibsGame, cancelDibsGame, fetchMyRentals, sendLog } from '../api';
 import { TEXTS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext'; // [NEW] 전역 Toast
@@ -95,10 +95,13 @@ function GameDetail() {
       if (user && game) {
         const { data: myRentals } = await fetchMyRentals(user.id);
         if (myRentals) {
-          // [FIX] '찜(DIBS)' 뿐만 아니라 '대여(RENT)' 상태라도, 미반납 상태이면 중복 대여 불가
-          const isAlreadyUsing = myRentals.some(r => String(r.gameId) === String(game.id) && !r.returnedAt);
-          if (isAlreadyUsing) {
-            setGame(prev => ({ ...prev, status: "이용중" })); // "찜" -> "이용중" (포괄적)
+          const myRental = myRentals.find(r => String(r.gameId) === String(game.id) && !r.returnedAt);
+          if (myRental) {
+            setGame(prev => ({
+              ...prev,
+              status: myRental.type === 'DIBS' ? "예약됨" : "이용중",
+              renterId: user.id // [FIX] 자신의 찜임을 명시
+            }));
           }
         }
       }
@@ -160,7 +163,13 @@ function GameDetail() {
               buttonText: "마이페이지로 가기",
               onButtonClick: () => navigate('/mypage')
             });
-            setGame({ ...game, status: "찜" }); // [UI 업데이트]
+            // [UI 업데이트] 즉시 '예약됨/취소' 상태로 전환
+            setGame(prev => ({
+              ...prev,
+              status: "예약됨",
+              renterId: user.id,
+              available_count: (prev.available_count || 1) - 1
+            }));
           } else {
             showToast(result.message || "찜하기 실패", { type: "error" });
           }
@@ -169,6 +178,27 @@ function GameDetail() {
         }
       },
       "primary" // [NOTE] ConfirmModal에서 primary 타입 지원 확인 필요 (없으면 info로 처리됨)
+    );
+  };
+
+  const handleCancelDibs = async () => {
+    showConfirmModal(
+      "찜 취소",
+      `'${game.name}' 찜을 취소하시겠습니까?`,
+      async () => {
+        try {
+          const result = await cancelDibsGame(game.id, user.id);
+          if (result.success) {
+            showToast("찜이 취소되었습니다.");
+            setGame({ ...game, status: "대여가능", available_count: (game.available_count || 0) + 1 });
+          } else {
+            showToast(result.message || "취소 실패", { type: "error" });
+          }
+        } catch (e) {
+          showToast("오류 발생: " + (e.message || "알 수 없는 오류"), { type: "error" });
+        }
+      },
+      "danger"
     );
   };
 
@@ -281,7 +311,11 @@ function GameDetail() {
             <button onClick={handleRent} style={{ width: "100%", padding: "15px", background: "#F39C12", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight: "bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(243, 156, 18, 0.3)" }}>
               ⚡ 찜하기 (30분)
             </button>
-          ) : game.status === "찜" || game.status === "이용중" ? (
+          ) : (game.status === "예약됨" || game.status === "찜") && user && String(game.renterId) === String(user.id) ? (
+            <button onClick={handleCancelDibs} style={{ width: "100%", padding: "15px", background: "#e74c3c", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight: "bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(231, 76, 60, 0.3)" }}>
+              ❌ 예약 취소
+            </button>
+          ) : game.status === "예약됨" || game.status === "찜" || game.status === "이용중" ? (
             <button disabled style={{ width: "100%", padding: "15px", background: "#2ecc71", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight: "bold", cursor: "not-allowed", opacity: 0.8 }}>
               ✅ 이미 이용 중인 게임입니다
             </button>

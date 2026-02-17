@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchMyRentals, fetchUserPoints, fetchPointHistory, withdrawAccount } from '../api';
+import { fetchMyRentals, fetchUserPoints, fetchPointHistory, withdrawAccount, cancelDibsGame } from '../api';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext'; // [NEW] Context 사용
 import { useToast } from '../contexts/ToastContext'; // [NEW]
@@ -107,6 +107,24 @@ const MyPage = () => {
     }
   };
 
+  // [NEW] 찜 취소 처리
+  const handleCancelDibs = async (gameId, gameName) => {
+    if (!window.confirm(`'${gameName}' 찜을 취소하시겠습니까?`)) return;
+
+    try {
+      const result = await cancelDibsGame(gameId, user.id);
+      if (result.success) {
+        showToast("찜이 취소되었습니다.");
+        // 목록에서 제거
+        setRentals(prev => prev.filter(r => r.gameId !== gameId));
+      } else {
+        showToast(result.message || "취소 실패", { type: "error" });
+      }
+    } catch (e) {
+      showToast("오류 발생: " + (e.message || "알 수 없는 오류"), { type: "error" });
+    }
+  };
+
   // 로딩 중일 때
   if (authLoading) return <div style={{ padding: "50px", textAlign: "center" }}>인증 정보 확인 중...</div>;
 
@@ -205,6 +223,14 @@ const MyPage = () => {
                           style={{ padding: "4px 8px", borderRadius: "12px", border: "1px solid #3498db", background: "white", color: "#3498db", cursor: "pointer", fontSize: "0.75em", fontWeight: "bold" }}
                         >
                           📖 룰북
+                        </button>
+                      )}
+                      {item.type === 'DIBS' && (
+                        <button
+                          onClick={() => handleCancelDibs(item.gameId, item.gameName)}
+                          style={{ padding: "4px 8px", borderRadius: "12px", border: "1px solid #e74c3c", background: "white", color: "#e74c3c", cursor: "pointer", fontSize: "0.75em", fontWeight: "bold" }}
+                        >
+                          ❌ 찜 취소
                         </button>
                       )}
                     </div>

@@ -44,7 +44,7 @@ BEGIN
     IF v_rental_id IS NOT NULL THEN
         -- 찜 전환 성공 (로그 불필요? 찜할때 이미 남김. 하지만 대여 시점 기록 위해 남김)
         INSERT INTO public.logs (game_id, user_id, action_type, details)
-        VALUES (p_game_id, p_user_id, 'RENT', 'DIBS -> RENT Conversion');
+        VALUES (p_game_id, p_user_id, 'RENT', jsonb_build_object('message', 'DIBS -> RENT Conversion'));
         
         RETURN jsonb_build_object('success', true, 'rental_id', v_rental_id);
     END IF;
@@ -66,7 +66,7 @@ BEGIN
 
     -- 로그
     INSERT INTO public.logs (game_id, user_id, action_type, details)
-    VALUES (p_game_id, p_user_id, 'RENT', 'Direct Rental');
+    VALUES (p_game_id, p_user_id, 'RENT', jsonb_build_object('message', 'Direct Rental'));
 
     RETURN jsonb_build_object('success', true, 'rental_id', v_rental_id);
 END;
