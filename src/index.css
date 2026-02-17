@@ -13,15 +13,6 @@ body {
   /* Disable double-tap zoom specifically in some mobile browsers */
   user-select: none;
   -webkit-user-select: none;
-
-  /* [FIX] Force hide horizontal scroll (Nuclear Option) */
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-#root {
-  width: 100%;
-  overflow-x: hidden;
 }
 
 code {
