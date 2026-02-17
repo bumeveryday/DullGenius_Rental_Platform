@@ -295,6 +295,7 @@ function MembersTab() {
                         onChange={(e) => setSortBy(e.target.value)}
                         className="admin-select"
                         style={{ padding: '8px' }}
+                        aria-label="회원 목록 정렬 기준"
                     >
                         <option value="name">이름순</option>
                         <option value="student_id">학번순</option>

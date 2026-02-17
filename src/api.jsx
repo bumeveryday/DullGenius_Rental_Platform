@@ -190,7 +190,6 @@ export const increaseViewCount = async (gameId) => {
 };
 
 // 11. 급상승 게임
-// 11. 급상승 게임
 export const fetchTrending = async () => {
   try {
     // [FIX] 최근 7일 집계 로직이 반영된 RPC 호출
@@ -260,7 +259,6 @@ export const sendMiss = async (gameId) => {
 export const loginUser = async () => { throw new Error("useAuth().login을 사용하세요."); };
 export const signupUser = async () => { throw new Error("useAuth().signup을 사용하세요."); };
 
-// [Admin] 검색용 네이버 API (Proxy 사용)
 // [Admin] 검색용 네이버 API (Proxy 사용)
 export const searchNaver = async (query) => {
   if (!query) return { items: [] };
@@ -484,8 +482,6 @@ export const adminUpdateGame = async (gameId, newStatus, renterName, userId) => 
 // [Deleted] adminReturnSpecificCopy (Legacy)
 
 // [Admin] 특정 대여자 일괄 반납
-// [Admin] 특정 대여자 일괄 반납
-// [Admin] 특정 대여자 일괄 반납
 export const returnGamesByRenter = async (renterName) => {
   let activeRentals = [];
 
@@ -555,7 +551,6 @@ export const returnGamesByRenter = async (renterName) => {
   return { status: "success", count: successCount };
 };
 
-// [Admin] 특정 대여자 일괄 찜 승인 (수령) - 개선 버전
 // [Admin] 특정 대여자 일괄 찜 승인 (수령) - 개선 버전
 export const approveDibsByRenter = async (renterName, userId) => {
   let reservedList = [];
@@ -709,7 +704,6 @@ export const fetchGameLogs = async (gameId) => {
   return { status: "success", logs: formatted };
 };
 
-// [MyPage]
 // [MyPage]
 export const fetchMyRentals = async (userId) => {
   // rentals -> game_copies -> games (name)

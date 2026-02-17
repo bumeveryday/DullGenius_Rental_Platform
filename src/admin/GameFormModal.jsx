@@ -81,8 +81,9 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
           <div className="admin-form-group">
-            <label className="admin-label">카테고리</label>
+            <label className="admin-label" htmlFor="category-select">카테고리</label>
             <select
+              id="category-select"
               value={formData.category}
               onChange={e => setFormData({ ...formData, category: e.target.value })}
               className="admin-select"

@@ -8,17 +8,24 @@ import { fetchGames, fetchTrending, fetchConfig, sendLog } from './api'; // API 
 import { useGameFilter } from './hooks/useGameFilter'; // [NEW] Custom Hook
 // import Admin from './Admin';         // [DELETE] Static Import
 const Admin = lazy(() => import('./Admin')); // [NEW] Lazy Import
-import GameDetail from './components/GameDetail'; // 상세 페이지 컴포넌트
+
+// [OPTIMIZATION] Lazy Load Route Components
+const GameDetail = lazy(() => import('./components/GameDetail'));
+const Login = lazy(() => import('./components/Login'));
+const Signup = lazy(() => import('./components/Signup'));
+const MyPage = lazy(() => import('./components/MyPage'));
+const KioskPage = lazy(() => import('./kiosk/KioskPage'));
+
 import { TEXTS } from './constants'; // 텍스트 수집 
 import './App.css';
 import logo from './logo.png';
 import FilterBar from './components/FilterBar';            // 스타일시트
-import Login from './components/Login';   // 로그인 페이지
-import Signup from './components/Signup'; // 회원가입 페이지
-import MyPage from './components/MyPage';
+// import Login from './components/Login';   // [DELETE] Static
+// import Signup from './components/Signup'; // [DELETE] Static
+// import MyPage from './components/MyPage'; // [DELETE] Static
 import { AuthProvider, useAuth } from './contexts/AuthContext'; // [NEW] Supabase Auth
 import { ToastProvider } from './contexts/ToastContext'; // [NEW] Toast 시스템
-import KioskPage from './kiosk/KioskPage'; // [NEW] Kiosk Page
+// import KioskPage from './kiosk/KioskPage'; // [DELETE] Static
 import ProtectedRoute from './components/ProtectedRoute'; // [NEW] Protected Route
 import InfoBar from './components/InfoBar'; // [NEW] InfoBar Component
 
@@ -400,122 +407,124 @@ function Home() {
       {/* [NEW] 메인 검색바 추가 (기존 스크롤 힌트 대체) */}
       <MainSearchBar value={inputValue} onChange={setInputValue} />
 
-      {/* --- [대시보드: 추천 테마 + 인기 급상승] --- */}
-      <div className={`trending-wrapper dashboard-container ${(searchTerm || selectedCategory !== "전체") ? 'hidden' : ''}`}>
-        <div className="dashboard-left">
-          <h2 style={{ fontSize: "1.5em", marginBottom: "15px" }}>🎯 상황별 추천</h2>
-          {config === null ? (
-            <div className="theme-grid">
-              {[1, 2, 3, 4].map(i => <div key={i} className="skeleton-box" style={{ height: "80px" }}></div>)}
-            </div>
-          ) : (
-            <div className="theme-grid">
-              {config.map((btn, idx) => (
-                <button key={idx} onClick={() => handleThemeClick(btn.value)} className="theme-btn" style={{ borderLeft: `5px solid ${btn.color} ` }}>
-                  {btn.label.split("\\n").map((line, i) => <span key={i}>{line}<br /></span>)}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="dashboard-right">
-          <h2 style={{ fontSize: "1.5em", marginBottom: "15px" }}>🔥 요즘 뜨는 게임</h2>
-          {(dataLoading && trending.length === 0) ? (
-            <div className="section-loading">
-              <div className="mini-spinner"></div>
-              <span style={{ fontSize: "0.9em" }}>인기 순위 집계 중...</span>
-            </div>
-          ) : (
-            trending.length > 0 ? (
-              <div style={{ display: "flex", gap: "15px", overflowX: "auto", padding: "10px 5px 20px 5px", scrollBehavior: "smooth" }}>
-                {trending.map((game, index) => (
-                  <Link to={`/game/${game.id}`} state={{ game }} key={game.id} style={{ textDecoration: "none", color: "inherit" }}>
-                    <div className="trend-card">
-                      <div className="trend-badge">{index + 1}위</div>
-                      <div style={{ width: "100%", height: "140px", background: "#f8f9fa" }}>
-                        {game.image ? <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", fontSize: "0.8em" }}>No Image</div>}
-                      </div>
-                      <div style={{ padding: "10px" }}>
-                        <div className="text-truncate" style={{ fontWeight: "bold", marginBottom: "3px", fontSize: "0.9em" }}>{game.name}</div>
-                        <div style={{ fontSize: "0.8em", color: "#888" }}>{game.category}</div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+      <main role="main">
+        {/* --- [대시보드: 추천 테마 + 인기 급상승] --- */}
+        <div className={`trending-wrapper dashboard-container ${(searchTerm || selectedCategory !== "전체") ? 'hidden' : ''}`}>
+          <div className="dashboard-left">
+            <h2 style={{ fontSize: "1.5em", marginBottom: "15px" }}>🎯 상황별 추천</h2>
+            {config === null ? (
+              <div className="theme-grid">
+                {[1, 2, 3, 4].map(i => <div key={i} className="skeleton-box" style={{ height: "80px" }}></div>)}
               </div>
             ) : (
-              <div style={{ padding: "30px", background: "#f9f9f9", borderRadius: "10px", textAlign: "center", color: "#888" }}>
-                아직 데이터 수집 중... 📊
+              <div className="theme-grid">
+                {config.map((btn, idx) => (
+                  <button key={idx} onClick={() => handleThemeClick(btn.value)} className="theme-btn" style={{ borderLeft: `5px solid ${btn.color} ` }}>
+                    {btn.label.split("\\n").map((line, i) => <span key={i}>{line}<br /></span>)}
+                  </button>
+                ))}
               </div>
-            )
-          )}
-        </div>
-      </div>
-
-
-      <div ref={filterSectionRef}>
-        <FilterBar
-          inputValue={inputValue} setInputValue={setInputValue}
-          selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
-          difficultyFilter={difficultyFilter} setDifficultyFilter={setDifficultyFilter}
-          playerFilter={playerFilter} setPlayerFilter={setPlayerFilter}
-          onlyAvailable={onlyAvailable} setOnlyAvailable={setOnlyAvailable}
-          categories={categories}
-          onReset={resetFilters}
-          hideSearch={true}
-        />
-      </div>
-
-      <div style={{ marginBottom: "15px", color: "#666", fontSize: "0.9em", marginLeft: "5px" }}>
-        총 <strong>{filteredGames.length}</strong>개의 게임을 찾았습니다.
-      </div>
-
-      <div className="game-list" key={searchTerm + selectedCategory}>
-        {filteredGames.map((game, idx) => (
-          <div key={game.id} className="game-card-animation" style={{ animationDelay: `${idx * 0.05}s` }}>
-            <div style={{ border: "1px solid #eee", borderRadius: "10px", overflow: "hidden", boxShadow: "0 2px 5px rgba(0,0,0,0.05)", background: "white" }}>
-              <Link
-                to={`/game/${game.id}`}
-                state={{ game }}
-                style={{ textDecoration: 'none', color: 'inherit', display: "block" }}
-                onClick={() => sessionStorage.setItem('home_scroll_y', window.scrollY)} // [NEW] 클릭 시 스크롤 위치 저장
-              >
-                <div style={{ width: "100%", height: "200px", overflow: "hidden", background: "#f9f9f9", position: "relative" }}>
-                  {game.image ? (
-                    <img src={game.image} alt={game.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc" }}>이미지 없음</div>
-                  )}
-                  {(game.status !== "대여가능") && (
-                    <div style={{
-                      position: "absolute", top: "10px", right: "10px",
-                      background: game.status === "대여가능" ? "rgba(46, 204, 113, 0.9)" : "rgba(231, 76, 60, 0.9)",
-                      color: "white", padding: "4px 10px", borderRadius: "12px", fontSize: "0.8em", fontWeight: "bold",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                    }}>
-                      {game.status}
-                      {game.status === "대여가능" && game.available_count > 0 && ` (${game.available_count})`}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ padding: "15px" }}>
-                  <h3 className="text-truncate" style={{ margin: "0 0 5px 0", fontSize: "1.1em", fontWeight: "bold" }}>{game.name}</h3>
-                  <div style={{ fontSize: "0.85em", color: "#888", marginBottom: "10px", display: "flex", justifyContent: "space-between" }}>
-                    <span className="text-truncate" style={{ maxWidth: "60%" }}>{game.genre}</span>
-                    <span>{game.players ? `👥 ${game.players} ` : ""}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9em", alignItems: "center" }}>
-                    <span style={{ background: "#f1f2f6", padding: "2px 8px", borderRadius: "5px", color: "#555", fontSize: "0.8em" }}>{game.category}</span>
-                    {game.difficulty ? <span style={{ color: "#e67e22", fontWeight: "bold" }}>🔥 {game.difficulty}</span> : <span style={{ color: "#ddd" }}>-</span>}
-                  </div>
-                </div>
-              </Link>
-            </div>
+            )}
           </div>
-        ))}
-      </div>
+
+          <div className="dashboard-right">
+            <h2 style={{ fontSize: "1.5em", marginBottom: "15px" }}>🔥 요즘 뜨는 게임</h2>
+            {(dataLoading && trending.length === 0) ? (
+              <div className="section-loading">
+                <div className="mini-spinner"></div>
+                <span style={{ fontSize: "0.9em" }}>인기 순위 집계 중...</span>
+              </div>
+            ) : (
+              trending.length > 0 ? (
+                <div style={{ display: "flex", gap: "15px", overflowX: "auto", padding: "10px 5px 20px 5px", scrollBehavior: "smooth" }}>
+                  {trending.map((game, index) => (
+                    <Link to={`/game/${game.id}`} state={{ game }} key={game.id} style={{ textDecoration: "none", color: "inherit" }}>
+                      <div className="trend-card">
+                        <div className="trend-badge">{index + 1}위</div>
+                        <div style={{ width: "100%", height: "140px", background: "#f8f9fa" }}>
+                          {game.image ? <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", fontSize: "0.8em" }}>No Image</div>}
+                        </div>
+                        <div style={{ padding: "10px" }}>
+                          <div className="text-truncate" style={{ fontWeight: "bold", marginBottom: "3px", fontSize: "0.9em" }}>{game.name}</div>
+                          <div style={{ fontSize: "0.8em", color: "#888" }}>{game.category}</div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: "30px", background: "#f9f9f9", borderRadius: "10px", textAlign: "center", color: "#888" }}>
+                  아직 데이터 수집 중... 📊
+                </div>
+              )
+            )}
+          </div>
+        </div>
+
+
+        <div ref={filterSectionRef}>
+          <FilterBar
+            inputValue={inputValue} setInputValue={setInputValue}
+            selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
+            difficultyFilter={difficultyFilter} setDifficultyFilter={setDifficultyFilter}
+            playerFilter={playerFilter} setPlayerFilter={setPlayerFilter}
+            onlyAvailable={onlyAvailable} setOnlyAvailable={setOnlyAvailable}
+            categories={categories}
+            onReset={resetFilters}
+            hideSearch={true}
+          />
+        </div>
+
+        <div style={{ marginBottom: "15px", color: "#666", fontSize: "0.9em", marginLeft: "5px" }}>
+          총 <strong>{filteredGames.length}</strong>개의 게임을 찾았습니다.
+        </div>
+
+        <div className="game-list" key={searchTerm + selectedCategory}>
+          {filteredGames.map((game, idx) => (
+            <div key={game.id} className="game-card-animation" style={{ animationDelay: `${idx * 0.05}s` }}>
+              <div style={{ border: "1px solid #eee", borderRadius: "10px", overflow: "hidden", boxShadow: "0 2px 5px rgba(0,0,0,0.05)", background: "white" }}>
+                <Link
+                  to={`/game/${game.id}`}
+                  state={{ game }}
+                  style={{ textDecoration: 'none', color: 'inherit', display: "block" }}
+                  onClick={() => sessionStorage.setItem('home_scroll_y', window.scrollY)} // [NEW] 클릭 시 스크롤 위치 저장
+                >
+                  <div style={{ width: "100%", height: "200px", overflow: "hidden", background: "#f9f9f9", position: "relative" }}>
+                    {game.image ? (
+                      <img src={game.image} alt={game.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc" }}>이미지 없음</div>
+                    )}
+                    {(game.status !== "대여가능") && (
+                      <div style={{
+                        position: "absolute", top: "10px", right: "10px",
+                        background: game.status === "대여가능" ? "rgba(46, 204, 113, 0.9)" : "rgba(231, 76, 60, 0.9)",
+                        color: "white", padding: "4px 10px", borderRadius: "12px", fontSize: "0.8em", fontWeight: "bold",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                      }}>
+                        {game.status}
+                        {game.status === "대여가능" && game.available_count > 0 && ` (${game.available_count})`}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ padding: "15px" }}>
+                    <h3 className="text-truncate" style={{ margin: "0 0 5px 0", fontSize: "1.1em", fontWeight: "bold" }}>{game.name}</h3>
+                    <div style={{ fontSize: "0.85em", color: "#888", marginBottom: "10px", display: "flex", justifyContent: "space-between" }}>
+                      <span className="text-truncate" style={{ maxWidth: "60%" }}>{game.genre}</span>
+                      <span>{game.players ? `👥 ${game.players} ` : ""}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9em", alignItems: "center" }}>
+                      <span style={{ background: "#f1f2f6", padding: "2px 8px", borderRadius: "5px", color: "#555", fontSize: "0.8em" }}>{game.category}</span>
+                      {game.difficulty ? <span style={{ color: "#e67e22", fontWeight: "bold" }}>🔥 {game.difficulty}</span> : <span style={{ color: "#ddd" }}>-</span>}
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
 
 
     </div>
@@ -528,32 +537,30 @@ function App() {
     <ToastProvider>
       <AuthProvider>
         <BrowserRouter>
-          <Routes>
-            {/* Home은 이제 내부 useAuth를 사용하므로 props 전달 불필요 */}
-            <Route path="/" element={<Home />} />
-            {/* 하위 페이지들도 context 사용 가능 */}
-            <Route path="/game/:id" element={<GameDetail />} />
-            <Route path="/mypage" element={<MyPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route element={<ProtectedRoute allowedRoles={['admin', 'executive']} />}>
-              <Route
-                path="/admin-secret"
-                element={
-                  <Suspense fallback={
-                    <div className="loading-container">
-                      <div className="spinner"></div>
-                      <p style={{ marginTop: "20px", color: "#666" }}>관리자 페이지 로딩 중...</p>
-                    </div>
-                  }>
-                    <Admin />
-                  </Suspense>
-                }
-              />
-            </Route>
-            <Route path="/kiosk" element={<KioskPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Suspense fallback={
+            <div className="loading-container">
+              <div className="spinner"></div>
+              <p style={{ marginTop: "20px", color: "#666" }}>페이지 로딩 중...</p>
+            </div>
+          }>
+            <Routes>
+              {/* Home은 이제 내부 useAuth를 사용하므로 props 전달 불필요 */}
+              <Route path="/" element={<Home />} />
+              {/* 하위 페이지들도 context 사용 가능 */}
+              <Route path="/game/:id" element={<GameDetail />} />
+              <Route path="/mypage" element={<MyPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'executive']} />}>
+                <Route
+                  path="/admin-secret"
+                  element={<Admin />}
+                />
+              </Route>
+              <Route path="/kiosk" element={<KioskPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </AuthProvider>
     </ToastProvider>

@@ -13,9 +13,6 @@ function SystemTab() {
     const [stats, setStats] = useState({
         totalMembers: 0,
         paidMembers: 0,
-        unpaidMembers: 0,
-        totalMembers: 0,
-        paidMembers: 0,
         unpaidMembers: 0
     });
     const [paymentCheckEnabled, setPaymentCheckEnabled] = useState(true);
@@ -49,8 +46,6 @@ function SystemTab() {
 
 
             setStats({
-                totalMembers,
-                paidMembers,
                 totalMembers,
                 paidMembers,
                 unpaidMembers

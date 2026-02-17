@@ -341,7 +341,7 @@ function GameDetail() {
               <div style={{ fontWeight: "bold", color: "#555" }}>
                 작성자: <span style={{ color: "#2c3e50" }}>{profile?.name || "익명"}</span>
               </div>
-              <select className="review-input" value={newReview.rating} onChange={e => setNewReview({ ...newReview, rating: e.target.value })} style={{ padding: "5px", borderRadius: "5px", border: "1px solid #ddd" }}>
+              <select className="review-input" value={newReview.rating} onChange={e => setNewReview({ ...newReview, rating: e.target.value })} style={{ padding: "5px", borderRadius: "5px", border: "1px solid #ddd" }} aria-label="별점 선택">
                 <option value="5">⭐⭐⭐⭐⭐ (5점)</option>
                 <option value="4">⭐⭐⭐⭐ (4점)</option>
                 <option value="3">⭐⭐⭐ (3점)</option>

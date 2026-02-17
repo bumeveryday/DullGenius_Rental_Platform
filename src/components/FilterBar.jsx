@@ -52,6 +52,7 @@ function FilterBar({
         onChange={(e) => setSelectedCategory(e.target.value)}
         className={isAdmin ? "admin-select" : ""}
         style={isAdmin ? {} : styles.select}
+        aria-label="카테고리 선택"
       >
         {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
       </select>
@@ -62,6 +63,7 @@ function FilterBar({
         onChange={(e) => setDifficultyFilter(e.target.value)}
         className={isAdmin ? "admin-select" : ""}
         style={isAdmin ? {} : styles.select}
+        aria-label="난이도 선택"
       >
         <option value="전체">난이도 전체</option>
         <option value="입문">🐣 입문 (0~2점)</option>
@@ -75,6 +77,7 @@ function FilterBar({
         onChange={(e) => setPlayerFilter(e.target.value)}
         className={isAdmin ? "admin-select" : ""}
         style={isAdmin ? { fontWeight: playerFilter !== "all" ? "bold" : "normal", color: playerFilter !== "all" ? "var(--admin-primary)" : "inherit" } : { ...styles.select, fontWeight: playerFilter !== "all" ? "bold" : "normal", color: playerFilter !== "all" ? "#3498db" : "black" }}
+        aria-label="인원수 선택"
       >
         <option value="all">인원수 전체</option>
         <option value="2">2인</option>

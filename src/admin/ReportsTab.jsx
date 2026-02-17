@@ -154,6 +154,7 @@ function ReportsTab() {
                                                     value={report.status}
                                                     onChange={(e) => handleStatusChange(report.id, e.target.value, 'damage')}
                                                     style={styles.select}
+                                                    aria-label="신고 처리 상태 변경"
                                                 >
                                                     <option value="pending">대기중</option>
                                                     <option value="resolved">처리완료</option>
@@ -191,6 +192,7 @@ function ReportsTab() {
                                                     value={request.status}
                                                     onChange={(e) => handleStatusChange(request.id, e.target.value, 'request')}
                                                     style={styles.select}
+                                                    aria-label="신청 처리 상태 변경"
                                                 >
                                                     <option value="pending">대기중</option>
                                                     <option value="approved">승인됨</option>
