@@ -224,6 +224,15 @@ a {
   display: block;
 }
 
+/* [NEW] Main Responsive Container */
+.main-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  /* For absolute positioned children */
+}
+
 /* =========================================
    7. 모바일 반응형 (Mobile Media Query)
    ========================================= */
@@ -237,11 +246,20 @@ a {
     /* [MODIFIED] 간격 축소 */
   }
 
-  /* 섹션 너비 꽉 채우기 */
+  /* 섹션 너비 꽉 채우기 & min-width 초기화 (가로 스크롤 방지) */
   .dashboard-left,
   .dashboard-right {
     width: 100%;
     flex: none;
+    min-width: 0;
+    /* [FIX] 모바일에서 강제 너비 제거 */
+  }
+
+  /* [NEW] 모바일 패딩 축소 */
+  .main-container {
+    padding: 10px;
+    padding-bottom: 80px;
+    /* 하단 탭바 고려 여유 공간 */
   }
 
   /* 추천 버튼: 모바일에서는 글자 가운데 정렬 */

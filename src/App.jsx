@@ -92,7 +92,7 @@ function Home() {
 
   useEffect(() => {
     const loadData = async () => {
-      const CACHE_DURATION = 0; // [DEBUG] 캐시 끄기 (항상 최신 데이터 로드)
+      const CACHE_DURATION = 1000 * 60 * 5; // [FIX] 5분 캐시 적용
 
       // [개선] 캐시 확인 (타임스탬프 기반)
       const cachedGames = localStorage.getItem('games_cache');
@@ -305,7 +305,7 @@ function Home() {
   );
 
   return (
-    <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
+    <div className="main-container">
 
       <div style={{ position: "absolute", top: "10px", right: "10px", fontSize: "0.9em", zIndex: 10 }}>
         {user ? (
