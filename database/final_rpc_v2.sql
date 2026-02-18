@@ -381,11 +381,18 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 5-2. 키오스크 반납 (포인트 리워드)
+-- [FIX] p_rental_id 추가하여 다중 카피 상황 대응
 DROP FUNCTION IF EXISTS public.kiosk_return(INTEGER, UUID);
-CREATE OR REPLACE FUNCTION public.kiosk_return(p_game_id INTEGER, p_user_id UUID) RETURNS jsonb AS $$
+DROP FUNCTION IF EXISTS public.kiosk_return(INTEGER, UUID, UUID);
+CREATE OR REPLACE FUNCTION public.kiosk_return(p_game_id INTEGER, p_user_id UUID, p_rental_id UUID DEFAULT NULL) RETURNS jsonb AS $$
 DECLARE v_rental_id UUID; v_game_name TEXT;
 BEGIN
-    SELECT rental_id, game_name INTO v_rental_id, v_game_name FROM public.rentals WHERE game_id = p_game_id AND user_id = p_user_id AND returned_at IS NULL AND type = 'RENT' LIMIT 1;
+    IF p_rental_id IS NOT NULL THEN
+        SELECT rental_id, game_name INTO v_rental_id, v_game_name FROM public.rentals WHERE rental_id = p_rental_id AND returned_at IS NULL;
+    ELSE
+        SELECT rental_id, game_name INTO v_rental_id, v_game_name FROM public.rentals WHERE game_id = p_game_id AND user_id = p_user_id AND returned_at IS NULL AND type = 'RENT' LIMIT 1;
+    END IF;
+
     IF v_rental_id IS NULL THEN RETURN jsonb_build_object('success', false, 'message', '대여 기록이 없습니다.'); END IF;
 
     UPDATE public.rentals SET returned_at = now() WHERE rental_id = v_rental_id;

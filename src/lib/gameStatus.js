@@ -20,7 +20,13 @@ export const calculateGameStatus = (game, gameRentals) => {
     let dueDate = null;
 
     // 3. 상태 결정 정책 (UX 개선: 재고가 있으면 무조건 '대여가능' 우선)
-    const activeDibs = gameRentals.filter(r => r.type === 'DIBS');
+    // [FIX] 만료된 찜(30분 초과)은 활성 상태에서 제외하여 '유령 예약' 방지
+    const now = new Date();
+    const activeDibs = gameRentals.filter(r => {
+        if (r.type !== 'DIBS') return false;
+        if (!r.due_date) return true;
+        return new Date(r.due_date) > now;
+    });
     const activeRents = gameRentals.filter(r => r.type === 'RENT');
 
     // [Step A] 정보 추출 (상태와 무관하게 대여자 정보를 모두 수집)
@@ -75,6 +81,6 @@ export const calculateGameStatus = (game, gameRentals) => {
         renter,
         renterId,
         dueDate,
-        rentals: gameRentals
+        rentals: [...activeDibs, ...activeRents] // [FIX] 유효한 찜/대여만 반환
     };
 };

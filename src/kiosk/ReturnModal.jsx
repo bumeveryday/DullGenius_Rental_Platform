@@ -43,6 +43,7 @@ function ReturnModal({ onClose }) {
                     profiles:user_id (id, name, student_id),
                     game:games (id, name, image)
                 `)
+                .eq('type', 'RENT')
                 .is('returned_at', null);
 
             if (error) {

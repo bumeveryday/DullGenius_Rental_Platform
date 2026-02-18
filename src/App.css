@@ -847,3 +847,48 @@ select.review-input {
     transform: scale(1.05);
     /* ?몃쾭 ???댁쭩 ?뺣? */
 }
+
+/* [NEW] 상단 로그인/회원가입 컨테이너 스타일 */
+.top-nav-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 0.9em;
+  z-index: 10;
+}
+
+@media (max-width: 480px) {
+  .top-nav-container {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    text-align: right;
+    padding: 10px;
+    margin-bottom: 20px;
+  }
+}
+
+
+/* [NEW] 비로그인 상태(툴팁 있음)일 때만 모바일에서 여백 추가 */
+@media (max-width: 480px) {
+  .login-links-wrapper {
+    margin-bottom: 50px; /* 툴팁이 들어갈 공간 확보 */
+  }
+}
+
+
+/* [FIX] 툴팁 겹침 방지를 위한 추가 여백 */
+@media (max-width: 480px) {
+  .top-nav-container {
+    margin-bottom: 80px !important;
+  }
+}
+
+
+/* [FIX] 헤더를 강제로 아래로 밀어 툴팁 공간 확보 */
+@media (max-width: 480px) {
+  header {
+    margin-top: 100px !important;
+  }
+}
+

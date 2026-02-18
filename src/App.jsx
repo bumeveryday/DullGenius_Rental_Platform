@@ -29,6 +29,7 @@ import { ToastProvider } from './contexts/ToastContext'; // [NEW] Toast 시스�
 import ProtectedRoute from './components/ProtectedRoute'; // [NEW] Protected Route
 import InfoBar from './components/InfoBar'; // [NEW] InfoBar Component
 import { getOptimizedImageUrl } from './utils/imageOptimizer'; // [NEW] 이미지 최적화
+import LoginTooltip from './components/LoginTooltip'; // [NEW] 로그인 툴팁
 
 const MainSearchBar = ({ value, onChange }) => (
   <div className="main-search-wrapper">
@@ -308,7 +309,7 @@ function Home() {
   return (
     <div className="main-container">
 
-      <div style={{ position: "absolute", top: "10px", right: "10px", fontSize: "0.9em", zIndex: 10 }}>
+      <div className="top-nav-container">
         {user ? (
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <span style={{ fontWeight: "bold", color: "#2c3e50" }}>👋 {profile?.name || user.email}님</span>
@@ -326,10 +327,13 @@ function Home() {
             </button>
           </div>
         ) : (
-          <div style={{ display: "flex", gap: "10px" }}>
-            <Link to="/login" style={{ textDecoration: "none", color: "#555", fontWeight: "bold" }}>로그인</Link>
-            <span style={{ color: "#ddd" }}>|</span>
-            <Link to="/signup" style={{ textDecoration: "none", color: "#3498db", fontWeight: "bold" }}>회원가입</Link>
+          <div className="auth-container" style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <Link to="/login" style={{ textDecoration: "none", color: "#555", fontWeight: "bold" }}>로그인</Link>
+              <span style={{ color: "#ddd" }}>|</span>
+              <Link to="/signup" style={{ textDecoration: "none", color: "#3498db", fontWeight: "bold" }}>회원가입</Link>
+            </div>
+            <LoginTooltip />
           </div>
         )}
       </div>

@@ -12,23 +12,7 @@ import React from 'react';
  * @param {Function} props.onReceive - 개별 수령 핸들러 (game, rentalId) => void
  */
 const RentalInstanceList = ({ game, onReturn, onReceive }) => {
-    const [selectedId, setSelectedId] = React.useState("");
-
     if (!game.rentals || game.rentals.length <= 1) return null;
-
-    // 초기 선택값 설정 (첫 번째 렌탈 건)
-    React.useEffect(() => {
-        if (game.rentals.length > 0 && !selectedId) {
-            setSelectedId(game.rentals[0].rental_id);
-        }
-    }, [game.rentals, selectedId]);
-
-    const selectedRental = game.rentals.find(r => r.rental_id === selectedId) || game.rentals[0];
-    const isDibs = selectedRental?.type === 'DIBS';
-
-    // 남은 일수 계산
-    const targetDate = new Date(selectedRental?.due_date || selectedRental?.borrowed_at);
-    const diffDays = ~~((targetDate - new Date()) / (1000 * 60 * 60 * 24));
 
     return (
         <div style={{
