@@ -41,14 +41,34 @@ export const useGameFilter = (games, filters) => {
             // TRPG는 선택한 경우에만 표시
             if (selectedCategory !== "TRPG" && game.category === "TRPG") return false;
 
+            // [Professional Search Improvements]
+            // 1. 공백 제거 및 대소문자 정규화
+            const normalize = (str) => str.replace(/\s+/g, "").toLowerCase();
+            const normalizedSearch = normalize(searchTerm);
+            const normalizedGameName = normalize(game.name || "");
+
+            // 2. 한글 초성 추출 함수
+            const getChoseong = (str) => {
+                const choseong = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+                let result = "";
+                for (let i = 0; i < str.length; i++) {
+                    const code = str.charCodeAt(i) - 0xac00;
+                    if (code > -1 && code < 11172) result += choseong[Math.floor(code / 588)];
+                    else result += str.charAt(i);
+                }
+                return result;
+            };
+
+            // 3. 순수 초성 여부 확인 함수
+            const isPureChoseong = (str) => /^[ㄱ-ㅎ]+$/.test(str);
+
             // 검색어 필터 (#태그 or 이름)
             if (searchTerm.startsWith("#")) {
                 if (!game.tags) return false;
 
                 // [Improved] 태그 검색 로직 강화
-                // 1. # 제거 후 검색 (유연성 확보)
-                // 2. 문자열/배열 모두 지원
                 const searchKeyword = searchTerm.replace(/^#/, '');
+                const normalizedTagSearch = normalize(searchKeyword);
 
                 let tags = [];
                 if (Array.isArray(game.tags)) {
@@ -57,15 +77,46 @@ export const useGameFilter = (games, filters) => {
                     tags = game.tags.split(/\s+/).filter(Boolean);
                 }
 
-                // 태그 중 하나라도 키워드를 포함하면 매칭
-                return tags.some(tag => tag.replace(/^#/, '').includes(searchKeyword));
+                // 태그 중 하나라도 키워드를 포함하면 매칭 (공백 무시 적용)
+                return tags.some(tag => {
+                    const normalizedTag = normalize(tag.replace(/^#/, ''));
+                    if (normalizedTag.includes(normalizedTagSearch)) return true;
+                    if (isPureChoseong(normalizedTagSearch)) {
+                        return getChoseong(normalizedTag).includes(normalizedTagSearch);
+                    }
+                    return false;
+                });
             } else {
-                if (searchTerm && !game.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+                if (searchTerm) {
+                    // 1. 일반 검색 (공백 무시)
+                    if (normalizedGameName.includes(normalizedSearch)) return true;
+
+                    // 2. 한글 초성 검색 (검색어가 순수 초성으로만 이루어진 경우만!)
+                    if (isPureChoseong(normalizedSearch)) {
+                        const gameChoseong = getChoseong(normalizedGameName);
+                        if (gameChoseong.includes(normalizedSearch)) return true;
+                    }
+
+                    return false;
+                }
             }
 
-            // [Admin 전용] 대여자 필터
+            // [Admin 전용] 대여자 필터 (개선 적용)
             if (renterFilter) {
-                if (!game.renter || !game.renter.includes(renterFilter)) return false;
+                if (!game.renter) return false;
+                const normalizedRenterSearch = normalize(renterFilter);
+                const normalizedRenterName = normalize(game.renter);
+
+                // 일반 검색
+                if (normalizedRenterName.includes(normalizedRenterSearch)) return true;
+
+                // 초성 검색 (순수 초성일 때만)
+                if (isPureChoseong(normalizedRenterSearch)) {
+                    const renterChoseong = getChoseong(normalizedRenterName);
+                    if (renterChoseong.includes(normalizedRenterSearch)) return true;
+                }
+
+                return false;
             }
 
             // 카테고리 필터

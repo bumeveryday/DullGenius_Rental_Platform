@@ -13,8 +13,8 @@ export const STATUS = {
   MAINTENANCE: { ko: '수리중', en: 'MAINTENANCE', color: '#95a5a6' },
   // [NEW] 호환성 및 V2 상태값
   RESERVED_V2: { ko: '예약됨', en: 'RESERVED', color: '#f1c40f' },
-  RENTED_V2: { ko: '이용 중', en: 'RENTED', color: '#e74c3c' },     // 대여 중 (Red)
-  RENTED_NO_STOCK: { ko: '대여 중', en: 'RENTED', color: '#e74c3c' } // 재고 없음 (Red)
+  RENTED_V2: { ko: '대여중', en: 'RENTED', color: '#e74c3c' },      // 대여중 (Red)
+  RENTED_NO_STOCK: { ko: '대여중', en: 'RENTED', color: '#e74c3c' } // 재고 없음 (Red)
 };
 
 // [NEW] 기본 학기 설정 (시스템 전반에서 fallback으로 사용)

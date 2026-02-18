@@ -54,13 +54,18 @@ function GameDetail() {
       // 1. 캐시/API로 게임 정보 찾기
       if (!targetGame) {
         setLoading(true);
-        const cachedGames = localStorage.getItem('games_cache');
-        if (cachedGames) {
-          const games = JSON.parse(cachedGames);
-          const found = games.find(g => String(g.id) === String(id));
-          if (found) {
-            targetGame = found;
-            setGame(found);
+        const cached = localStorage.getItem('games_cache');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            const gamesList = parsed.data || (Array.isArray(parsed) ? parsed : []);
+            const found = gamesList.find(g => String(g.id) === String(id));
+            if (found) {
+              targetGame = found;
+              setGame(found);
+            }
+          } catch (e) {
+            console.warn('캐시 로드 실패:', e);
           }
         }
 
@@ -100,8 +105,8 @@ function GameDetail() {
           if (myRental) {
             setGame(prev => ({
               ...prev,
-              status: myRental.type === 'DIBS' ? "예약됨" : "이용중",
-              renterId: user.id // [FIX] 자신의 찜임을 명시
+              status: myRental.type === 'DIBS' ? "예약됨" : "대여중",
+              renterId: user.id
             }));
           }
         }
@@ -330,7 +335,7 @@ function GameDetail() {
             <button onClick={handleCancelDibs} style={{ width: "100%", padding: "15px", background: "#e74c3c", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight: "bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(231, 76, 60, 0.3)" }}>
               ❌ 예약 취소
             </button>
-          ) : game.status === "예약됨" || game.status === "찜" || game.status === "이용중" ? (
+          ) : game.status === "예약됨" || game.status === "찜" || game.status === "대여중" || game.status === "이용중" ? (
             <button disabled style={{ width: "100%", padding: "15px", background: "#2ecc71", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight: "bold", cursor: "not-allowed", opacity: 0.8 }}>
               ✅ 이미 이용 중인 게임입니다
             </button>

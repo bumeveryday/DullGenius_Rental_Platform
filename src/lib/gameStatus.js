@@ -19,61 +19,62 @@ export const calculateGameStatus = (game, gameRentals) => {
     let renterId = null;
     let dueDate = null;
 
-    // 3. 우선순위: 예약(찜) > 대여(Rent)
+    // 3. 상태 결정 정책 (UX 개선: 재고가 있으면 무조건 '대여가능' 우선)
     const activeDibs = gameRentals.filter(r => r.type === 'DIBS');
     const activeRents = gameRentals.filter(r => r.type === 'RENT');
 
-    // [INTEGRITY CHECK] 데이터 불일치 감지
-    // (대여 중 + 대여 가능 > 총 수량)인 경우, 시스템 상 재고가 꼬인 상태임.
-    // 사용자 요청: 이 경우 '대여 중'으로 간주.
-    const isOverStock = (activeRents.length + realAvailableCount > game.quantity);
+    // [Step A] 정보 추출 (상태와 무관하게 대여자 정보를 모두 수집)
+    // 모든 예약자 + 대여자 이름을 합침 (중복 제거 필요 시 추가 가능)
+    const allRenterNames = [
+        ...activeDibs.map(r => r.renter_name || r.profiles?.name),
+        ...activeRents.map(r => r.renter_name || r.profiles?.name)
+    ].filter(Boolean);
 
+    renter = allRenterNames.join(', ');
 
+    // 대표 대여자 ID (상세보기용, 찜 우선)
+    const representative = activeDibs[0] || activeRents[0];
+    renterId = representative?.user_id;
 
-    if (activeDibs.length > 0) {
-        // [CASE 1] 예약됨 (찜)
+    // 반납 예정일 추출 (가장 빠른 날짜)
+    const allDueDates = [...activeDibs, ...activeRents]
+        .filter(r => r.due_date)
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+
+    if (allDueDates.length > 0) {
+        dueDate = allDueDates[0].due_date;
+    }
+
+    // [Step B] 최종 상태(Status) 결정
+    let adminStatus = '대여가능';
+
+    // 1. 이용자(User)용 상태: 재고 우선
+    if (realAvailableCount > 0) {
+        status = '대여가능';
+    } else if (activeDibs.length > 0) {
         status = '예약됨';
-        // 가장 최근 예약 찾기
-        const latestDibs = activeDibs.sort((a, b) =>
-            new Date(b.borrowed_at) - new Date(a.borrowed_at)
-        )[0];
+    } else {
+        status = '대여중';
+    }
 
-        renter = latestDibs.renter_name || latestDibs.profiles?.name;
-        renterId = latestDibs.user_id;
-        dueDate = latestDibs.due_date;
-
+    // 2. 관리자(Admin)용 상태: 조치(예약/대여) 우선
+    if (activeDibs.length > 0) {
+        adminStatus = '예약됨';
     } else if (activeRents.length > 0) {
-        // [CASE 2] 대여 중 (Rent)
-        // [USER REQUEST] 대여 중인 건이 하나라도 있으면 '대여 중'으로 표시 (다중 카피 여부 무관)
-        status = '대여 중';
-
-        // 대여자 목록 (콤마로 구분)
-        const renters = activeRents.map(r => r.renter_name || r.profiles?.name).filter(Boolean);
-        renter = renters.join(', ');
-        renterId = activeRents[0].user_id; // 대표 1인 ID (상세정보용)
-
-        // 반납 예정일 (가장 빠른 날짜)
-        if (activeRents.some(r => r.due_date)) {
-            const sortedByDueDate = activeRents
-                .filter(r => r.due_date)
-                .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
-            if (sortedByDueDate.length > 0) {
-                dueDate = sortedByDueDate[0].due_date;
-            }
-        }
-
-    } else if (realAvailableCount <= 0) {
-        // [CASE 3] 재고 없음 (대여 기록은 없으나 수량이 0)
-        status = '대여 중'; // 사실상 품절/분실
+        adminStatus = '대여중';
+    } else if (realAvailableCount === 0) {
+        adminStatus = '대여중'; // 재고 0이면 사실상 대여중(품절)
+    } else {
+        adminStatus = '대여가능';
     }
 
     return {
         status,
+        adminStatus, // [NEW] 관리자 전용 상태
         available_count: realAvailableCount,
         renter,
         renterId,
-        due_date: dueDate,
-        active_rental_count: gameRentals.length,
+        dueDate,
         rentals: gameRentals
     };
 };

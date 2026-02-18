@@ -99,6 +99,21 @@ function DashboardTab({ games, loading, onReload }) {
     return () => clearTimeout(timer);
   }, [inputValue]);
 
+  /**
+   * [HELPER] Get Effective Rental ID
+   * @param {Object} game - The game object
+   * @param {string|null} rentalId - Provided rentalId (optional)
+   * @returns {string|null} - The detected rentalId if unique (INTERNAL USE ONLY)
+   */
+  const getEffectiveRentalId = (game, rentalId) => {
+    // rentalId가 명시적으로 있으면 최우선 (드롭다운/개별 버튼 선택 시)
+    if (rentalId) return rentalId;
+
+    // rentalId가 없고, 이 게임을 빌린 사람이 단 1명뿐일 때만 자동 지정
+    if (game.rentals?.length === 1) return game.rentals[0].rental_id;
+    return null;
+  };
+
   // --- 필터링 로직 (App.js에서 가져옴 + 대여자 필터 추가) ---
   // [개선] Custom Hook 사용
   const filteredGames = useGameFilter(games, {
@@ -282,7 +297,7 @@ function DashboardTab({ games, loading, onReload }) {
 
   // 4. 스마트 반납 (일괄 처리 로직)
   const handleReturn = async (game, rentalId) => {
-    // [1] 특정 rentalId가 주어지면 즉시 그 건만 처리 (개별 반납 버튼 클릭 시)
+    // [MOD] 특정 rentalId가 '명시적'으로 전달된 경우 (드롭다운 개별 버튼 클릭) 즉시 처리
     if (rentalId) {
       const targetRental = game.rentals?.find(r => r.rental_id === rentalId);
       const renterName = targetRental?.renter_name || targetRental?.profiles?.name || "알 수 없음";
@@ -291,40 +306,67 @@ function DashboardTab({ games, loading, onReload }) {
         "반납 확인",
         `[${game.name}] ${renterName}님의 대여 건을 반납 처리하시겠습니까?`,
         async () => {
-          await returnGamesByRenter(null, null, null, rentalId);
-          showToast("반납되었습니다.", { type: "success" });
-          onReload();
+          const res = await returnGamesByRenter(null, null, null, rentalId);
+          if (res.status === "success" && res.count > 0) {
+            showToast("반납되었습니다.", { type: "success" });
+            onReload();
+          } else {
+            showToast(`❌ 반납 처리 실패: ${res.message || '매칭되는 대여 기록이 없거나 DB 오류'}`, { type: "error" });
+          }
         }
       );
       return;
     }
 
-    // [2] Bulk 로직 (카드 하단 버튼 등에서 호출)
+    // [MOD] 메인 카드 버튼 클릭 시: 해당 대여자가 빌린 전체 게임 수를 먼저 파악
     const renterName = game.renter; // 예: "A, B" or "A"
-
-    // 전체 반납 대상 확인 (이름이 여러 개면 첫 번째 사람 기준?)
-    // 사실 다중 카피 상황에서는 리스트의 개별 버튼을 쓰는 것이 권장됨
     const firstRenter = renterName?.split(',')[0].trim();
     if (!firstRenter) return;
 
-    const sameUserRentals = games.filter(g => (g.status === "이용 중" || g.status === "대여중") && g.renter && g.renter.includes(firstRenter));
-    const count = sameUserRentals.length;
+    // [FIX] 모든 게임을 뒤져서 이 사람이 빌린 '전체' 건수 합산 (일괄 처리 여부 결정의 근거)
+    const totalUserRentals = games.reduce((acc, g) => {
+      const userRentals = g.rentals?.filter(r =>
+        r.type === 'RENT' &&
+        !r.returned_at &&
+        (r.renter_name === firstRenter || r.profiles?.name === firstRenter)
+      ) || [];
+      return acc + userRentals.length;
+    }, 0);
 
-    showConfirmModal(
-      "일괄 반납 확인",
-      `💡 [${firstRenter}] 님이 빌려간 게임이 총 ${count}개입니다.\n(다른 게임 포함)\n\n모두 한꺼번에 '반납' 처리하시겠습니까?`,
-      async () => {
-        await returnGamesByRenter(firstRenter);
-        showToast(`${count}건이 일괄 반납되었습니다.`, { type: "success" });
-        onReload();
-      },
-      "warning"
-    );
+    // 단일 건(이 게임 1통뿐)인 경우 -> 바로 반납 컨펌
+    if (totalUserRentals <= 1) {
+      const finalRentalId = game.rentals?.[0]?.rental_id;
+      showConfirmModal(
+        "반납 확인",
+        `[${game.name}] ${firstRenter}님의 대여 건을 반납 처리하시겠습니까?`,
+        async () => {
+          const res = await returnGamesByRenter(null, null, null, finalRentalId);
+          if (res.status === "success" && res.count > 0) {
+            showToast("반납되었습니다.", { type: "success" });
+            onReload();
+          } else {
+            showToast(`❌ 반납 실패`, { type: "error" });
+          }
+        }
+      );
+    } else {
+      // 여러 개 빌린 경우 -> 일괄 반납 유도
+      showConfirmModal(
+        "일괄 반납 확인",
+        `💡 [${firstRenter}] 님이 빌려간 게임이 총 ${totalUserRentals}개입니다.\n(다른 게임 포함)\n\n모두 한꺼번에 '반납' 처리하시겠습니까?`,
+        async () => {
+          await returnGamesByRenter(firstRenter);
+          showToast(`${totalUserRentals}건이 일괄 반납되었습니다.`, { type: "success" });
+          onReload();
+        },
+        "warning"
+      );
+    }
   };
 
   // 5. [개선] 스마트 수령 (일괄 찜 처리 로직 + 동명이인 처리)
   const handleReceive = async (game, rentalId) => {
-    // [1] 특정 rentalId가 주어지면 즉시 처리 (개별 수령 버튼)
+    // [MOD] 특정 rentalId가 '명시적'으로 전달된 경우 (드롭다운 개별 버튼 클릭) 즉시 처리
     if (rentalId) {
       const targetRental = game.rentals?.find(r => r.rental_id === rentalId);
       const renterName = targetRental?.renter_name || targetRental?.profiles?.name || "관리자";
@@ -334,11 +376,15 @@ function DashboardTab({ games, loading, onReload }) {
         "수령 확인",
         `[${game.name}] ${renterName}님의 수령을 확인하시겠습니까?`,
         async () => {
-          const res = await adminUpdateGame(game.id, "대여중", renterName, userId, rentalId);
-          if (res.status === "success") {
-            showToast("수령 처리되었습니다.", { type: "success" });
-            localStorage.removeItem('games_cache');
-            onReload();
+          try {
+            const res = await adminUpdateGame(game.id, "대여중", renterName, userId, rentalId);
+            if (res.status === "success") {
+              showToast("수령 처리되었습니다.", { type: "success" });
+              localStorage.removeItem('games_cache');
+              onReload();
+            }
+          } catch (e) {
+            showToast(`❌ 수령 처리 실패: ${e.message || '매칭되는 찜 기록이 없거나 DB 오류'}`, { type: "error" });
           }
         }
       );
@@ -346,92 +392,70 @@ function DashboardTab({ games, loading, onReload }) {
     }
 
     // [2] Bulk 로직
-    const renterName = game.renter?.split(',')[0].trim();
-    if (!renterName) return;
+    const renterNameInput = game.renter?.split(',')[0].trim();
+    if (!renterNameInput) return;
 
-    const sameUserDibs = games.filter(g => (g.status === "예약됨" || g.status === "찜") && g.renter && g.renter.includes(renterName));
-    const count = sameUserDibs.length;
+    // [FIX] 모든 게임을 뒤져서 이 사람이 예약한 '전체' 건수 합산
+    const totalUserDibs = games.reduce((acc, g) => {
+      const userDibs = g.rentals?.filter(r =>
+        r.type === 'DIBS' &&
+        !r.returned_at &&
+        (r.renter_name === renterNameInput || r.profiles?.name === renterNameInput)
+      ) || [];
+      return acc + userDibs.length;
+    }, 0);
 
     // [개선] 동명이인 처리
-    let userId = game.renterId; // 먼저 game에서 가져오기
-
-    // renterId가 없으면 (수기 예약) 이름으로 검색
+    let userId = game.renterId;
     if (!userId) {
-      const candidates = findMatchingUsers(renterName);
-
-      // [경우 1] 2명 이상 동명이인 -> 선택 모달
+      const candidates = findMatchingUsers(renterNameInput);
       if (candidates.length > 1) {
         setUserSelectModal({
           isOpen: true,
           candidates: candidates,
           game: game,
-          renterNameInput: renterName,
-          actionType: 'receive' // [새로운 필드] 수령인지 대여인지 구분
+          renterNameInput: renterNameInput,
+          actionType: 'receive'
         });
         return;
       }
-
-      // [경우 2] 1명 매칭 -> 자동 선택
-      if (candidates.length === 1) {
-        userId = candidates[0].id;
-      }
-
-      // [경우 3] 0명 -> userId = null (비회원 수기)
+      if (candidates.length === 1) userId = candidates[0].id;
     }
 
     // 단일 수령 처리
-    if (count <= 1) {
+    if (totalUserDibs <= 1) {
+      const finalRentalId = game.rentals?.[0]?.rental_id;
       showConfirmModal(
         "수령 확인",
         `[${game.name}] 현장 수령 확인하시겠습니까?`,
         async () => {
-          const res = await approveDibsByRenter(renterName, userId);
-
-          // [개선] 상세한 피드백
-          if (res.count > 0) {
-            showToast(`${res.message}`, { type: "success" });
-            // [FIX] 캐시 무효화 + 강제 새로고침
+          const res = await adminUpdateGame(game.id, "대여중", renterNameInput, userId, finalRentalId);
+          if (res.status === "success") {
+            showToast("수령 완료", { type: "success" });
             localStorage.removeItem('games_cache');
-            await onReload();
-          } else if (res.total === 0) {
-            showToast("⚠️ 처리할 찜이 없습니다. (이미 수령되었거나 만료됨)", { type: "warning" });
+            onReload();
+          }
+        },
+        "info"
+      );
+    } else {
+      // 일괄 수령 처리
+      showConfirmModal(
+        "일괄 수령 확인",
+        `💡 [${renterNameInput}] 님이 예약한 게임이 총 ${totalUserDibs}개입니다.\n\n모두 한꺼번에 '대여중'으로 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 처리합니다)`,
+        async () => {
+          const res = await approveDibsByRenter(renterNameInput, userId);
+          if (res.count > 0) {
+            showToast(`${res.count}건 일괄 수령 완료!`, { type: "success" });
+            localStorage.removeItem('games_cache');
             onReload();
           } else {
-            showToast(`❌ 처리 실패: ${res.failedGames?.[0]?.error || '알 수 없는 오류'}`, { type: "error" });
-            onReload();
+            showToast(`❌ 처리 실패`, { type: "error" });
           }
-        }
+        },
+        "info"
       );
-      return;
     }
-
-    // 일괄 수령 처리
-    showConfirmModal(
-      "일괄 수령 처리",
-      `💡 [${renterName}] 님이 예약한 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '대여중'으로 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 처리합니다)`,
-      async () => {
-        const res = await approveDibsByRenter(renterName, userId);
-
-        // [개선] 상세한 피드백
-        if (res.count > 0) {
-          showToast(`${res.message}`, { type: "success" });
-
-          // 실패한 게임이 있으면 추가 알림
-          if (res.failed > 0 && res.failedGames && res.failedGames.length > 0) {
-            const failedList = res.failedGames.map(f => `${f.gameName} (${f.error})`).join(', ');
-            showToast(`⚠️ 실패 목록: ${failedList}`, { type: "warning", duration: 8000 });
-          }
-
-          // [FIX] 캐시 무효화 + 강제 새로고침
-          localStorage.removeItem('games_cache');
-          await onReload();
-        } else {
-          showToast("❌ 모든 처리가 실패했습니다.", { type: "error" });
-          onReload();
-        }
-      },
-      "warning"
-    );
   };
 
   const handleDelete = async (game) => {
@@ -500,9 +524,18 @@ function DashboardTab({ games, loading, onReload }) {
               <div style={{ flex: 1, minWidth: "200px" }}>
                 <div style={{ fontWeight: "bold", fontSize: "1.05em" }}>
                   {game.name}
-                  <span style={{ ...styles.statusBadge, background: getStatusColor(game.status) }}>
-                    {game.status}
+                  {/* [MOD] 관리자 화면에서는 adminStatus(예약>대여)를 배지로 표시 */}
+                  <span style={{ ...styles.statusBadge, background: getStatusColor(game.adminStatus) }}>
+                    {game.adminStatus}
                   </span>
+
+                  {/* [RESTORED] 대여자 이름 표시 (단일 대여 시 가시성 확보) */}
+                  {game.renter && (
+                    <span style={{ marginLeft: "10px", color: "var(--admin-primary)", fontSize: "0.9em" }}>
+                      👤 {game.renter}
+                    </span>
+                  )}
+
                   {/* [NEW] 다중 카피 정보 표시 */}
                   {game.quantity >= 2 && (
                     <span style={{ marginLeft: "8px", fontSize: "0.85em", color: "var(--admin-text-sub)", fontWeight: "normal" }}>
@@ -523,11 +556,14 @@ function DashboardTab({ games, loading, onReload }) {
                 </div>
 
                 {/* [NEW] 품질 개선: 개별 대여 인스턴스 리스트 (Component Extracted) */}
-                <RentalInstanceList
-                  game={game}
-                  onReturn={handleReturn}
-                  onReceive={handleReceive}
-                />
+                {/* [MOD] 2인 이상 빌려간 경우에만 개별 블록 노출 / 1명일 때는 메인 버튼에서 처리 */}
+                {game.rentals?.length > 1 && (
+                  <RentalInstanceList
+                    game={game}
+                    onReturn={handleReturn}
+                    onReceive={handleReceive}
+                  />
+                )}
               </div>
 
               {/* 상태별 버튼 로직 [IMPROVED] */}
@@ -539,7 +575,9 @@ function DashboardTab({ games, loading, onReload }) {
                 {/* 1. 수령/취소 (예약이 있는 경우) */}
                 {((game.rentals && game.rentals.some(r => r.type === 'DIBS')) || game.status === '예약됨') && (
                   <>
-                    <button onClick={() => handleReceive(game)} style={actionBtnStyle("#2980b9")} title="해당 사용자의 모든 예약 일괄 수령">🤝 일괄수령</button>
+                    <button onClick={() => handleReceive(game)} style={actionBtnStyle("#2980b9")} title="해당 사용자의 모든 예약 수령">
+                      {game.rentals?.filter(r => r.type === 'DIBS').length > 1 ? "🤝 일괄수령" : "🤝 수령"}
+                    </button>
                     <button onClick={() => handleStatusChange(game.id, "대여가능", game.name)} style={actionBtnStyle("#c0392b")}>🚫 취소</button>
                   </>
                 )}
@@ -548,7 +586,9 @@ function DashboardTab({ games, loading, onReload }) {
                 {(!game.rentals || !game.rentals.some(r => r.type === 'DIBS')) &&
                   ((game.rentals && game.rentals.some(r => r.type === 'RENT' && !r.returned_at)) || game.active_rental_count > 0) && (
                     <>
-                      <button onClick={() => handleReturn(game)} style={actionBtnStyle("#27ae60")} title="해당 사용자의 모든 대여 일괄 반납">↩️ 일괄반납</button>
+                      <button onClick={() => handleReturn(game)} style={actionBtnStyle("#27ae60")} title="해당 사용자의 모든 대여 반납">
+                        {game.rentals?.filter(r => r.type === 'RENT' && !r.returned_at).length > 1 ? "↩️ 일괄반납" : "↩️ 반납"}
+                      </button>
                       <button onClick={() => handleStatusChange(game.id, "분실", game.name)} style={actionBtnStyle("#7f8c8d")}>⚠️ 분실</button>
                     </>
                   )}

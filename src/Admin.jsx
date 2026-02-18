@@ -63,14 +63,14 @@ function Admin() {
         return; // 에러 시 중단
       }
 
-      // 정렬 로직 (우선순위: 예약됨 > 이용 중 > 대여 중 > 대여가능 > 분실)
-      // [FIX] 반납/수령 처리를 위해 '예약됨(찜)', '이용 중(대여)'을 상위로 이동
-      const priority = { "예약됨": 1, "이용 중": 2, "대여 중": 3, "대여가능": 4, "분실": 5, "수리중": 6 };
+      // 정렬 로직 (우선순위: 예약됨 > 대여중 > 대여가능 > 분실)
+      // [FIX] 반납/수령 처리를 위해 '예약됨(찜)', '대여중'을 상위로 이동
+      const priority = { "예약됨": 1, "대여중": 2, "대여가능": 3, "분실": 4, "수리중": 5 };
 
       const sortedGames = validGames.sort((a, b) => {
-        // 1. 상태 우선순위 비교
-        const priorityA = priority[a.status] || 99;
-        const priorityB = priority[b.status] || 99;
+        // 1. 상태 우선순위 비교 (관리자용 adminStatus 기준)
+        const priorityA = priority[a.adminStatus] || 99;
+        const priorityB = priority[b.adminStatus] || 99;
         if (priorityA !== priorityB) return priorityA - priorityB;
 
         // 2. 같은 상태면 이름순 정렬
