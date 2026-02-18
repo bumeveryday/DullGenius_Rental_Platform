@@ -3,7 +3,13 @@ import { supabase } from './lib/supabaseClient';
 import { statusToKorean, koreanToStatus } from './constants'; // [NEW] STATUS enum 헬퍼 함수
 import { calculateGameStatus } from './lib/gameStatus';
 
-// 1. 전체 게임 목록 가져오기 (V2 - Application-Side Join)
+/**
+ * 전체 게임 목록을 가져옵니다.
+ * 이 함수는 Application-Side Join을 사용하여 게임 정보, 대여 기록, 프로필 정보를 병합합니다.
+ * 
+ * @returns {Promise<Array>} 병합된 게임 정보 배열
+ * @throws {Error} Supabase 조회 중 발생한 에러
+ */
 export const fetchGames = async () => {
 
   try {
@@ -69,7 +75,14 @@ export const fetchGames = async () => {
   }
 };
 
-// 2. 찜하기/대여하기 (RPC)
+/**
+ * 게임을 즉시 대여 처리합니다. (회원 전용)
+ * 
+ * @param {number} gameId - 게임 ID
+ * @param {string} userId - 사용자 UUID
+ * @returns {Promise<Object>} RPC 결과 객체
+ * @throws {Error} RPC 실행 중 발생한 에러
+ */
 export const rentGame = async (gameId, userId) => {
   const { data, error } = await supabase.rpc('rent_game', {
     p_game_id: gameId,
@@ -80,7 +93,14 @@ export const rentGame = async (gameId, userId) => {
   return data;
 };
 
-// 5. 찜하기 (V2)
+/**
+ * 게임을 찜(예약) 처리합니다.
+ * 
+ * @param {number} gameId - 게임 ID
+ * @param {string} userId - 사용자 UUID
+ * @returns {Promise<Object>} RPC 결과 객체
+ * @throws {Error} RPC 실행 중 발생한 에러
+ */
 export const dibsGame = async (gameId, userId) => {
   const { data, error } = await supabase.rpc('dibs_game', {
     p_game_id: gameId,
@@ -90,7 +110,14 @@ export const dibsGame = async (gameId, userId) => {
   return data;
 };
 
-// 6. 찜 취소 (V2)
+/**
+ * 찜(예약)을 취소합니다.
+ * 
+ * @param {number} gameId - 게임 ID
+ * @param {string} userId - 사용자 UUID
+ * @returns {Promise<Object>} RPC 결과 객체
+ * @throws {Error} RPC 실행 중 발생한 에러
+ */
 export const cancelDibsGame = async (gameId, userId) => {
   const { data, error } = await supabase.rpc('cancel_dibs', {
     p_game_id: gameId,
@@ -100,7 +127,12 @@ export const cancelDibsGame = async (gameId, userId) => {
   return data;
 };
 
-// 7. 리뷰 목록 가져오기
+/**
+ * 특정 게임의 리뷰 목록을 가져오며, 중복된 리뷰를 필터링합니다.
+ * 
+ * @param {number} [gameId] - 필터링할 게임 ID (없으면 전체 조회)
+ * @returns {Promise<Array>} 중복 제거된 리뷰 배열
+ */
 export const fetchReviews = async (gameId) => {
   // author_name이 reviews 테이블에 있으므로 그냥 가져오면 됨
   let query = supabase
@@ -136,7 +168,13 @@ export const fetchReviews = async (gameId) => {
   return uniqueReviews;
 };
 
-// 7. 리뷰 작성하기
+/**
+ * 새로운 리뷰를 작성합니다. (로그인 필수)
+ * 
+ * @param {Object} reviewData - 리뷰 데이터 { game_id, rating, comment, user_name }
+ * @returns {Promise<Object>} 작성된 리뷰 데이터
+ * @throws {Error} 로그인되지 않았거나 작성 실패 시
+ */
 export const addReview = async (reviewData) => {
   // reviewData: { game_id, rating, comment, user_name }
   // user_id는 Auth Policy가 처리하거나, 명시적으로 보내야 함. RLS에서 auth.uid()=user_id 체크하므로,
@@ -170,8 +208,13 @@ export const addReview = async (reviewData) => {
   return data;
 };
 
-// 8. 리뷰 삭제하기
-export const deleteReview = async (reviewId, password) => {
+/**
+ * 리뷰를 삭제합니다. (RLS에 의해 본인 또는 관리자만 가능)
+ * 
+ * @param {string} reviewId - 리뷰 ID (UUID)
+ * @returns {Promise<Object>} 성공 여부 객체 { status: "success" | "error" }
+ */
+export const deleteReview = async (reviewId) => {
   // password 검증 로직 제거 (Supabase Auth가 본인 확인)
   // 본인 글이면 삭제 가능 (RLS)
 
@@ -184,12 +227,21 @@ export const deleteReview = async (reviewId, password) => {
   return { status: "success" };
 };
 
-// 10. 조회수 증가
+/**
+ * 게임의 조회수를 1 증가시킵니다.
+ * 
+ * @param {number} gameId - 게임 ID
+ */
 export const increaseViewCount = async (gameId) => {
   await supabase.rpc('increment_view_count', { p_game_id: gameId });
 };
 
-// 11. 급상승 게임
+/**
+ * 급상승 게임(최근 7일 집계) 목록을 가져옵니다.
+ * RPC가 실패할 경우 전체 조회수 기준의 Fallback을 제공합니다.
+ * 
+ * @returns {Promise<Array>} 트렌딩 게임 배열
+ */
 export const fetchTrending = async () => {
   try {
     // [FIX] 최근 7일 집계 로직이 반영된 RPC 호출
@@ -378,7 +430,11 @@ export const saveConfig = async (newConfig) => {
   return { status: "success" };
 };
 
-// [Admin] 유저 목록 조회 - 역할 정보 포함 (안전한 Join 복구)
+/**
+ * 전체 사용자 목록을 가져오며, 각 사용자의 역할(관리자, 집행부 등) 정보를 병합합니다.
+ * 
+ * @returns {Promise<Array>} 역할 정보가 포함된 프로필 배열
+ */
 export const fetchUsers = async () => {
   // 1. 프로필 조회
   const { data: profiles, error: profileError } = await supabase
@@ -419,7 +475,12 @@ export const fetchUsers = async () => {
   }));
 };
 
-// [Admin] 게임 수정 (단순 정보 업데이트)
+/**
+ * 게임의 기본 정보(이름, 카테고리, 태그 등)를 수정합니다.
+ * 
+ * @param {Object} gameData - 수정할 게임 데이터 (game_id 필수)
+ * @throws {Error} DB 업데이트 실패 시
+ */
 export const editGame = async (gameData) => {
   const { error } = await supabase
     .from('games')
@@ -438,9 +499,19 @@ export const editGame = async (gameData) => {
   if (error) throw error;
 };
 
-// [Updated] 트랜잭션 RPC를 사용하는 안전한 관리자 상태 변경
-// 관리자: 게임 상태 변경 (V2 - game_id 기반)
-export const adminUpdateGame = async (gameId, newStatus, renterName, userId) => {
+/**
+ * 관리자용 게임 상태 변경 함수입니다. (RPC 연동)
+ * '대여중'(RENTED) 또는 '대여가능'(AVAILABLE) 상태로 강제 전환합니다.
+ * 
+ * @param {number} gameId - 게임 ID
+ * @param {string} newStatus - 변경할 한국어 상태명
+ * @param {string} [renterName] - 대여자 이름 (수기 입력/비회원용)
+ * @param {string} [userId] - 대여자 UUID (회원용)
+ * @param {string} [rentalId] - 특정 대여 기록 UUID (정밀 타겟팅용)
+ * @returns {Promise<Object>} 성공 여부 객체
+ * @throws {Error} RPC 오류 또는 처리 실패 시
+ */
+export const adminUpdateGame = async (gameId, newStatus, renterName, userId, rentalId) => {
   const statusKey = koreanToStatus(newStatus) || 'AVAILABLE';
 
   try {
@@ -449,7 +520,8 @@ export const adminUpdateGame = async (gameId, newStatus, renterName, userId) => 
       const { data, error } = await supabase.rpc('admin_rent_game', {
         p_game_id: gameId,
         p_renter_name: renterName || (userId ? "회원" : "관리자"),
-        p_user_id: userId || null
+        p_user_id: userId || null,
+        p_rental_id: rentalId
       });
       if (error) throw error;
       if (!data.success) throw new Error(data.message);
@@ -460,7 +532,8 @@ export const adminUpdateGame = async (gameId, newStatus, renterName, userId) => 
       const { data, error } = await supabase.rpc('admin_return_game', {
         p_game_id: gameId,
         p_renter_name: renterName,
-        p_user_id: userId
+        p_user_id: userId,
+        p_rental_id: rentalId
       });
       if (error) throw error;
       if (!data.success) throw new Error(data.message);
@@ -481,77 +554,80 @@ export const adminUpdateGame = async (gameId, newStatus, renterName, userId) => 
 // [Deleted] adminRentSpecificCopy (Legacy)
 // [Deleted] adminReturnSpecificCopy (Legacy)
 
-// [Admin] 특정 대여자 일괄 반납
-export const returnGamesByRenter = async (renterName) => {
+/**
+ * 특정 대여자의 대여 건들을 일괄 반납 처리합니다.
+ * targetRentalId가 제공되면 해당 건만 처리합니다.
+ * 
+ * @param {string} [renterName] - 대여자 이름
+ * @param {string} [targetUserId] - 대상 사용자 UUID
+ * @param {number} [targetGameId] - 대상 게임 ID
+ * @param {string} [targetRentalId] - 특정 대여 기록 UUID
+ * @returns {Promise<Object>} 처리 결과 { status, count }
+ */
+export const returnGamesByRenter = async (renterName, targetUserId, targetGameId, targetRentalId) => {
+  // targetGameId나 targetRentalId가 있으면 해당 건만, 없으면 해당 대여자의 모든 대여 건 반납
   let activeRentals = [];
 
-  // 1. 회원 ID로 조회
-  const { data: users } = await supabase.from('profiles').select('id').eq('name', renterName);
-
-  if (users && users.length > 0) {
-    const userId = users[0].id;
-    const { data } = await supabase
-      .from('rentals')
-      .select('rental_id, game_id, games(name)') // [FIX] game_copies 제거, games(name) 조인
-      .eq('user_id', userId)
-      .eq('type', 'RENT')
-      .is('returned_at', null);
-
-    if (data) activeRentals = [...data];
-  }
-
-  // 2. 수기 대여 조회 (이름 일치, 비회원)
-  const { data: manualRentals } = await supabase
+  // 1. 회원 ID 또는 게임 ID로 조회 범위 설정
+  const { data, error } = await supabase
     .from('rentals')
-    .select('rental_id, game_id, games(name)') // [FIX]
-    .eq('renter_name', renterName)
-    .eq('type', 'RENT')
-    .is('returned_at', null);
+    .select('rental_id, game_id, user_id, renter_name')
+    .is('returned_at', null)
+    .eq('type', 'RENT');
 
-  if (manualRentals) {
-    activeRentals = [...activeRentals, ...manualRentals];
+  if (error) {
+    console.error("대여 목록 조회 실패:", error);
+    return { status: "error", message: error.message };
   }
 
-  // 3. 중복 제거
-  const uniqueRentals = [];
-  const seenIds = new Set();
-  for (const r of activeRentals) {
-    if (!seenIds.has(r.rental_id)) {
-      seenIds.add(r.rental_id);
-      uniqueRentals.push(r);
-    }
-  }
+  // 필터링: 특정 게임 + 특정 유저(또는 이름) 매칭
+  activeRentals = data.filter(r => {
+    const isRentalMatch = targetRentalId ? r.rental_id === targetRentalId : true;
+    const isGameMatch = targetGameId ? r.game_id === targetGameId : true;
+    const isUserMatch = targetUserId ? r.user_id === targetUserId : (renterName ? r.renter_name === renterName : true);
+    return isRentalMatch && isGameMatch && isUserMatch;
+  });
 
-  // 4. 일괄 반납 처리 (RPC 사용)
+  // 4. 반납 처리 (RPC 사용)
   let successCount = 0;
-  if (uniqueRentals.length > 0) {
-    for (const rental of uniqueRentals) {
+  if (activeRentals.length > 0) {
+    for (const rental of activeRentals) {
       try {
-        const gameId = rental.game_id; // [FIX] 직접 game_id 사용
-        if (!gameId) {
-          console.error("Game ID missing for return:", rental);
-          continue;
-        }
+        const gameId = rental.game_id;
+        const userId = rental.user_id;
+        const renter = rental.renter_name;
+        const rentalId = rental.rental_id;
 
-        // [RPC] 관리자 반납 (v2 함수는 game_id 기반)
-        const { data, error } = await supabase.rpc('admin_return_game', { p_game_id: gameId });
+        // [RPC] 관리자 반납 (v2 함수는 game_id, renter_name, user_id 기반)
+        const { data: rpcData, error: rpcError } = await supabase.rpc('admin_return_game', {
+          p_game_id: gameId,
+          p_renter_name: renter,
+          p_user_id: userId,
+          p_rental_id: rentalId
+        });
 
-        if (error) {
-          console.error(`[Error] Return RPC Failed(GameID: ${gameId})`, error);
-        } else if (!data.success) {
-          console.error(`[Fail] Return result false: ${data.message}`);
+        if (rpcError) {
+          console.error(`[Error] Return RPC Failed(GameID: ${gameId})`, rpcError);
+        } else if (!rpcData.success) {
+          console.error(`[Fail] Return result false: ${rpcData.message}`);
         } else {
           successCount++;
         }
       } catch (e) {
-        console.error("일괄 반납 중 에러:", e);
+        console.error("반납 중 에러:", e);
       }
     }
   }
   return { status: "success", count: successCount };
 };
 
-// [Admin] 특정 대여자 일괄 찜 승인 (수령) - 개선 버전
+/**
+ * 특정 대여자의 찜(예약) 기록을 일괄적으로 대여 상태로 승인(수령) 처리합니다.
+ * 
+ * @param {string} [renterName] - 대여자 이름
+ * @param {string} [userId] - 사용자 UUID
+ * @returns {Promise<Object>} 처리 결과 리포트
+ */
 export const approveDibsByRenter = async (renterName, userId) => {
   let reservedList = [];
 
@@ -627,7 +703,8 @@ export const approveDibsByRenter = async (renterName, userId) => {
       const { data, error } = await supabase.rpc('admin_rent_game', {
         p_game_id: gameId,
         p_renter_name: renterName || "관리자",
-        p_user_id: userId || null
+        p_user_id: userId || null,
+        p_rental_id: reserved.rental_id // [FIX] 특정 찜 기록을 대여로 전환
       });
 
       if (error) throw error;
@@ -766,7 +843,12 @@ export const fetchMyRentals = async (userId) => {
 // [Kiosk & Points System APIs]
 // ==========================================
 
-// [Kiosk] 12. 포인트 내역 조회
+/**
+ * 특정 사용자의 포인트 거래 내역을 가져옵니다.
+ * 
+ * @param {string} userId - 사용자 UUID
+ * @returns {Promise<Array>} 포인트 거래 내역 배열
+ */
 export const fetchPointHistory = async (userId) => {
   const { data, error } = await supabase
     .from('point_transactions')
@@ -781,7 +863,14 @@ export const fetchPointHistory = async (userId) => {
   return data;
 };
 
-// [Kiosk] 13. 매치 결과 등록 (RPC) - [MOD] winnerIds 배열 지원
+/**
+ * 보드게임 매치 결과를 등록하고 포인트(MVP 등)를 지급합니다.
+ * 
+ * @param {number} gameId - 게임 ID
+ * @param {Array<string>} playerIds - 참가자 UUID 배열
+ * @param {Array<string>} winnerIds - 승리자 UUID 배열
+ * @returns {Promise<Object>} 성공 여부 객체
+ */
 export const registerMatch = async (gameId, playerIds, winnerIds) => {
   // playerIds, winnerIds: array of UUIDs
   const { data, error } = await supabase.rpc('register_match_result', {
@@ -797,7 +886,12 @@ export const registerMatch = async (gameId, playerIds, winnerIds) => {
   return { success: true };
 };
 
-// [Kiosk] 14. 포인트 조회
+/**
+ * 특정 사용자의 현재 가용 포인트를 조회합니다.
+ * 
+ * @param {string} userId - 사용자 UUID
+ * @returns {Promise<number>} 현재 포인트
+ */
 export const fetchUserPoints = async (userId) => {
   const { data, error } = await supabase
     .from('profiles')
@@ -817,11 +911,19 @@ export const updateMySemester = async (newSemester) => {
   return data;
 };
 
-// [Kiosk] 14. 키오스크 간편 반납 (RPC)
-export const kioskReturn = async (gameId, userId) => {
+/**
+ * 키오스크용 간편 반납 처리 함수입니다.
+ * 
+ * @param {number} gameId - 게임 ID
+ * @param {string} userId - 사용자 UUID
+ * @param {string} [rentalId] - 특정 대여 기록 UUID
+ * @returns {Promise<Object>} 처리 결과 객체
+ */
+export const kioskReturn = async (gameId, userId, rentalId) => {
   const { data, error } = await supabase.rpc('kiosk_return', {
     p_game_id: gameId,
-    p_user_id: userId
+    p_user_id: userId,
+    p_rental_id: rentalId
   });
 
   if (error) {
@@ -832,7 +934,13 @@ export const kioskReturn = async (gameId, userId) => {
 };
 
 // [Kiosk] 16. 키오스크 간편 대여 (RPC) [NEW]
-// [Kiosk] 16. 키오스크 간편 대여 (RPC) [NEW]
+/**
+ * 키오스크용 간편 대여 처리 함수입니다.
+ * 
+ * @param {number} gameId - 게임 ID
+ * @param {string} userId - 사용자 UUID
+ * @returns {Promise<Object>} 처리 결과 객체
+ */
 export const kioskRental = async (gameId, userId) => {
   const { data, error } = await supabase.rpc('kiosk_rental', {
     p_game_id: gameId,
@@ -846,7 +954,12 @@ export const kioskRental = async (gameId, userId) => {
   return data;
 };
 
-// [Kiosk] 17. 키오스크 예약 수령 (RPC) [NEW]
+/**
+ * 키오스크에서 예약된 게임을 수령 처리합니다.
+ * 
+ * @param {string} rentalId - 대여 기록 UUID
+ * @returns {Promise<Object>} 처리 결과 객체
+ */
 export const kioskPickup = async (rentalId) => {
   const { data, error } = await supabase.rpc('kiosk_pickup', {
     p_rental_id: rentalId
@@ -859,7 +972,12 @@ export const kioskPickup = async (rentalId) => {
   return data;
 };
 
-// [Admin] 17. 전체 포인트 내역 조회 (Dashboard) [NEW]
+/**
+ * 모든 사용자의 최근 포인트 거래 내역을 통합 조회합니다. (관리자용)
+ * 
+ * @param {number} [limit=50] - 조회할 최대 개수
+ * @returns {Promise<Array>} 통합 포인트 거래 내역 배열
+ */
 export const fetchGlobalPointHistory = async (limit = 50) => {
   const { data, error } = await supabase
     .from('point_transactions')
@@ -877,7 +995,12 @@ export const fetchGlobalPointHistory = async (limit = 50) => {
   return data;
 };
 
-// [Admin] 18. 포인트 랭킹 조회 (Dashboard) [NEW]
+/**
+ * 포인트 보유량 기준 상위 사용자 목록을 조회합니다. (리더보드)
+ * 
+ * @param {number} [limit=10] - 조회할 최대 개수
+ * @returns {Promise<Array>} 리더보드 데이터 배열
+ */
 export const fetchLeaderboard = async (limit = 10) => {
   const { data, error } = await supabase
     .from('profiles')
@@ -892,7 +1015,12 @@ export const fetchLeaderboard = async (limit = 10) => {
   return data;
 };
 
-// [Member] 14. 회원 탈퇴 (Withdraw) [NEW]
+/**
+ * 사용자의 계정을 탈퇴 처리합니다. (기존 데이터 보존 또는 삭제 정책에 따라 처리)
+ * 
+ * @param {string} userId - 탈퇴할 사용자 UUID
+ * @returns {Promise<Object>} RPC 결과 객체
+ */
 export const withdrawAccount = async (userId) => {
   const { data, error } = await supabase.rpc('withdraw_user', {
     p_user_id: userId

@@ -118,7 +118,7 @@ function ReturnModal({ onClose }) {
                     if (!targetRental) continue;
 
                     try {
-                        const result = await kioskReturn(targetRental.game_id, targetRental.profiles.id);
+                        const result = await kioskReturn(targetRental.game_id, targetRental.profiles.id, rentalId);
                         if (result.success) {
                             successCount++;
                         } else {

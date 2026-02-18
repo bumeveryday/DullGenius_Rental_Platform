@@ -100,45 +100,139 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 2. 관리자 기능 및 자동화
 -- ============================================================
 
--- 2-1. 관리자 대여 처리
+/**
+ * 2-1. 관리자 대여 처리 (V3)
+ * 찜(DIBS) 기록을 대여(RENT)로 전환하거나, 찜 기록이 없는 경우 신규 대여를 생성합니다.
+ * rental_id가 제공되면 해당 인스턴스를 정확하게 타겟팅하여 대여로 전환합니다.
+ */
 DROP FUNCTION IF EXISTS public.admin_rent_game(INTEGER, TEXT, UUID);
-CREATE OR REPLACE FUNCTION public.admin_rent_game(p_game_id INTEGER, p_renter_name TEXT, p_user_id UUID DEFAULT NULL) RETURNS jsonb AS $$
-DECLARE v_game_name TEXT; v_affected INTEGER;
+CREATE OR REPLACE FUNCTION public.admin_rent_game(
+    p_game_id INTEGER, 
+    p_renter_name TEXT, 
+    p_user_id UUID DEFAULT NULL,
+    p_rental_id UUID DEFAULT NULL
+) RETURNS jsonb AS $$
+DECLARE 
+    v_game_name TEXT; 
+    v_affected INTEGER;
+    v_target_rental_id UUID;
 BEGIN
+    -- [준비] 게임 이름 조회 및 존재 여부 확인
     SELECT name INTO v_game_name FROM public.games WHERE id = p_game_id;
-    IF v_game_name IS NULL THEN RETURN jsonb_build_object('success', false, 'message', '존재하지 않는 게임입니다.'); END IF;
+    IF v_game_name IS NULL THEN 
+        RETURN jsonb_build_object('success', false, 'message', '존재하지 않는 게임입니다.'); 
+    END IF;
 
-    UPDATE public.rentals SET type = 'RENT', returned_at = NULL, borrowed_at = now(), due_date = now() + interval '7 days', renter_name = p_renter_name, user_id = COALESCE(p_user_id, user_id)
-    WHERE game_id = p_game_id AND (user_id = p_user_id OR renter_name = p_renter_name) AND type = 'DIBS' AND returned_at IS NULL;
-    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    -- [Step 1] 대여로 전환할 찜 기록(DIBS) 확정
+    -- rental_id가 있으면 최우선 사용, 없으면 검색 로직 수행
+    IF p_rental_id IS NOT NULL THEN
+        v_target_rental_id := p_rental_id;
+    ELSE
+        SELECT rental_id INTO v_target_rental_id 
+        FROM public.rentals 
+        WHERE game_id = p_game_id 
+          AND (user_id = p_user_id OR renter_name = p_renter_name) 
+          AND type = 'DIBS' 
+          AND returned_at IS NULL
+        LIMIT 1;
+    END IF;
 
-    IF v_affected = 0 THEN
-        UPDATE public.games SET available_count = available_count - 1 WHERE id = p_game_id AND available_count > 0;
+    -- [Step 2] 찜 기록이 있는 경우 대여(RENT)로 상태 업데이트
+    IF v_target_rental_id IS NOT NULL THEN
+        UPDATE public.rentals 
+        SET type = 'RENT', 
+            returned_at = NULL, 
+            borrowed_at = now(), 
+            due_date = now() + interval '7 days', 
+            renter_name = p_renter_name, 
+            user_id = COALESCE(p_user_id, user_id)
+        WHERE rental_id = v_target_rental_id 
+          AND type = 'DIBS';
         GET DIAGNOSTICS v_affected = ROW_COUNT;
-        IF v_affected = 0 THEN RETURN jsonb_build_object('success', false, 'message', '재고가 없습니다.'); END IF;
-        INSERT INTO public.rentals (game_id, user_id, game_name, renter_name, type, borrowed_at, due_date) VALUES (p_game_id, p_user_id, v_game_name, p_renter_name, 'RENT', now(), now() + interval '7 days');
+    ELSE
+        v_affected := 0;
+    END IF;
+
+    -- [Step 3] 찜 기록이 없었거나 업데이트 실패 시 신규 대여 기록 생성
+    -- 이 경우 games 테이블의 재고(available_count)를 직접 차감함
+    IF v_affected = 0 THEN
+        UPDATE public.games SET available_count = available_count - 1 
+        WHERE id = p_game_id AND available_count > 0;
+        GET DIAGNOSTICS v_affected = ROW_COUNT;
+        
+        IF v_affected = 0 THEN 
+            RETURN jsonb_build_object('success', false, 'message', '재고가 없습니다.'); 
+        END IF;
+        
+        INSERT INTO public.rentals (game_id, user_id, game_name, renter_name, type, borrowed_at, due_date) 
+        VALUES (p_game_id, p_user_id, v_game_name, p_renter_name, 'RENT', now(), now() + interval '7 days');
     END IF;
     
-    INSERT INTO public.logs (game_id, user_id, action_type, details) VALUES (p_game_id, p_user_id, 'RENT', to_jsonb('ADMIN RENT: ' || p_renter_name));
+    -- [로그] 활동 기록 남기기
+    INSERT INTO public.logs (game_id, user_id, action_type, details) 
+    VALUES (p_game_id, p_user_id, 'RENT', to_jsonb('ADMIN RENT: ' || p_renter_name));
+    
     RETURN jsonb_build_object('success', true, 'message', '대여 완료');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2-2. 관리자 반납 처리
+/**
+ * 2-2. 관리자 반납 처리 (V3)
+ * 대여(RENT) 기록을 종료(returned_at 설정)하고 재고를 복구합니다.
+ * rental_id가 제공되면 해당 인스턴스를 정확하게 타겟팅하여 반납 처리합니다.
+ */
 DROP FUNCTION IF EXISTS public.admin_return_game(INTEGER, TEXT, UUID);
-CREATE OR REPLACE FUNCTION public.admin_return_game(p_game_id INTEGER, p_renter_name TEXT DEFAULT NULL, p_user_id UUID DEFAULT NULL) RETURNS jsonb AS $$
-DECLARE v_affected INTEGER;
+CREATE OR REPLACE FUNCTION public.admin_return_game(
+    p_game_id INTEGER, 
+    p_renter_name TEXT DEFAULT NULL, 
+    p_user_id UUID DEFAULT NULL,
+    p_rental_id UUID DEFAULT NULL
+) RETURNS jsonb AS $$
+DECLARE 
+    v_affected INTEGER;
+    v_target_rental_id UUID;
+    v_game_id INTEGER;
 BEGIN
-    UPDATE public.rentals SET returned_at = now() 
-    WHERE game_id = p_game_id 
-      AND (rental_id IN (SELECT rental_id FROM public.rentals WHERE game_id = p_game_id AND returned_at IS NULL ORDER BY borrowed_at ASC LIMIT 1))
-      AND returned_at IS NULL;
-      
-    GET DIAGNOSTICS v_affected = ROW_COUNT;
-    IF v_affected = 0 THEN RETURN jsonb_build_object('success', false, 'message', '반납할 대여 기록이 없습니다.'); END IF;
+    -- [Step 1] 반납할 대여 건(RENT) 확정
+    -- rental_id가 있으면 최우선 사용, 없으면 검색 로직(가장 오래된 기록) 수행
+    IF p_rental_id IS NOT NULL THEN
+        v_target_rental_id := p_rental_id;
+    ELSE
+        -- ID가 없을 경우 기존 정보를 조합하여 검색
+        SELECT rental_id INTO v_target_rental_id 
+        FROM public.rentals 
+        WHERE game_id = p_game_id 
+          AND returned_at IS NULL
+          AND (
+              (p_user_id IS NOT NULL AND user_id = p_user_id) OR
+              (p_user_id IS NULL AND p_renter_name IS NOT NULL AND renter_name = p_renter_name) OR
+              (p_user_id IS NULL AND p_renter_name IS NULL)
+          )
+        ORDER BY borrowed_at ASC 
+        LIMIT 1;
+    END IF;
 
-    UPDATE public.games SET available_count = available_count + 1 WHERE id = p_game_id;
-    INSERT INTO public.logs (game_id, user_id, action_type, details) VALUES (p_game_id, p_user_id, 'RETURN', to_jsonb('ADMIN RETURN'::text));
+    IF v_target_rental_id IS NULL THEN 
+        RETURN jsonb_build_object('success', false, 'message', '반납할 대여 기록을 찾을 수 없습니다.'); 
+    END IF;
+
+    -- [준비] 실제 게임 ID 추출 (재고 업데이트용)
+    SELECT game_id INTO v_game_id FROM public.rentals WHERE rental_id = v_target_rental_id;
+
+    -- [Step 2] 반납 처리 (Returned_at 설정)
+    UPDATE public.rentals SET returned_at = now() WHERE rental_id = v_target_rental_id;
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+
+    IF v_affected = 0 THEN 
+        RETURN jsonb_build_object('success', false, 'message', '반납 처리 실패'); 
+    END IF;
+
+    -- [Step 3] 재고(available_count) 복구 및 로그 기록
+    UPDATE public.games SET available_count = available_count + 1 WHERE id = v_game_id;
+    
+    INSERT INTO public.logs (game_id, user_id, action_type, details) 
+    VALUES (v_game_id, p_user_id, 'RETURN', to_jsonb('ADMIN RETURN'::text));
+
     RETURN jsonb_build_object('success', true, 'message', '반납 완료');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -93,45 +93,59 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- [6] RPC: 키오스크 간편 반납
--- "반납" 버튼 누르면 즉시 포인트 지급하고 상태 변경
+/**
+ * [6] RPC: 키오스크 간편 반납
+ * rental_id 우선 지원을 통해 정확한 인스턴스를 반납 처리합니다.
+ * 반납 성공 시 재고를 복구하고 사용자에게 100 포인트를 지급합니다.
+ */
 CREATE OR REPLACE FUNCTION kiosk_return(
-    p_game_id INTEGER, -- [MOD] copy_id -> game_id
-    p_user_id UUID, -- 반납하려는 사람 (본인 혹은 키오스크 대리)
-    p_condition_ok BOOLEAN DEFAULT TRUE
+    p_game_id INTEGER DEFAULT NULL,
+    p_user_id UUID DEFAULT NULL,
+    p_condition_ok BOOLEAN DEFAULT TRUE,
+    p_rental_id UUID DEFAULT NULL
 ) RETURNS JSONB AS $$
 DECLARE
     v_rental_id UUID;
+    v_game_id INTEGER;
     v_game_name TEXT;
+    v_target_user_id UUID;
 BEGIN
-    -- 1. 현재 대여중인 정보 찾기 (V2: game_id 기준)
-    SELECT rental_id INTO v_rental_id
-    FROM rentals
-    WHERE game_id = p_game_id
-      AND returned_at IS NULL
-      AND (user_id = p_user_id OR p_user_id IS NULL) -- 유저 검증 (옵션)
-    LIMIT 1;
+    -- [Step 1] 반납할 대여 기록 확정
+    -- p_rental_id가 있으면 최우선으로 해당 기록을 처리함
+    IF p_rental_id IS NOT NULL THEN
+        v_rental_id := p_rental_id;
+        -- 관련 정보 조회 (재고 및 포인트 지급용)
+        SELECT game_id, user_id INTO v_game_id, v_target_user_id FROM rentals WHERE rental_id = v_rental_id;
+    ELSE
+        -- p_rental_id가 없는 경우 (Legacy) game_id와 user_id로 가장 최근 건을 찾음
+        SELECT rental_id, game_id, user_id INTO v_rental_id, v_game_id, v_target_user_id
+        FROM rentals
+        WHERE game_id = p_game_id
+          AND returned_at IS NULL
+          AND (user_id = p_user_id OR p_user_id IS NULL)
+        LIMIT 1;
+    END IF;
 
     IF v_rental_id IS NULL THEN
         RETURN jsonb_build_object('success', false, 'message', '반납할 대여 기록을 찾을 수 없습니다.');
     END IF;
 
-    -- 게임 이름 조회
-    SELECT name INTO v_game_name FROM games WHERE id = p_game_id;
+    -- 게임 이름 조회 (포인트 알림용)
+    SELECT name INTO v_game_name FROM games WHERE id = v_game_id;
 
-    -- 2. 반납 처리 (Rentals)
+    -- [Step 2] 반납 처리 (Rentals 테이블 업데이트)
     UPDATE rentals
     SET returned_at = timezone('kst', now())
     WHERE rental_id = v_rental_id;
 
-    -- 3. 가용 재고 증가 (V2)
+    -- [Step 3] 가용 재고 복구
     UPDATE games
     SET available_count = available_count + 1
-    WHERE id = p_game_id;
+    WHERE id = v_game_id;
 
-    -- 4. 반납 포인트 지급 (+100P)
-    IF p_user_id IS NOT NULL THEN
-        PERFORM earn_points(p_user_id, 100, 'RETURN_ON_TIME', '키오스크 반납 (' || COALESCE(v_game_name, '게임:' || p_game_id) || ')');
+    -- [Step 4] 반납 포인트 지급 (+100P)
+    IF v_target_user_id IS NOT NULL THEN
+        PERFORM earn_points(v_target_user_id, 100, 'RETURN_ON_TIME', '키오스크 반납 (' || COALESCE(v_game_name, '게임:' || v_game_id) || ')');
     END IF;
 
     RETURN jsonb_build_object('success', true);
@@ -175,7 +189,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- [NEW] RPC: 키오스크 예약 수령 (v2)
+/**
+ * [7-2] RPC: 키오스크 예약 수령 (Dibs -> Rent 전환)
+ * rental_id를 통해 특정 예약을 즉시 대여 상태로 전환합니다.
+ */
 CREATE OR REPLACE FUNCTION kiosk_pickup(
     p_rental_id UUID
 ) RETURNS JSONB AS $$
@@ -184,7 +201,7 @@ DECLARE
     v_user_id UUID;
     v_status TEXT;
 BEGIN
-    -- 1. 유효한 예약(찜)인지 확인
+    -- [Step 1] 유효한 예약(찜) 데이터인지 확인
     SELECT game_id, user_id, type INTO v_game_id, v_user_id, v_status
     FROM rentals
     WHERE rental_id = p_rental_id;
@@ -197,7 +214,8 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '예약(찜) 상태가 아닙니다.');
     END IF;
 
-    -- 2. 대여로 전환 (Update Rentals) (재고는 이미 찜할 때 빠짐)
+    -- [Step 2] 대여(RENT)로 전환 (Update Rentals)
+    -- (참고: 재고는 이미 찜하기 단계에서 차감되었으므로 별도 업데이트 불필요)
     UPDATE rentals
     SET 
         type = 'RENT',
@@ -205,7 +223,7 @@ BEGIN
         due_date = timezone('kst', now() + INTERVAL '2 days')
     WHERE rental_id = p_rental_id;
 
-    -- 3. 로그 기록
+    -- [Step 3] 로그 기록
     INSERT INTO logs (game_id, user_id, action_type, details)
     VALUES (v_game_id, v_user_id, 'RENT', 'Kiosk Pickup (Rental ID: ' || p_rental_id || ')');
 

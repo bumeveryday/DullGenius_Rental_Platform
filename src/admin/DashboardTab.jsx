@@ -8,6 +8,7 @@ import FilterBar from '../components/FilterBar';
 import { TEXTS, getStatusColor } from '../constants';
 import { useToast } from '../contexts/ToastContext';
 import { useGameFilter } from '../hooks/useGameFilter';
+import RentalInstanceList from './components/RentalInstanceList'; // [QUALITY] Component Extracted
 
 function DashboardTab({ games, loading, onReload }) {
   const { showToast } = useToast();
@@ -280,19 +281,17 @@ function DashboardTab({ games, loading, onReload }) {
   };
 
   // 4. 스마트 반납 (일괄 처리 로직)
-  const handleReturn = async (game) => {
-    const renterName = game.renter;
-    // [FIX] "이용 중" 또는 "대여중" 상태 모두 포함
-    const sameUserRentals = games.filter(g => (g.status === "이용 중" || g.status === "대여중") && g.renter === renterName);
-    const count = sameUserRentals.length;
+  const handleReturn = async (game, rentalId) => {
+    // [1] 특정 rentalId가 주어지면 즉시 그 건만 처리 (개별 반납 버튼 클릭 시)
+    if (rentalId) {
+      const targetRental = game.rentals?.find(r => r.rental_id === rentalId);
+      const renterName = targetRental?.renter_name || targetRental?.profiles?.name || "알 수 없음";
 
-    // [FIX] 단일 반납이어도 확실한 처리를 위해 일괄 반납 함수(1:1 ID 매칭) 사용
-    if (count <= 1) {
       showConfirmModal(
         "반납 확인",
-        `[${game.name}] 반납 처리하시겠습니까?`,
+        `[${game.name}] ${renterName}님의 대여 건을 반납 처리하시겠습니까?`,
         async () => {
-          await returnGamesByRenter(renterName, game.renterId); // game.renterId는 없을 수도 있음
+          await returnGamesByRenter(null, null, null, rentalId);
           showToast("반납되었습니다.", { type: "success" });
           onReload();
         }
@@ -300,24 +299,57 @@ function DashboardTab({ games, loading, onReload }) {
       return;
     }
 
+    // [2] Bulk 로직 (카드 하단 버튼 등에서 호출)
+    const renterName = game.renter; // 예: "A, B" or "A"
+
+    // 전체 반납 대상 확인 (이름이 여러 개면 첫 번째 사람 기준?)
+    // 사실 다중 카피 상황에서는 리스트의 개별 버튼을 쓰는 것이 권장됨
+    const firstRenter = renterName?.split(',')[0].trim();
+    if (!firstRenter) return;
+
+    const sameUserRentals = games.filter(g => (g.status === "이용 중" || g.status === "대여중") && g.renter && g.renter.includes(firstRenter));
+    const count = sameUserRentals.length;
+
     showConfirmModal(
-      "일괄 반납 처리",
-      `💡 [${renterName}] 님이 현재 빌려간 게임이 총 ${count}개입니다.\n\n모두 한꺼번에 '반납' 처리하시겠습니까?\n(취소 누르면 이 게임 하나만 반납합니다)`,
+      "일괄 반납 확인",
+      `💡 [${firstRenter}] 님이 빌려간 게임이 총 ${count}개입니다.\n(다른 게임 포함)\n\n모두 한꺼번에 '반납' 처리하시겠습니까?`,
       async () => {
-        await returnGamesByRenter(renterName);
+        await returnGamesByRenter(firstRenter);
         showToast(`${count}건이 일괄 반납되었습니다.`, { type: "success" });
         onReload();
       },
       "warning"
     );
-    // 취소 시 단일 반납은 모달의 취소 버튼으로 처리됨
   };
 
   // 5. [개선] 스마트 수령 (일괄 찜 처리 로직 + 동명이인 처리)
-  const handleReceive = async (game) => {
-    const renterName = game.renter;
-    // [FIX] "예약됨" 또는 "찜" 상태 모두 포함
-    const sameUserDibs = games.filter(g => (g.status === "예약됨" || g.status === "찜") && g.renter === renterName);
+  const handleReceive = async (game, rentalId) => {
+    // [1] 특정 rentalId가 주어지면 즉시 처리 (개별 수령 버튼)
+    if (rentalId) {
+      const targetRental = game.rentals?.find(r => r.rental_id === rentalId);
+      const renterName = targetRental?.renter_name || targetRental?.profiles?.name || "관리자";
+      const userId = targetRental?.user_id;
+
+      showConfirmModal(
+        "수령 확인",
+        `[${game.name}] ${renterName}님의 수령을 확인하시겠습니까?`,
+        async () => {
+          const res = await adminUpdateGame(game.id, "대여중", renterName, userId, rentalId);
+          if (res.status === "success") {
+            showToast("수령 처리되었습니다.", { type: "success" });
+            localStorage.removeItem('games_cache');
+            onReload();
+          }
+        }
+      );
+      return;
+    }
+
+    // [2] Bulk 로직
+    const renterName = game.renter?.split(',')[0].trim();
+    if (!renterName) return;
+
+    const sameUserDibs = games.filter(g => (g.status === "예약됨" || g.status === "찜") && g.renter && g.renter.includes(renterName));
     const count = sameUserDibs.length;
 
     // [개선] 동명이인 처리
@@ -479,7 +511,6 @@ function DashboardTab({ games, loading, onReload }) {
                   )}
                 </div>
                 <div style={{ fontSize: "0.85em", color: "var(--admin-text-sub)", marginTop: "5px", lineHeight: "1.4" }}>
-                  <span style={{ marginRight: "10px" }}>{game.renter ? `👤 ${game.renter}` : "대여자 없음"}</span>
                   <span style={{ color: "#e67e22", marginRight: "10px" }}>난이도: {game.difficulty || "-"}</span>
                   <span title="유튜브 설명 영상" style={{ cursor: "help", opacity: game.video_url ? 1 : 0.3, marginRight: "5px" }}>
                     {game.video_url ? "📺" : "📺❌"}
@@ -490,6 +521,13 @@ function DashboardTab({ games, loading, onReload }) {
                   <br />
                   태그: <span style={{ color: "var(--admin-primary)" }}>{game.tags || "(없음)"}</span>
                 </div>
+
+                {/* [NEW] 품질 개선: 개별 대여 인스턴스 리스트 (Component Extracted) */}
+                <RentalInstanceList
+                  game={game}
+                  onReturn={handleReturn}
+                  onReceive={handleReceive}
+                />
               </div>
 
               {/* 상태별 버튼 로직 [IMPROVED] */}
@@ -501,17 +539,16 @@ function DashboardTab({ games, loading, onReload }) {
                 {/* 1. 수령/취소 (예약이 있는 경우) */}
                 {((game.rentals && game.rentals.some(r => r.type === 'DIBS')) || game.status === '예약됨') && (
                   <>
-                    <button onClick={() => handleReceive(game)} style={actionBtnStyle("#2980b9")}>🤝 수령</button>
+                    <button onClick={() => handleReceive(game)} style={actionBtnStyle("#2980b9")} title="해당 사용자의 모든 예약 일괄 수령">🤝 일괄수령</button>
                     <button onClick={() => handleStatusChange(game.id, "대여가능", game.name)} style={actionBtnStyle("#c0392b")}>🚫 취소</button>
                   </>
                 )}
 
                 {/* 2. 반납/분실 (대여 중인 건이 있고, 예약된 건이 없는 경우) */}
-                {/* [FIX] 찜 상태라면 반납/분실 버튼 숨김 처리 */}
                 {(!game.rentals || !game.rentals.some(r => r.type === 'DIBS')) &&
                   ((game.rentals && game.rentals.some(r => r.type === 'RENT' && !r.returned_at)) || game.active_rental_count > 0) && (
                     <>
-                      <button onClick={() => handleReturn(game)} style={actionBtnStyle("#27ae60")}>↩️ 반납</button>
+                      <button onClick={() => handleReturn(game)} style={actionBtnStyle("#27ae60")} title="해당 사용자의 모든 대여 일괄 반납">↩️ 일괄반납</button>
                       <button onClick={() => handleStatusChange(game.id, "분실", game.name)} style={actionBtnStyle("#7f8c8d")}>⚠️ 분실</button>
                     </>
                   )}
