@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -11,8 +11,8 @@ envContent.split('\n').forEach(line => {
     if (key && val) env[key.trim()] = val.trim();
 });
 
-const supabaseUrl = env.REACT_APP_SUPABASE_URL;
-const supabaseKey = env.REACT_APP_SUPABASE_ANON_KEY;
+const supabaseUrl = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
     console.error("Missing Supabase Credentials in .env");

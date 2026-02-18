@@ -28,6 +28,7 @@ import { ToastProvider } from './contexts/ToastContext'; // [NEW] Toast 시스�
 // import KioskPage from './kiosk/KioskPage'; // [DELETE] Static
 import ProtectedRoute from './components/ProtectedRoute'; // [NEW] Protected Route
 import InfoBar from './components/InfoBar'; // [NEW] InfoBar Component
+import { getOptimizedImageUrl } from './utils/imageOptimizer'; // [NEW] 이미지 최적화
 
 const MainSearchBar = ({ value, onChange }) => (
   <div className="main-search-wrapper">
@@ -426,7 +427,22 @@ function Home() {
                       <div className="trend-card">
                         <div className="trend-badge">{index + 1}위</div>
                         <div style={{ width: "100%", height: "140px", background: "#f8f9fa" }}>
-                          {game.image ? <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", fontSize: "0.8em" }}>No Image</div>}
+                          {game.image ? (
+                            <img
+                              src={getOptimizedImageUrl(game.image, 300)}
+                              alt={game.name}
+                              loading="lazy"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                if (e.target.src !== game.image) {
+                                  e.target.src = game.image;
+                                }
+                              }}
+                              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                            />
+                          ) : (
+                            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", fontSize: "0.8em" }}>No Image</div>
+                          )}
                         </div>
                         <div style={{ padding: "10px" }}>
                           <div className="text-truncate" style={{ fontWeight: "bold", marginBottom: "3px", fontSize: "0.9em" }}>{game.name}</div>
@@ -474,11 +490,24 @@ function Home() {
                   onClick={() => sessionStorage.setItem('home_scroll_y', window.scrollY)} // [NEW] 클릭 시 스크롤 위치 저장
                 >
                   <div style={{ width: "100%", height: "200px", overflow: "hidden", background: "#f9f9f9", position: "relative" }}>
-                    {game.image ? (
-                      <img src={game.image} alt={game.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc" }}>이미지 없음</div>
-                    )}
+                    <div className="card-image-wrapper">
+                      {game.image ? (
+                        <img
+                          src={getOptimizedImageUrl(game.image, 300)}
+                          alt={game.name}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            if (e.target.src !== game.image) {
+                              e.target.src = game.image;
+                            }
+                          }}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="no-image">No Image</div>
+                      )}
+                      {/* [NEW] 왼쪽 상단 순위 뱃지 (검색/필터 없을 때만 표시) */}
+                    </div>
                     {(game.status !== "대여가능") && (
                       <div style={{
                         position: "absolute", top: "10px", right: "10px",

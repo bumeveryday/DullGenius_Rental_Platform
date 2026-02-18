@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -10,14 +10,14 @@ envContent.split('\n').forEach(line => {
     if (key && val) env[key.trim()] = val.trim();
 });
 
-const supabaseUrl = env.REACT_APP_SUPABASE_URL;
-const supabaseKey = env.REACT_APP_SUPABASE_ANON_KEY;
+const supabaseUrl = env.VITE_SUPABASE_URL;
+const supabaseKey = env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function verify() {
     console.log("🔍 Verifying Migration Results...");
 
-    const targets = ['뱅!', '도적날의 월급날'];
+    const targets = ['뱅']; // Other corrupted targets removed
 
     for (const name of targets) {
         const { data: games } = await supabase

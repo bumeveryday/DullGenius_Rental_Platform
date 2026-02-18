@@ -59,9 +59,49 @@ function AddGameTab({ onGameAdded }) {
   };
 
   // 모달에서 '저장' 버튼 눌렀을 때 실행
-  const handleSaveGame = async (formData) => { // [Changed] async
+  const handleSaveGame = async (formData) => {
     try {
-      // 1. 중복 체크
+      // 1. 이미지 최적화 및 업로드 (Supabase Storage)
+      // 외부 이미지(네이버 등)인 경우에만 처리
+      if (formData.image && formData.image.startsWith('http') && !formData.image.includes('supabase.co')) {
+        try {
+          // Toast: 이미지 처리 중 알림
+          showToast("이미지를 최적화하고 있습니다...", { type: "info" });
+
+          // 1-1. weserv.nl을 통해 리사이징된 이미지(WebP, 600px) Fetch
+          const cleanUrl = formData.image.replace(/^https?:\/\//, '');
+          const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&w=600&output=webp&il`;
+
+          const response = await fetch(proxyUrl);
+          const blob = await response.blob();
+
+          // 1-2. Supabase Storage 업로드
+          const { supabase } = await import('../lib/supabaseClient'); // Dynamic Import to avoid top-level cyclic dependency if any
+          const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webp`; // 임시 ID 사용 (실제 Game ID는 나중에 생성되므로)
+
+          const { error: uploadError } = await supabase.storage
+            .from('game-images')
+            .upload(fileName, blob, { contentType: 'image/webp' });
+
+          if (uploadError) throw uploadError;
+
+          // 1-3. Public URL 획득
+          const { data: { publicUrl } } = supabase.storage
+            .from('game-images')
+            .getPublicUrl(fileName);
+
+          // 이미지 URL 교체
+          formData.image = publicUrl;
+          console.log("Image optimized and uploaded:", publicUrl);
+
+        } catch (imgError) {
+          console.error("Image optimization failed:", imgError);
+          showToast("이미지 최적화 실패 (원본 사용)", { type: "warning" });
+          // 실패해도 원본 URL로 계속 진행
+        }
+      }
+
+      // 2. 중복 체크
       const duplicates = await checkGameExists(formData.name);
 
       if (duplicates && duplicates.length > 0) {

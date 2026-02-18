@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -28,20 +28,20 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function migrate() {
-    console.log("🚀 Starting Migration...");
+    console.log("?? Starting Migration...");
 
-    // 0. Pre-process: Rename '뱅' to '뱅!'
+    // 0. Pre-process: Rename '뱅!' to '뱅'
     // We do this first so the standard "exact match" logic picks them up together.
-    console.log("Step 0: Unifying '뱅' aliases...");
+    console.log("Step 0: Unifying '뱅!' aliases...");
     const { data: bangGames, error: bangError } = await supabase
         .from('games')
         .select('*')
-        .eq('name', '뱅');
+        .eq('name', '뱅!');
 
     if (bangGames && bangGames.length > 0) {
         for (const game of bangGames) {
-            console.log(`Renaming '뱅' (ID: ${game.id}) to '뱅!'`);
-            await supabase.from('games').update({ name: '뱅!' }).eq('id', game.id);
+            console.log(`Renaming '뱅!' (ID: ${game.id}) to '뱅'`);
+            await supabase.from('games').update({ name: '뱅' }).eq('id', game.id);
         }
     }
 
@@ -129,10 +129,10 @@ async function migrate() {
             .in('id', slaveIds);
 
         if (delErr) {
-            console.error("  ❌ Delete failed (Foreign Key constraint?):", delErr.message);
+            console.error("  ??Delete failed (Foreign Key constraint?):", delErr.message);
             console.log("     Skipping deletion for safety. Please delete manually.");
         } else {
-            console.log("  ✅ Merged successfully.");
+            console.log("  ??Merged successfully.");
         }
     }
 

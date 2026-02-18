@@ -1,11 +1,11 @@
-require('dotenv').config(); // CWD(루트)의 .env 로드
+﻿require('dotenv').config(); // CWD(루트)의 .env 로드
 const { createClient } = require('@supabase/supabase-js');
 // Node 18+ has native fetch. If on older node, uncomment below:
 // const fetch = require('node-fetch');
 
 // 1. Supabase Client 설정
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
 if (!supabaseUrl || !supabaseKey) {

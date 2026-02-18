@@ -5,6 +5,7 @@ import { TEXTS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext'; // [NEW] 전역 Toast
 import ConfirmModal from './ConfirmModal'; // [NEW] 커스텀 확인 모달
+import { getOptimizedImageUrl } from '../utils/imageOptimizer'; // [NEW] 이미지 최적화
 
 function GameDetail() {
   const { id } = useParams();
@@ -250,8 +251,22 @@ function GameDetail() {
       <button onClick={() => navigate("/")} style={{ marginBottom: "20px", cursor: "pointer", border: "none", background: "none", fontSize: "1.2em" }}>← 뒤로가기</button>
 
       {/* 게임 정보 카드 */}
+      {/* 게임 정보 카드 */}
       <div style={{ border: "1px solid #ddd", borderRadius: "10px", padding: "20px", textAlign: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", background: "white" }}>
-        {game.image && <img src={game.image} alt={game.name} style={{ maxWidth: "100%", maxHeight: "300px", borderRadius: "10px", objectFit: "contain" }} />}
+        {game.image && (
+          <img
+            src={getOptimizedImageUrl(game.image, 600)} // 상세 페이지는 조금 더 크게
+            alt={game.name}
+            loading="lazy"
+            onError={(e) => {
+              e.target.onerror = null; // 무한 루프 방지
+              if (e.target.src !== game.image) {
+                e.target.src = game.image; // 최적화 실패 시 원본 로드
+              }
+            }}
+            style={{ maxWidth: "100%", maxHeight: "300px", borderRadius: "10px", objectFit: "contain" }}
+          />
+        )}
         <h2 style={{ marginTop: "15px" }}>{game.name}</h2>
 
         {/* [NEW] 스마트 뱃지 버튼 */}

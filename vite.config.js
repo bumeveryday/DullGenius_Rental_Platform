@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '')
     return {
         plugins: [react()],
-        envPrefix: ['VITE_', 'REACT_APP_'],
+        envPrefix: ['VITE_'],
         server: {
             port: 3000,
             proxy: {
@@ -21,8 +21,8 @@ export default defineConfig(({ mode }) => {
                     rewrite: (path) => path.replace(/^\/v1/, '/v1'), // maintain /v1
                     configure: (proxy, _options) => {
                         proxy.on('proxyReq', (proxyReq, req, _res) => {
-                            const clientId = env.VITE_NAVER_CLIENT_ID || env.REACT_APP_NAVER_CLIENT_ID
-                            const clientSecret = env.VITE_NAVER_CLIENT_SECRET || env.REACT_APP_NAVER_CLIENT_SECRET
+                            const clientId = env.VITE_NAVER_CLIENT_ID
+                            const clientSecret = env.VITE_NAVER_CLIENT_SECRET
                             if (clientId && clientSecret) {
                                 proxyReq.setHeader('X-Naver-Client-Id', clientId)
                                 proxyReq.setHeader('X-Naver-Client-Secret', clientSecret)

@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -29,10 +29,10 @@ const colors = {
 };
 
 const log = {
-    info: (msg) => console.log(`${colors.cyan}ℹ ${msg}${colors.reset}`),
-    success: (msg) => console.log(`${colors.green}✔ ${msg}${colors.reset}`),
-    warn: (msg) => console.log(`${colors.yellow}⚠ ${msg}${colors.reset}`),
-    error: (msg) => console.log(`${colors.red}✖ ${msg}${colors.reset}`),
+    info: (msg) => console.log(`${colors.cyan}??${msg}${colors.reset}`),
+    success: (msg) => console.log(`${colors.green}??${msg}${colors.reset}`),
+    warn: (msg) => console.log(`${colors.yellow}??${msg}${colors.reset}`),
+    error: (msg) => console.log(`${colors.red}??${msg}${colors.reset}`),
     header: (msg) => console.log(`\n${colors.bgBlue}${colors.bright} ${msg} ${colors.reset}\n`)
 };
 

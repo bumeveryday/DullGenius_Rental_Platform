@@ -1,4 +1,4 @@
-
+﻿
 const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
@@ -52,8 +52,8 @@ async function removeLinks() {
     }
 
     // 2. Identify TRPG/Playing Card games
-    const trpgKeywords = ['TRPG', 'RPG', '역할극', '마기카로기아', '인세인', '피아스코', '다이얼렉트', '크라켄']; // Based on known titles
-    const cardKeywords = ['Card', 'Poker', 'Playing Card', '카드', '플레잉', '진실카드', '원카드', '도둑잡기'];
+    const trpgKeywords = ['TRPG', 'RPG', '크툴루', '마기카로기아', '인세인', '피아스코', '다이얼렉트', '블라랏']; // Based on known titles
+    const cardKeywords = ['Card', 'Poker', 'Playing Card', '카드', '플레잉', '진실카드', '포커', '도둑잡기'];
 
     const trpgList = [];
 
@@ -65,7 +65,7 @@ async function removeLinks() {
         let isTrpgOrCard = false;
 
         // Check Category match
-        if (category.includes('TRPG') || category.includes('카드') || category.includes('플레잉')) {
+        if (category.includes('TRPG') || category.includes('카드') || category.includes('플레이')) {
             isTrpgOrCard = true;
         }
 
@@ -76,7 +76,7 @@ async function removeLinks() {
         }
 
         // Specific known titles check
-        if (['노닥노닥 TRPG', '마기카로기아 : 황혼선서', '다이얼렉트', '인세인 1', '인세인 2', '피아스코', '마기카로기아 기본 룰 북', '진실카드게임', '쿼스천 카드 클래식'].includes(name)) {
+        if (['냥이냥이 TRPG', '마기카로기아 : 황혼선서', '다이얼렉트', '인세인 1', '인세인 2', '피아스코', '마기카로기아 기본 룰북', '진실카드게임', '퀘스트 카드 컬렉션'].includes(name)) {
             isTrpgOrCard = true;
         }
 
@@ -102,7 +102,7 @@ async function removeLinks() {
 
     // 4. Generate Report
     const reportPath = path.resolve(__dirname, 'removed_trpg_games.md');
-    let reportContent = '# 🎲 TRPG 및 카드 게임 리스트 (영상 링크 제거됨)\n\n';
+    let reportContent = '# 🗑️ TRPG 및 카드 게임 리스트 (영상 링크 제거됨)\n\n';
     reportContent += '다음 게임들은 유튜브 링크가 제거되었으며, TRPG 또는 카드 게임 장르로 식별된 항목들입니다. 직접 영상을 찾아 추가해주세요.\n\n';
     reportContent += '| ID | 게임명 | 카테고리 | 기존 링크 (참고용) |\n';
     reportContent += '|:---:|:---|:---|:---|\n';

@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 
 const SEEDS_DIR = path.join(__dirname, '../db_seeds');

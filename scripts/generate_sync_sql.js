@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 
 // No need for Supabase client, just file I/O
@@ -99,7 +99,7 @@ SET available_count = quantity - (
         console.log(`📝 Update Statements: ${Object.keys(countsByName).length}`);
 
     } catch (e) {
-        console.error("🔥 Failed:", e);
+        console.error("❌ Failed:", e);
     }
 }
 

@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 
 // Node 18+ has native fetch.
 // const fetch = require('node-fetch');
@@ -7,11 +7,11 @@ const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
 async function sendTestNotification() {
     if (!discordWebhookUrl) {
-        console.error("❌ Link not found in .env");
+        console.error("??Link not found in .env");
         return;
     }
 
-    console.log("🚀 Sending test notification...");
+    console.log("?? Sending test notification...");
 
     // Mock Overdue Data
     const mockData = [
@@ -35,10 +35,10 @@ async function sendTestNotification() {
     });
 
     const payload = {
-        username: process.env.DISCORD_BOT_NAME || "덜지니어스 알림봇 (TEST)",
+        username: process.env.DISCORD_BOT_NAME || "덜지니어스 알림봇(TEST)",
         avatar_url: process.env.DISCORD_AVATAR_URL || "https://cdn-icons-png.flaticon.com/512/3523/3523063.png",
         embeds: [{
-            title: `🧪 테스트 알림입니다`,
+            title: `🧪 테스트 알림입니다.`,
             description: `이것은 테스트 메시지입니다. 실제 데이터가 아닙니다.\n현재 **${mockData.length}건**의 테스트 연체 기록이 있습니다.`,
             color: 3447003, // Blue for test
             fields: fields,
@@ -56,12 +56,12 @@ async function sendTestNotification() {
         });
 
         if (response.ok) {
-            console.log("✅ Test Notification Sent Successfully!");
+            console.log("??Test Notification Sent Successfully!");
         } else {
-            console.error(`❌ Failed: ${response.status} ${await response.text()}`);
+            console.error(`??Failed: ${response.status} ${await response.text()}`);
         }
     } catch (e) {
-        console.error("❌ Error:", e);
+        console.error("??Error:", e);
     }
 }
 

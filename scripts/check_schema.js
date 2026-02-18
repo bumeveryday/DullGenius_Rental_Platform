@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -11,7 +11,7 @@ envContent.split('\n').forEach(line => {
     if (key && val) env[key.trim()] = val.trim();
 });
 
-const supabase = createClient(env.REACT_APP_SUPABASE_URL, env.REACT_APP_SUPABASE_ANON_KEY);
+const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY);
 
 async function checkSchema() {
     console.log("🔍 Checking 'game_copies' schema...");
@@ -26,11 +26,11 @@ async function checkSchema() {
         console.log("❌ Column check failed.");
         console.log("Error details:", error.message);
         if (error.message.includes("does not exist") || error.code === "PGRST301") {
-            console.log("👉 Conclusion: Columns likely DO NOT exist.");
+            console.log("💡 Conclusion: Columns likely DO NOT exist.");
         }
     } else {
         console.log("✅ Query successful!", data);
-        console.log("👉 Conclusion: Columns ALREADY EXIST.");
+        console.log("💡 Conclusion: Columns ALREADY EXIST.");
     }
 }
 

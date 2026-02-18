@@ -8,7 +8,7 @@ import ReturnModal from './ReturnModal';
 import ReservationModal from './ReservationModal'; // [NEW] 예약 수령 모달
 
 // [Constants]
-const MASTER_KEY = import.meta.env.VITE_KIOSK_MASTER_KEY || import.meta.env.REACT_APP_KIOSK_MASTER_KEY;
+const MASTER_KEY = import.meta.env.VITE_KIOSK_MASTER_KEY;
 const IDLE_TIMEOUT_MS = 180000; // 3분 (번인 방지)
 const REFRESH_HOUR = 4; // 새벽 4시 자동 새로고침
 

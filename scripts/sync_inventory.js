@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -15,8 +15,8 @@ if (fs.existsSync(envPath)) {
     });
 }
 
-const supabaseUrl = env.VITE_SUPABASE_URL || env.REACT_APP_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = env.VITE_SUPABASE_ANON_KEY || env.REACT_APP_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
     console.error("❌ Supabase URL/Key Missing!");
@@ -76,7 +76,7 @@ async function syncInventory() {
                 countsByName[normalized] = (countsByName[normalized] || 0) + 1;
             }
         });
-        console.log(`✅ Found ${Object.keys(countsByName).length} unique games in CSV.`);
+        console.log(`🔍 Found ${Object.keys(countsByName).length} unique games in CSV.`);
 
         // 3.3 Fetch Existing Games from DB
         const { data: dbGames, error: dbError } = await supabase
@@ -112,7 +112,7 @@ async function syncInventory() {
         for (const game of dbGames) {
             const csvCount = countsByName[game.name.trim()] || 1; // Default to 1 if not in CSV (safe fallback)
             // But if user says "Sync based on CSV", maybe 0 if not in CSV?
-            // "보드게임 개수는... 기준으로 맞춘다"
+            // "보드게임 개수는 CSV 기준으로 맞춤"
             // If CSV has it, trust CSV count. If not, keeping 1 seems safer than 0 (deleting).
 
             // Validate: If DB has 1 but CSV has 0? If name changed?
@@ -136,7 +136,7 @@ async function syncInventory() {
                     console.error(`❌ Update failed for ${game.name}:`, updateError.message);
                     errorCount++;
                 } else {
-                    console.log(`🔄 Updated ${game.name}: Qty ${game.quantity}->${newQuantity}, Avail ${game.available_count}->${newAvailable} (Rented: ${activeCount})`);
+                    console.log(`✏️ Updated ${game.name}: Qty ${game.quantity}->${newQuantity}, Avail ${game.available_count}->${newAvailable} (Rented: ${activeCount})`);
                     updatedCount++;
                 }
             }
@@ -145,7 +145,7 @@ async function syncInventory() {
         console.log(`🎉 Sync Complete! Updated: ${updatedCount}, Errors: ${errorCount}`);
 
     } catch (e) {
-        console.error("🔥 Sync Failed:", e);
+        console.error("❌ Sync Failed:", e);
     }
 }
 
