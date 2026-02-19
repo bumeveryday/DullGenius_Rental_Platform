@@ -1,4 +1,4 @@
-/* =========================================
+ï»¿/* =========================================
    1. ê¸°ë³¸ ì„¤ì • (Base)
    ========================================= */
 * {
@@ -122,6 +122,130 @@ a {
   /* ë„ˆë¬´ ì¢ì•„ì§€ë©´ ì¤„ë°”ê¿ˆ ìœ ë„ */
   min-width: 0;
   /* Flex ìì‹ì˜ ê°€ë¡œ ìŠ¤í¬ë¡¤ ë²„ê·¸ ë°©ì§€ (ì¤‘ìš”!) */
+}
+
+/* =========================================
+   10. InfoBar Components (New Redesign)
+   ========================================= */
+.infobar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #ffffff;
+  /* Pure white */
+  border-top: 1px solid #f0f0f0;
+  padding: 15px 20px 20px 20px;
+  /* Reduced top/bottom padding */
+  gap: 12px;
+  /* Reduced gap */
+  width: 100%;
+  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.02);
+  /* Top subtle shadow */
+}
+
+/* 1. Primary Actions (Buttons) */
+.infobar-actions {
+  display: flex;
+  gap: 15px;
+  width: 100%;
+  max-width: 400px;
+  justify-content: center;
+}
+
+.infobar-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 10px;
+  /* Reduced padding from 14px */
+  border-radius: 14px;
+  /* Slightly less round */
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  /* Slightly smaller font */
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.infobar-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.infobar-action-btn:active {
+  transform: scale(0.97);
+}
+
+/* ì‹ ì²­ ë²„íŠ¼ (Vibrant Gradient) */
+.infobar-action-btn.primary {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+.infobar-action-btn.primary:hover {
+  box-shadow: 0 8px 20px rgba(79, 172, 254, 0.4);
+}
+
+/* ì‹ ê³  ë²„íŠ¼ (Clean White with Border) */
+.infobar-action-btn.secondary {
+  background: #ffffff;
+  color: #555;
+  border: 2px solid #f0f0f0;
+}
+
+.infobar-action-btn.secondary:hover {
+  border-color: #ddd;
+  background: #fcfcfc;
+  color: #333;
+}
+
+.action-icon {
+  font-size: 1.2em;
+}
+
+/* 2. Secondary Links (Text) */
+.infobar-links {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  /* Wider gap */
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.infobar-link-text {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #999;
+  padding: 5px;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.infobar-link-text:hover {
+  color: #333;
+  transform: translateY(-1px);
+}
+
+.link-divider {
+  color: #eee;
+  font-size: 0.7rem;
+}
+
+/* 3. Copyright */
+.infobar-copyright {
+  font-size: 0.7rem;
+  color: #bbb;
+  margin-top: 5px;
+  font-weight: 400;
 }
 
 /* =========================================
@@ -689,100 +813,35 @@ select.review-input {
   color: #333 !important;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
-
-/* =========================================
-   10. InfoBar Components (New)
-   ========================================= */
-.infobar-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 20px 25px;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-  gap: 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  border: 1px solid #eee;
-}
-
-.infobar-left {
+  /* [Moved from InfoModal.jsx] */
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow: hidden;
 }
 
-.infobar-title {
-  font-weight: bold;
-  font-size: 1.1rem;
-  color: #333;
-}
+/* [NEW] Mobile Modal Optimization */
+@media (max-width: 480px) {
+  .modal-overlay {
+    align-items: flex-start !important;
+    /* Start from top */
+    padding-top: 10vh;
+    /* 10% from top */
+    overflow-y: auto;
+    /* Allow scrolling if modal is too tall */
+  }
 
-.infobar-right {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-  /* [FIX] Wrap buttons on mobile */
-  justify-content: flex-end;
-}
-
-.infobar-btn-highlight {
-  background: linear-gradient(135deg, #3498db, #2980b9);
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 25px;
-  transition: all 0.3s ease;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.25);
-  letter-spacing: -0.5px;
-}
-
-.infobar-btn-text {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: #555;
-  padding: 5px 10px;
-  border-radius: 5px;
-  transition: background 0.2s;
-  font-weight: 500;
-}
-
-.infobar-btn-icon {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  padding: 5px 12px;
-  font-size: 0.9rem;
-  color: #444;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: transform 0.1s;
-}
-
-/* Header Logo Styles */
-.logo-header {
-  font-size: 2.5em;
-  margin-bottom: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  user-select: none;
+  .modal-content {
+    width: 95% !important;
+    /* Wider on mobile */
+    max-height: initial;
+    /* Remove fixed height constraint */
+    min-height: auto;
+    margin-bottom: 50px;
+    /* Space at bottom for scrolling */
+  }
 }
 
 .logo-img {
@@ -824,31 +883,33 @@ select.review-input {
     font-size: 0.85rem;
     padding: 8px 12px;
   }
-}/* [NEW] ì¹´ë“œ ?´ë?ì§€ ?˜í¼ (?´ë?ì§€ ?˜ë¦¼ ë°©ì?) */
+}
+
+/* [NEW] ì¹´ë“œ ?ï¿½ï¿½?ì§€ ?ï¿½í¼ (?ï¿½ï¿½?ì§€ ?ï¿½ë¦¼ ë°©ï¿½?) */
 .card-image-wrapper {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #f9f9f9;
-    overflow: hidden;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f9f9f9;
+  overflow: hidden;
 }
 
 .card-image-wrapper img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    /* [FIX] ?˜ë¦¼ ë°©ì? (?„ì²´ ë³´ì´ê¸? */
-    transition: transform 0.3s ease;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* [FIX] ?ï¿½ë¦¼ ë°©ï¿½? (?ï¿½ì²´ ë³´ì´ï¿½? */
+  transition: transform 0.3s ease;
 }
 
 .card-image-wrapper:hover img {
-    transform: scale(1.05);
-    /* ?¸ë²„ ???´ì§ ?•ë? */
+  transform: scale(1.05);
+  /* ?ï¿½ë²„ ???ï¿½ì§ ?ï¿½ï¿½? */
 }
 
-/* [NEW] »ó´Ü ·Î±×ÀÎ/È¸¿ø°¡ÀÔ ÄÁÅ×ÀÌ³Ê ½ºÅ¸ÀÏ */
+/* [NEW] ï¿½ï¿½ï¿½ ï¿½Î±ï¿½ï¿½ï¿½/È¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ì³ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½ */
 .top-nav-container {
   position: absolute;
   top: 10px;
@@ -869,26 +930,26 @@ select.review-input {
 }
 
 
-/* [NEW] ºñ·Î±×ÀÎ »óÅÂ(ÅøÆÁ ÀÖÀ½)ÀÏ ¶§¸¸ ¸ğ¹ÙÀÏ¿¡¼­ ¿©¹é Ãß°¡ */
+/* [NEW] ï¿½ï¿½Î±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ */
 @media (max-width: 480px) {
   .login-links-wrapper {
-    margin-bottom: 50px; /* ÅøÆÁÀÌ µé¾î°¥ °ø°£ È®º¸ */
+    margin-bottom: 50px;
+    /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½î°¥ ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ */
   }
 }
 
 
-/* [FIX] ÅøÆÁ °ãÄ§ ¹æÁö¸¦ À§ÇÑ Ãß°¡ ¿©¹é */
+/* [FIX] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä§ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ ï¿½ï¿½ï¿½ï¿½ */
 @media (max-width: 480px) {
   .top-nav-container {
-    margin-bottom: 80px !important;
+    /* margin-bottom: 80px !important; */
   }
 }
 
 
-/* [FIX] Çì´õ¸¦ °­Á¦·Î ¾Æ·¡·Î ¹Ğ¾î ÅøÆÁ °ø°£ È®º¸ */
+/* [FIX] ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Æ·ï¿½ï¿½ï¿½ ï¿½Ğ¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ */
 @media (max-width: 480px) {
   header {
-    margin-top: 100px !important;
+    /* margin-top: 100px !important; */
   }
 }
-

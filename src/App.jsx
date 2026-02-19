@@ -1,584 +1,70 @@
 // src/App.js
-// 최종 수정일: 2026.01.30 (빌드 리프레시)
-// 설명: 메인 화면(Home) 및 라우터 설정, 데이터 로딩, 필터링 로직 포함
+// 최종 수정일: 2026.02.19 (구조 개편)
+// 설명: 라우터 설정 및 전역 Provider 구성 (InfoBar, Home 등은 하위 페이지로 이동)
 
-import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { fetchGames, fetchTrending, fetchConfig, sendLog } from './api'; // API 함수들 임포트
-import { useGameFilter } from './hooks/useGameFilter'; // [NEW] Custom Hook
-// import Admin from './Admin';         // [DELETE] Static Import
-const Admin = lazy(() => import('./Admin')); // [NEW] Lazy Import
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import './App.css';
 
-// [OPTIMIZATION] Lazy Load Route Components
+// Contexts
+import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
+import { GameProvider } from './contexts/GameDataContext'; // [NEW] 데이터 중앙 관리
+
+// Components (Lazy Load)
+const Home = lazy(() => import('./pages/Home')); // [MOVED] pages/Home.jsx
+const CategorySelect = lazy(() => import('./pages/CategorySelect')); // [NEW]
+const GameSearch = lazy(() => import('./pages/GameSearch')); // [NEW]
 const GameDetail = lazy(() => import('./components/GameDetail'));
 const Login = lazy(() => import('./components/Login'));
 const Signup = lazy(() => import('./components/Signup'));
 const MyPage = lazy(() => import('./components/MyPage'));
 const KioskPage = lazy(() => import('./kiosk/KioskPage'));
+const Admin = lazy(() => import('./Admin'));
 
-import { TEXTS } from './constants'; // 텍스트 수집 
-import './App.css';
-import logo from './logo.png';
-import FilterBar from './components/FilterBar';            // 스타일시트
-// import Login from './components/Login';   // [DELETE] Static
-// import Signup from './components/Signup'; // [DELETE] Static
-// import MyPage from './components/MyPage'; // [DELETE] Static
-import { AuthProvider, useAuth } from './contexts/AuthContext'; // [NEW] Supabase Auth
-import { ToastProvider } from './contexts/ToastContext'; // [NEW] Toast 시스템
-// import KioskPage from './kiosk/KioskPage'; // [DELETE] Static
-import ProtectedRoute from './components/ProtectedRoute'; // [NEW] Protected Route
-import InfoBar from './components/InfoBar'; // [NEW] InfoBar Component
-import { getOptimizedImageUrl } from './utils/imageOptimizer'; // [NEW] 이미지 최적화
-import LoginTooltip from './components/LoginTooltip'; // [NEW] 로그인 툴팁
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginTooltip from './components/LoginTooltip';
 
-const MainSearchBar = ({ value, onChange }) => (
-  <div className="main-search-wrapper">
-    <input
-      type="text"
-      className="main-search-input"
-      placeholder="🔍 검색하거나, 아래로 스크롤하세요"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
-);
-
-function Home() {
-  const navigate = useNavigate();
-  const location = useLocation(); // [FIX] useLocation 훅 사용
-  const { user, profile, logout } = useAuth(); // [NEW] useAuth 훅 사용
-
-  // ==========================================
-  // [이스터 에그] 로고 5번 클릭 시 관리자 페이지 이동
-  // ==========================================
-
-
-
-
-  // ==========================================
-  // 1. 상태 관리 (State Management)
-  // ==========================================
-
-  const [games, setGames] = useState([]);
-  // const [showGuide, setShowGuide] = useState(false); // [DELETE] InfoBar로 통합
-  const [trending, setTrending] = useState([]);
-  const [config, setConfig] = useState(null);
-  const [pageLoading, setPageLoading] = useState(true);
-  const [dataLoading, setDataLoading] = useState(false);
-  const [inputValue, setInputValue] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("전체");
-  const [difficultyFilter, setDifficultyFilter] = useState("전체");
-  const [onlyAvailable, setOnlyAvailable] = useState(false);
-  const [playerFilter, setPlayerFilter] = useState("all");
-  const filterSectionRef = useRef(null);
-  const JOIN_FORM_URL = "https://forms.gle/VaASrMoiC6pda75t8";
-
-
-
-
-  // ==========================================
-  // 2. 이펙트 & 데이터 로딩 (Effects)
-  // ==========================================
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearchTerm(inputValue);
-      // [NEW] 검색어 로그 기록 (구조화)
-      if (inputValue.trim()) {
-        sendLog(null, 'SEARCH', { query: inputValue.trim() });
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [inputValue]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      const CACHE_DURATION = 1000 * 60 * 5; // [FIX] 5분 캐시 적용
-
-      // [개선] 캐시 확인 (타임스탬프 기반)
-      const cachedGames = localStorage.getItem('games_cache');
-      const cachedTrending = localStorage.getItem('trending_cache');
-      const cachedConfig = localStorage.getItem('config_cache');
-
-      let shouldFetchGames = true;
-      let cachedGamesData = null;
-
-      if (cachedGames) {
-        try {
-          const cache = JSON.parse(cachedGames);
-          const age = Date.now() - (cache.timestamp || 0);
-
-          if (age < CACHE_DURATION) {
-            // 캐시 유효
-            cachedGamesData = cache.data;
-            setGames(cachedGamesData);
-            setPageLoading(false);
-            shouldFetchGames = false;
-          }
-        } catch (e) {
-          console.warn('게임 캐시 파싱 실패:', e);
-        }
-      }
-
-      if (cachedConfig) {
-        const config = await fetchConfig();
-        setConfig(config);
-      }
-
-      if (cachedTrending && cachedGamesData) {
-        try {
-          const tCache = JSON.parse(cachedTrending);
-          const mapped = tCache.data.map(t => cachedGamesData.find(g => String(g.id) === String(t.id))).filter(Boolean);
-          setTrending(mapped);
-        } catch (e) { }
-      }
-
-      // [개선] API 호출
-      if (shouldFetchGames || !cachedTrending) {
-        if (shouldFetchGames) setDataLoading(true);
-      }
-
-      try {
-        const [gamesData, trendingData, configData] = await Promise.all([
-          shouldFetchGames ? fetchGames() : Promise.resolve(null),
-          fetchTrending(),
-          fetchConfig()
-        ]);
-
-        if (gamesData && !gamesData.error) {
-          const valid = gamesData.filter(g => g.name && g.name.trim() !== "");
-          setGames(valid);
-          // [개선] 타임스탬프와 함께 저장
-          localStorage.setItem('games_cache', JSON.stringify({
-            data: valid,
-            timestamp: Date.now()
-          }));
-        } else if (gamesData?.error) {
-          console.error('게임 데이터 로딩 에러:', gamesData.message);
-        }
-
-        if (configData) {
-          setConfig(configData);
-        }
-
-        if (Array.isArray(trendingData)) {
-          const gameList = gamesData || cachedGamesData;
-          if (gameList) {
-            const mapped = trendingData.map(t => gameList.find(g => String(g.id) === String(t.id))).filter(Boolean);
-            setTrending(mapped);
-            localStorage.setItem('trending_cache', JSON.stringify({
-              data: trendingData,
-              timestamp: Date.now()
-            }));
-          }
-        }
-
-      } catch (e) {
-        console.error("데이터 로딩 실패:", e);
-      } finally {
-        setPageLoading(false);
-        setDataLoading(false);
-      }
-    };
-    loadData();
-  }, []);
-
-  // ==========================================
-  // [NEW] 스크롤 위치 저장 및 복원 (Scroll Restoration)
-  // ==========================================
-
-  // 1. 스크롤 위치 저장: 사용자가 스크롤할 때마다 위치 기록
-  // 1. 스크롤 위치 저장: 사용자가 스크롤할 때마다 위치 기록 -> [REMOVED] 클릭 시 저장으로 변경
-  // useEffect(() => {
-  //   const handleScroll = () => {
-  //     sessionStorage.setItem('home_scroll_y', window.scrollY);
-  //   };
-  //   window.addEventListener('scroll', handleScroll, { passive: true });
-  //   return () => window.removeEventListener('scroll', handleScroll);
-  // }, []);
-
-  // 2. 스크롤 위치 복원: 데이터 로딩 완료 후 이전 위치로 이동
-  useEffect(() => {
-    if (!pageLoading) {
-      const savedScrollY = sessionStorage.getItem('home_scroll_y');
-      if (savedScrollY) {
-        // 브라우저가 레이아웃을 계산할 시간을 주기 위해 약간의 지연 후 이동
-        setTimeout(() => {
-          window.scrollTo(0, parseInt(savedScrollY, 10));
-        }, 50);
-      }
-    }
-  }, [pageLoading]);
-
-  // ==========================================
-  // 3. 필터링 로직 (Custom Hook 사용) [IMPROVED]
-  // ==========================================
-  const filteredGames = useGameFilter(games, {
-    searchTerm,
-    selectedCategory,
-    onlyAvailable,
-    difficultyFilter,
-    playerFilter
-  });
-
-  const categories = ["전체", ...new Set(games.map(g => g.category).filter(Boolean))];
-
-  useEffect(() => {
-    const isFiltered = searchTerm || selectedCategory !== "전체" || difficultyFilter !== "전체" || playerFilter !== "all" || onlyAvailable;
-
-    if (isFiltered && !pageLoading) {
-      setTimeout(() => {
-        const offset = 10; // 상단 검색바와의 적절한 간격
-        const element = filterSectionRef.current;
-        if (element) {
-          const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-          window.scrollTo({
-            top: elementPosition - offset,
-            behavior: 'smooth'
-          });
-        }
-      }, 50);
-    }
-  }, [searchTerm, selectedCategory, difficultyFilter, playerFilter, onlyAvailable, pageLoading]);
-
-  // [NEW] 필터 시너지 로그 (검색 제외한 필터만 변경 시, 디바운스 적용)
-  useEffect(() => {
-    if (pageLoading) return;
-
-    const hasFilter = selectedCategory !== "전체" || difficultyFilter !== "전체" || playerFilter !== "all" || onlyAvailable;
-    if (!hasFilter) return;
-
-    const timer = setTimeout(() => {
-      sendLog(null, 'FILTER_CHANGE', {
-        category: selectedCategory,
-        difficulty: difficultyFilter,
-        players: playerFilter,
-        only_available: onlyAvailable
-      });
-    }, 1000); // 필터는 1초간 멈췄을 때만 기록
-
-    return () => clearTimeout(timer);
-  }, [selectedCategory, difficultyFilter, playerFilter, onlyAvailable, pageLoading]);
-
-  // [NEW] 검색 결과 없음 로그 (구조화)
-  useEffect(() => {
-    if (searchTerm && filteredGames.length === 0 && !pageLoading) {
-      sendLog(null, 'SEARCH_EMPTY', { query: searchTerm });
-    }
-  }, [searchTerm, filteredGames.length, pageLoading]);
-
-  // ==========================================
-  // 3. 핸들러 함수 (Event Handlers)
-  // ==========================================
-
-  const handleThemeClick = (tagValue) => {
-    setInputValue(tagValue);
-    setSearchTerm(tagValue);
-    setOnlyAvailable(false);
-    setDifficultyFilter("전체");
-    setSelectedCategory("전체");
-    setPlayerFilter("all");
-    window.scrollTo({ top: 400, behavior: 'smooth' });
-  };
-
-  const resetFilters = () => {
-    setInputValue("");
-    setSearchTerm("");
-    setSelectedCategory("전체");
-    setDifficultyFilter("전체");
-    setPlayerFilter("all");
-    setOnlyAvailable(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // ==========================================
-  // 4. 핸들러 함수 (Event Handlers)
-  // ==========================================
-
-  if (pageLoading) return (
-    <div className="loading-container">
-      <div className="spinner"></div>
-      <p style={{ marginTop: "20px", color: "#666", fontSize: "1.1em" }}>
-        🎲 보드게임 정보를 불러오고 있어요...<br />
-        <span style={{ fontSize: "0.8em", color: "#999" }}>요즘 잘나가는 애들로 가져올게요...</span>
-      </p>
-    </div>
-  );
-
-  return (
-    <div className="main-container">
-
-      <div className="top-nav-container">
-        {user ? (
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <span style={{ fontWeight: "bold", color: "#2c3e50" }}>👋 {profile?.name || user.email}님</span>
-            <Link to="/mypage">
-              <button style={{ padding: "5px 10px", border: "1px solid #ddd", background: "#f1f2f6", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", color: "#333" }}>
-                마이페이지
-              </button>
-            </Link>
-
-            <button
-              onClick={logout}
-              style={{ padding: "5px 10px", border: "1px solid #ddd", background: "white", borderRadius: "5px", cursor: "pointer" }}
-            >
-              로그아웃
-            </button>
-          </div>
-        ) : (
-          <div className="auth-container" style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              <Link to="/login" style={{ textDecoration: "none", color: "#555", fontWeight: "bold" }}>로그인</Link>
-              <span style={{ color: "#ddd" }}>|</span>
-              <Link to="/signup" style={{ textDecoration: "none", color: "#3498db", fontWeight: "bold" }}>회원가입</Link>
-            </div>
-            <LoginTooltip />
-          </div>
-        )}
-      </div>
-
-      {/* --- [헤더 영역] --- */}
-      <header style={{ marginBottom: "30px", textAlign: "center" }}>
-        <h1 className="logo-header">
-          <img
-            src={logo}
-            alt="덜지니어스 로고"
-            className="logo-img"
-            onClick={(e) => {
-              // 1. 기본 동작: 메인으로 이동
-              if (location.pathname !== "/") {
-                navigate("/");
-              } else {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-
-              // 2. [DEV] 이스터에그: 5번 연속 클릭 시 관리자 페이지 이동
-              // 2. [DEV] 이스터에그: 5번 연속 클릭 시 관리자 페이지 이동
-              // if (import.meta.env.DEV) { // [CHANGED] 배포 환경에서도 허용
-              const now = Date.now();
-              const lastClick = window.lastLogoClickTime || 0;
-
-              if (now - lastClick < 500) { // 0.5초 이내 클릭
-                window.logoClickCount = (window.logoClickCount || 0) + 1;
-              } else {
-                window.logoClickCount = 1;
-              }
-              window.lastLogoClickTime = now;
-
-              if (window.logoClickCount >= 5) {
-                if (window.logoClickCount >= 5) {
-                  const confirmDev = window.confirm("🛠️ 개발자 모드로 관리자 페이지에 접속하시겠습니까?");
-                  if (confirmDev) {
-                    // sessionStorage.setItem('dev_admin_bypass', 'true'); // [REMOVED] 보안 강화
-                    navigate("/admin-secret");
-                    window.logoClickCount = 0;
-                  }
-                }
-              }
-              // }
-            }}
-          />
-          <span onClick={() => window.location.reload()}>덜지니어스 대여소</span>
-        </h1>
-
-        <div style={{ marginBottom: "20px" }}>
-          <a href={JOIN_FORM_URL} target="_blank" rel="noopener noreferrer"
-            style={{ display: "inline-block", padding: "10px 20px", background: "#3498db", color: "white", textDecoration: "none", borderRadius: "25px", fontWeight: "bold", boxShadow: "0 2px 5px rgba(0,0,0,0.2)" }}>
-            🚀 부원 가입 신청하기
-          </a>
-        </div>
-      </header>
-
-      {/* [MODIFIED] InfoBar를 상단으로 이동 & 기존 가이드 제거 */}
-      <InfoBar games={games} />
-
-      {/* [NEW] 메인 검색바 추가 (기존 스크롤 힌트 대체) */}
-      <MainSearchBar value={inputValue} onChange={setInputValue} />
-
-      <main role="main">
-        {/* --- [대시보드: 추천 테마 + 인기 급상승] --- */}
-        <div className={`trending-wrapper dashboard-container ${(searchTerm || selectedCategory !== "전체") ? 'hidden' : ''}`}>
-          <div className="dashboard-left">
-            <h2 style={{ fontSize: "1.5em", marginBottom: "15px" }}>🎯 상황별 추천</h2>
-            {config === null ? (
-              <div className="theme-grid">
-                {[1, 2, 3, 4].map(i => <div key={i} className="skeleton-box" style={{ height: "80px" }}></div>)}
-              </div>
-            ) : (
-              <div className="theme-grid">
-                {config.map((btn, idx) => (
-                  <button key={idx} onClick={() => handleThemeClick(btn.value)} className="theme-btn" style={{ borderLeft: `5px solid ${btn.color} ` }}>
-                    {btn.label.split("\\n").map((line, i) => <span key={i}>{line}<br /></span>)}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="dashboard-right">
-            <h2 style={{ fontSize: "1.5em", marginBottom: "15px" }}>🔥 요즘 뜨는 게임</h2>
-            {(dataLoading && trending.length === 0) ? (
-              <div className="section-loading">
-                <div className="mini-spinner"></div>
-                <span style={{ fontSize: "0.9em" }}>인기 순위 집계 중...</span>
-              </div>
-            ) : (
-              trending.length > 0 ? (
-                <div style={{ display: "flex", gap: "15px", overflowX: "auto", padding: "10px 5px 20px 5px", scrollBehavior: "smooth" }}>
-                  {trending.map((game, index) => (
-                    <Link to={`/game/${game.id}`} state={{ game }} key={game.id} style={{ textDecoration: "none", color: "inherit" }}>
-                      <div className="trend-card">
-                        <div className="trend-badge">{index + 1}위</div>
-                        <div style={{ width: "100%", height: "140px", background: "#f8f9fa" }}>
-                          {game.image ? (
-                            <img
-                              src={getOptimizedImageUrl(game.image, 300)}
-                              alt={game.name}
-                              loading="lazy"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                if (e.target.src !== game.image) {
-                                  e.target.src = game.image;
-                                }
-                              }}
-                              style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                            />
-                          ) : (
-                            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", fontSize: "0.8em" }}>No Image</div>
-                          )}
-                        </div>
-                        <div style={{ padding: "10px" }}>
-                          <div className="text-truncate" style={{ fontWeight: "bold", marginBottom: "3px", fontSize: "0.9em" }}>{game.name}</div>
-                          <div style={{ fontSize: "0.8em", color: "#888" }}>{game.category}</div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ padding: "30px", background: "#f9f9f9", borderRadius: "10px", textAlign: "center", color: "#888" }}>
-                  아직 데이터 수집 중... 📊
-                </div>
-              )
-            )}
-          </div>
-        </div>
-
-
-        <div ref={filterSectionRef}>
-          <FilterBar
-            inputValue={inputValue} setInputValue={setInputValue}
-            selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
-            difficultyFilter={difficultyFilter} setDifficultyFilter={setDifficultyFilter}
-            playerFilter={playerFilter} setPlayerFilter={setPlayerFilter}
-            onlyAvailable={onlyAvailable} setOnlyAvailable={setOnlyAvailable}
-            categories={categories}
-            onReset={resetFilters}
-            hideSearch={true}
-          />
-        </div>
-
-        <div style={{ marginBottom: "15px", color: "#666", fontSize: "0.9em", marginLeft: "5px" }}>
-          총 <strong>{filteredGames.length}</strong>개의 게임을 찾았습니다.
-        </div>
-
-        <div className="game-list" key={searchTerm + selectedCategory}>
-          {filteredGames.map((game, idx) => (
-            <div key={game.id} className="game-card-animation" style={{ animationDelay: `${idx * 0.05}s` }}>
-              <div style={{ border: "1px solid #eee", borderRadius: "10px", overflow: "hidden", boxShadow: "0 2px 5px rgba(0,0,0,0.05)", background: "white" }}>
-                <Link
-                  to={`/game/${game.id}`}
-                  state={{ game }}
-                  style={{ textDecoration: 'none', color: 'inherit', display: "block" }}
-                  onClick={() => sessionStorage.setItem('home_scroll_y', window.scrollY)} // [NEW] 클릭 시 스크롤 위치 저장
-                >
-                  <div style={{ width: "100%", height: "200px", overflow: "hidden", background: "#f9f9f9", position: "relative" }}>
-                    <div className="card-image-wrapper">
-                      {game.image ? (
-                        <img
-                          src={getOptimizedImageUrl(game.image, 300)}
-                          alt={game.name}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            if (e.target.src !== game.image) {
-                              e.target.src = game.image;
-                            }
-                          }}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="no-image">No Image</div>
-                      )}
-                      {/* [NEW] 왼쪽 상단 순위 뱃지 (검색/필터 없을 때만 표시) */}
-                    </div>
-                    {(game.status !== "대여가능") && (
-                      <div style={{
-                        position: "absolute", top: "10px", right: "10px",
-                        background: game.status === "대여가능" ? "rgba(46, 204, 113, 0.9)" : "rgba(231, 76, 60, 0.9)",
-                        color: "white", padding: "4px 10px", borderRadius: "12px", fontSize: "0.8em", fontWeight: "bold",
-                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                      }}>
-                        {game.status}
-                        {game.status === "대여가능" && game.available_count > 0 && ` (${game.available_count})`}
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ padding: "15px" }}>
-                    <h3 className="text-truncate" style={{ margin: "0 0 5px 0", fontSize: "1.1em", fontWeight: "bold" }}>{game.name}</h3>
-                    <div style={{ fontSize: "0.85em", color: "#888", marginBottom: "10px", display: "flex", justifyContent: "space-between" }}>
-                      <span className="text-truncate" style={{ maxWidth: "60%" }}>{game.genre}</span>
-                      <span>{game.players ? `👥 ${game.players} ` : ""}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9em", alignItems: "center" }}>
-                      <span style={{ background: "#f1f2f6", padding: "2px 8px", borderRadius: "5px", color: "#555", fontSize: "0.8em" }}>{game.category}</span>
-                      {game.difficulty ? <span style={{ color: "#e67e22", fontWeight: "bold" }}>🔥 {game.difficulty}</span> : <span style={{ color: "#ddd" }}>-</span>}
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
-
-
-    </div>
-  );
-}
-
-// 라우터 설정 (메인)
+// 메인 앱 컴포넌트
 function App() {
   return (
     <ToastProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <Suspense fallback={
-            <div className="loading-container">
-              <div className="spinner"></div>
-              <p style={{ marginTop: "20px", color: "#666" }}>페이지 로딩 중...</p>
-            </div>
-          }>
-            <Routes>
-              {/* Home은 이제 내부 useAuth를 사용하므로 props 전달 불필요 */}
-              <Route path="/" element={<Home />} />
-              {/* 하위 페이지들도 context 사용 가능 */}
-              <Route path="/game/:id" element={<GameDetail />} />
-              <Route path="/mypage" element={<MyPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route element={<ProtectedRoute allowedRoles={['admin', 'executive']} />}>
-                <Route
-                  path="/admin-secret"
-                  element={<Admin />}
-                />
-              </Route>
-              <Route path="/kiosk" element={<KioskPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
+        <GameProvider> {/* [NEW] Game Data Provider 추가 */}
+          <BrowserRouter>
+            <Suspense fallback={
+              <div className="loading-container">
+                <div className="spinner"></div>
+                <p style={{ marginTop: "20px", color: "#666" }}>페이지 로딩 중...</p>
+              </div>
+            }>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/categories" element={<CategorySelect />} />
+                <Route path="/search" element={<GameSearch />} />
+
+                <Route path="/game/:id" element={<GameDetail />} />
+                <Route path="/mypage" element={<MyPage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+
+                <Route element={<ProtectedRoute allowedRoles={['admin', 'executive']} />}>
+                  <Route path="/admin-secret" element={<Admin />} />
+                </Route>
+
+                <Route path="/kiosk" element={<KioskPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+
+              {/* [Global UI] 로그인 툴팁은 이제 각 페이지 헤더나 필요 시점에 렌더링되므로 여기서 제거하거나 
+                  필요하다면 공통 레이아웃 컴포넌트(Layout.jsx)를 만드는 것이 좋음.
+                  현재는 Home, GameDetail 등에서 개별 처리 중이므로 App level에서는 제거. 
+                  단, AuthProvider 내부에서 Global로 처리해야 할 것이 있다면 여기에 배치.
+              */}
+
+            </Suspense>
+          </BrowserRouter>
+        </GameProvider>
       </AuthProvider>
     </ToastProvider>
   );

@@ -1,0 +1,221 @@
+/* src/pages/GameSearch.css */
+
+.search-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+}
+
+.search-header {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+    padding: 10px 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.search-input-wrapper {
+    flex: 1;
+}
+
+.search-page-input {
+    width: 100%;
+    padding: 10px 15px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    background: #f8f9fa;
+    font-size: 1em;
+    outline: none;
+    transition: box-shadow 0.2s;
+}
+
+.search-page-input:focus {
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    border-color: #3498db;
+    background: white;
+}
+
+.search-status-bar {
+    padding: 10px 20px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* 게임 리스트 아이템 스타일 */
+/* 게임 리스트 아이템 스타일 */
+.search-game-list {
+    padding: 0 15px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* [FIX] 2 Columns Grid */
+    gap: 15px;
+}
+
+@media (min-width: 768px) {
+    .search-game-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        /* 3 Cols on Tablet */
+    }
+}
+
+@media (min-width: 1024px) {
+    .search-game-list {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        /* 4 Cols on Desktop */
+    }
+}
+
+/* Game Card Structure - Robust Equal Heights */
+.game-card-animation {
+    margin-bottom: 0;
+    animation: slideUpFade 0.5s ease-out forwards;
+    opacity: 0;
+    transform: translateY(10px);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes slideUpFade {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.game-card-link {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    /* Grow to fill animation wrapper */
+    height: 100%;
+    text-decoration: none;
+    color: inherit;
+}
+
+.game-item-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    /* Grow to fill link */
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #eee;
+    /* [FIX] Minimal border to define edges */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    height: 100%;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.game-item-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    border-color: #ddd;
+}
+
+.game-item-img-wrapper {
+    width: 100%;
+    padding-top: 100%;
+    /* 1:1 Ratio */
+    background: #f1f2f6;
+    /* [FIX] Darker gray background to frame whitebox images */
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid #eee;
+    /* Separator */
+}
+
+.game-item-img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Fill the square */
+}
+
+.game-item-info {
+    flex: 1;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* Push badges to bottom */
+}
+
+.game-item-title {
+    margin: 0 0 8px 0;
+    font-size: 1.15em;
+    font-weight: bold;
+    line-height: 1.35;
+    height: 2.7em;
+    /* Fixed height for 2 lines */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    color: #333;
+}
+
+.game-item-meta {
+    font-size: 0.85em;
+    color: #888;
+    margin-bottom: 8px;
+}
+
+.game-item-badges {
+    margin-top: auto;
+    /* Push to bottom */
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+}
+
+.badge-status {
+    font-size: 0.75em;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.badge-status.available {
+    color: #27ae60;
+    background: #e8f8f5;
+}
+
+.badge-status.unavailable {
+    color: #c0392b;
+    background: #fadbd8;
+}
+
+.badge-difficulty {
+    font-size: 0.75em;
+    color: #e67e22;
+    background: #fff3e0;
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+.no-results {
+    text-align: center;
+    padding: 50px 0;
+    color: #888;
+}

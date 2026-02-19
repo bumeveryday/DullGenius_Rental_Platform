@@ -3,16 +3,18 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { fetchGames, sendMiss, fetchReviews, addReview, increaseViewCount, dibsGame, cancelDibsGame, fetchMyRentals, sendLog } from '../api';
 import { TEXTS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext'; // [NEW] 전역 Toast
-import ConfirmModal from './ConfirmModal'; // [NEW] 커스텀 확인 모달
-import { getOptimizedImageUrl } from '../utils/imageOptimizer'; // [NEW] 이미지 최적화
+import { useToast } from '../contexts/ToastContext';
+import ConfirmModal from './ConfirmModal';
+import LazyImage from './common/LazyImage'; // [NEW] Lazy Image
+import { getOptimizedImageUrl } from '../utils/imageOptimizer';
+import './GameDetail.css'; // [NEW] External CSS
 
 function GameDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile } = useAuth();
-  const { showToast } = useToast(); // [NEW] 전역 toast 함수
+  const { showToast } = useToast();
 
   const [game, setGame] = useState(location.state?.game || null);
   const [reviews, setReviews] = useState([]);
@@ -21,10 +23,9 @@ function GameDetail() {
   const [newReview, setNewReview] = useState({ rating: "5", comment: "" });
   const [cooldown, setCooldown] = useState(0);
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
-  const [videoModalOpen, setVideoModalOpen] = useState(false); // [NEW] 영상 모달 상태
-  const [videoId, setVideoId] = useState(null); // [NEW] 유튜브 ID
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [videoId, setVideoId] = useState(null);
 
-  // [NEW] Confirm 모달 상태
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     title: "",
@@ -51,7 +52,6 @@ function GameDetail() {
     const loadData = async () => {
       let targetGame = game;
 
-      // 1. 캐시/API로 게임 정보 찾기
       if (!targetGame) {
         setLoading(true);
         const cached = localStorage.getItem('games_cache');
@@ -80,14 +80,12 @@ function GameDetail() {
       }
 
       setIsReviewsLoading(true);
-      // [FIX] 중복 제거 및 필터링은 API 내부에서 처리됨
       const reviewsData = await fetchReviews(id);
       setReviews(reviewsData || []);
 
       setIsReviewsLoading(false);
       setLoading(false);
 
-      // [NEW] 품절 상품 조회 로그 기록 (구조화)
       if (targetGame && targetGame.status !== "대여가능") {
         sendLog(id, 'OUT_OF_STOCK_VIEW', { current_status: targetGame.status });
       }
@@ -95,7 +93,6 @@ function GameDetail() {
     loadData();
   }, [id]);
 
-  // [NEW] 찜 상태 확인 (새로고침 시 유지)
   useEffect(() => {
     const checkDibsStatus = async () => {
       if (user && game) {
@@ -113,7 +110,7 @@ function GameDetail() {
       }
     };
     checkDibsStatus();
-  }, [user, game?.id]); // game이 로드된 후 실행
+  }, [user, game?.id]);
 
   useEffect(() => {
     if (cooldown > 0) {
@@ -122,7 +119,6 @@ function GameDetail() {
     }
   }, [cooldown]);
 
-  // [NEW] 유튜브 URL에서 ID 추출
   const getYoutubeId = (url) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -131,7 +127,6 @@ function GameDetail() {
   };
 
   const openVideo = (url) => {
-    // [NEW] 리소스 클릭 로그 (구조화)
     sendLog(game.id, 'RESOURCE_CLICK', {
       type: 'YouTube Video',
       url: url
@@ -142,12 +137,10 @@ function GameDetail() {
       setVideoId(vid);
       setVideoModalOpen(true);
     } else {
-      window.open(url, '_blank'); // 유튜브 아니면 새창
+      window.open(url, '_blank');
     }
   };
 
-  // 대여 처리 함수
-  // [FIX] User Flow: 사용자는 '찜하기'만 가능 (대여는 관리자/키오스크)
   const handleRent = async () => {
     if (!user) {
       showConfirmModal("로그인 필요", "로그인이 필요합니다. 로그인 페이지로 이동할까요?", () => {
@@ -161,7 +154,7 @@ function GameDetail() {
       `'${game.name}'을(를) 찜하시겠습니까?\n30분 내로 동아리방에서 수령해야 합니다.`,
       async () => {
         try {
-          const result = await dibsGame(game.id, user.id); // [Changed] rentGame -> dibsGame
+          const result = await dibsGame(game.id, user.id);
 
           if (result.success) {
             showToast("찜 완료! 30분 내에 수령해주세요.", {
@@ -169,7 +162,6 @@ function GameDetail() {
               buttonText: "마이페이지로 가기",
               onButtonClick: () => navigate('/mypage')
             });
-            // [UI 업데이트] 즉시 '예약됨/취소' 상태로 전환
             setGame(prev => ({
               ...prev,
               status: "예약됨",
@@ -183,7 +175,7 @@ function GameDetail() {
           showToast("오류 발생: " + (e.message || "알 수 없는 오류"), { type: "error" });
         }
       },
-      "primary" // [NOTE] ConfirmModal에서 primary 타입 지원 확인 필요 (없으면 info로 처리됨)
+      "primary"
     );
   };
 
@@ -230,14 +222,13 @@ function GameDetail() {
       await addReview({
         ...newReview,
         game_id: game.id,
-        user_name: profile?.name || user.email?.split('@')[0] || "익명", // [CHANGE] 실명 우선 사용
+        user_name: profile?.name || user.email?.split('@')[0] || "익명",
       });
 
       showToast(TEXTS.ALERT_REVIEW_SUCCESS);
       setNewReview({ rating: "5", comment: "" });
       setCooldown(10);
 
-      // 리뷰 목록 리로드
       const reviewsData = await fetchReviews(id);
       setReviews(reviewsData || []);
 
@@ -248,38 +239,41 @@ function GameDetail() {
     }
   };
 
-  if (loading && !game) return <div style={{ padding: "20px", textAlign: "center" }}>로딩 중...</div>;
+  if (loading && !game) return <div className="loading-container"><div className="spinner"></div></div>;
   if (!game) return <div style={{ padding: "20px", textAlign: "center" }}>게임을 찾을 수 없습니다.</div>;
 
+  const handleBack = () => {
+    if (location.state?.from) {
+      navigate(location.state.from);
+    } else {
+      navigate("/");
+    }
+  };
+
   return (
-    <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
-      <button onClick={() => navigate("/")} style={{ marginBottom: "20px", cursor: "pointer", border: "none", background: "none", fontSize: "1.2em" }}>← 뒤로가기</button>
+    <div className="game-detail-container">
+      <button onClick={handleBack} className="detail-back-btn">← 뒤로가기</button>
 
       {/* 게임 정보 카드 */}
-      {/* 게임 정보 카드 */}
-      <div style={{ border: "1px solid #ddd", borderRadius: "10px", padding: "20px", textAlign: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", background: "white" }}>
+      <div className="detail-card">
         {game.image && (
-          <img
-            src={getOptimizedImageUrl(game.image, 600)} // 상세 페이지는 조금 더 크게
+          <LazyImage
+            src={getOptimizedImageUrl(game.image, 600)}
+            fallbackSrc={game.image}
             alt={game.name}
-            loading="lazy"
-            onError={(e) => {
-              e.target.onerror = null; // 무한 루프 방지
-              if (e.target.src !== game.image) {
-                e.target.src = game.image; // 최적화 실패 시 원본 로드
-              }
-            }}
-            style={{ maxWidth: "100%", maxHeight: "300px", borderRadius: "10px", objectFit: "contain" }}
+            className="detail-img"
+            style={{ height: '300px', backgroundColor: 'transparent', width: '100%' }}
+            aspectRatio={null}
           />
         )}
-        <h2 style={{ marginTop: "15px" }}>{game.name}</h2>
+        <h2 className="detail-title">{game.name}</h2>
 
-        {/* [NEW] 스마트 뱃지 버튼 */}
-        <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "10px" }}>
+        {/* 스마트 뱃지 버튼 */}
+        <div className="detail-actions">
           {game.video_url && (
             <button
               onClick={() => openVideo(game.video_url)}
-              style={{ padding: "6px 12px", borderRadius: "15px", border: "1px solid #e74c3c", background: "white", color: "#e74c3c", cursor: "pointer", fontSize: "0.9em", display: "flex", alignItems: "center", gap: "5px" }}
+              className="action-btn video"
             >
               📺 영상 가이드
             </button>
@@ -293,32 +287,32 @@ function GameDetail() {
                 });
                 window.open(game.manual_url, '_blank');
               }}
-              style={{ padding: "6px 12px", borderRadius: "15px", border: "1px solid #3498db", background: "white", color: "#3498db", cursor: "pointer", fontSize: "0.9em", display: "flex", alignItems: "center", gap: "5px" }}
+              className="action-btn manual"
             >
               📖 설명서 보기
             </button>
           )}
         </div>
-        <p style={{ color: "#666" }}>{game.category} | {game.genre}</p>
+        <p className="detail-category">{game.category} | {game.genre}</p>
 
-        {/* [NEW] 추천 문구 */}
+        {/* 추천 문구 */}
         {game.recommendation_text && (
-          <div style={{ marginTop: "15px", padding: "10px", backgroundColor: "#f0f8ff", borderRadius: "8px", color: "#2980b9", fontSize: "0.95em", fontStyle: "italic" }}>
+          <div className="detail-recommendation">
             💡 {game.recommendation_text}
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-around", margin: "20px 0", background: "#f9f9f9", padding: "15px", borderRadius: "10px" }}>
+        <div className="detail-stats">
           <div>
-            <div style={{ fontSize: "0.8em", color: "#888" }}>난이도</div>
-            <div style={{ fontSize: "1.2em", color: "#e67e22", fontWeight: "bold" }}>{game.difficulty || "-"} <span style={{ fontSize: "0.8em" }}>/ 5.0</span></div>
+            <div className="stat-label">난이도</div>
+            <div className="stat-value difficulty">{game.difficulty || "-"} <span className="stat-label">/ 5.0</span></div>
           </div>
           <div>
-            <div style={{ fontSize: "0.8em", color: "#888" }}>상태</div>
-            <div style={{ fontSize: "1.2em", fontWeight: "bold", color: game.status === "대여가능" ? "#2ecc71" : "#e74c3c" }}>
+            <div className="stat-label">상태</div>
+            <div className={`stat-value ${game.status === "대여가능" ? "status-available" : "status-unavailable"}`}>
               {game.status}
               {game.status === "대여가능" && game.available_count > 0 && (
-                <span style={{ fontSize: "0.8em", color: "#27ae60", marginLeft: "5px" }}>
+                <span className="stat-value status-available" style={{ fontSize: "0.8em", marginLeft: "5px" }}>
                   ({game.available_count}개 남음)
                 </span>
               )}
@@ -326,21 +320,21 @@ function GameDetail() {
           </div>
         </div>
 
-        <div style={{ marginTop: "20px" }}>
+        <div className="main-action-area">
           {game.status === "대여가능" ? (
-            <button onClick={handleRent} style={{ width: "100%", padding: "15px", background: "#F39C12", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight: "bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(243, 156, 18, 0.3)" }}>
+            <button onClick={handleRent} className="main-btn rent">
               ⚡ 찜하기 (30분)
             </button>
           ) : (game.status === "예약됨" || game.status === "찜") && user && String(game.renterId) === String(user.id) ? (
-            <button onClick={handleCancelDibs} style={{ width: "100%", padding: "15px", background: "#e74c3c", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight: "bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(231, 76, 60, 0.3)" }}>
+            <button onClick={handleCancelDibs} className="main-btn cancel">
               ❌ 예약 취소
             </button>
           ) : game.status === "예약됨" || game.status === "찜" || game.status === "대여중" || game.status === "이용중" ? (
-            <button disabled style={{ width: "100%", padding: "15px", background: "#2ecc71", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight: "bold", cursor: "not-allowed", opacity: 0.8 }}>
+            <button disabled className="main-btn using">
               ✅ 이미 이용 중인 게임입니다
             </button>
           ) : (
-            <button onClick={handleMiss} style={{ width: "100%", padding: "15px", background: "#95a5a6", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1em", fontWeight: "bold", cursor: "pointer" }}>
+            <button onClick={handleMiss} className="main-btn miss">
               😢 아쉬워요 (입고 요청)
             </button>
           )}
@@ -348,20 +342,25 @@ function GameDetail() {
       </div>
 
       {/* 리뷰 섹션 */}
-      <div className="review-form-box" style={{ marginTop: "30px", borderTop: "1px solid #eee", paddingTop: "20px" }}>
+      <div className="review-section">
         <h3>리뷰 남기기</h3>
         {!user ? (
-          <div style={{ textAlign: "center", padding: "20px", color: "#888" }}>
-            <p style={{ marginBottom: "10px" }}>로그인 후 리뷰를 남길 수 있습니다.</p>
-            <button onClick={() => navigate("/login")} style={{ padding: "8px 16px", borderRadius: "5px", border: "1px solid #ddd", background: "white", cursor: "pointer" }}>로그인하기</button>
+          <div className="login-plz">
+            <p>로그인 후 리뷰를 남길 수 있습니다.</p>
+            <button onClick={() => navigate("/login")} className="login-btn-small">로그인하기</button>
           </div>
         ) : (
-          <div style={{ background: "#f8f9fa", padding: "15px", borderRadius: "10px" }}>
-            <div className="review-row top-row" style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", alignItems: "center" }}>
+          <div className="review-input-box">
+            <div className="review-header-row">
               <div style={{ fontWeight: "bold", color: "#555" }}>
                 작성자: <span style={{ color: "#2c3e50" }}>{profile?.name || "익명"}</span>
               </div>
-              <select className="review-input" value={newReview.rating} onChange={e => setNewReview({ ...newReview, rating: e.target.value })} style={{ padding: "5px", borderRadius: "5px", border: "1px solid #ddd" }} aria-label="별점 선택">
+              <select
+                className="review-rating-select"
+                value={newReview.rating}
+                onChange={e => setNewReview({ ...newReview, rating: e.target.value })}
+                aria-label="별점 선택"
+              >
                 <option value="5">⭐⭐⭐⭐⭐ (5점)</option>
                 <option value="4">⭐⭐⭐⭐ (4점)</option>
                 <option value="3">⭐⭐⭐ (3점)</option>
@@ -369,13 +368,12 @@ function GameDetail() {
                 <option value="1">⭐ (1점)</option>
               </select>
             </div>
-            <div className="review-row bottom-row" style={{ display: "flex", gap: "10px" }}>
+            <div className="review-body-row">
               <input
-                className="review-input"
+                className="review-text-input"
                 placeholder="후기를 남겨주세요"
                 value={newReview.comment}
                 onChange={e => setNewReview({ ...newReview, comment: e.target.value })}
-                style={{ flex: 1, padding: "10px", borderRadius: "5px", border: "1px solid #ddd" }}
               />
               <button
                 onClick={handleSubmitReview}
@@ -383,12 +381,7 @@ function GameDetail() {
                 className="review-submit-btn"
                 style={{
                   background: cooldown > 0 ? "#bdc3c7" : "#3498db",
-                  color: "white",
-                  border: "none",
-                  padding: "0 20px",
-                  borderRadius: "5px",
-                  cursor: cooldown > 0 ? "not-allowed" : "pointer",
-                  fontWeight: "bold"
+                  cursor: cooldown > 0 ? "not-allowed" : "pointer"
                 }}
               >
                 {cooldown > 0 ? `${cooldown} s` : "등록"}
@@ -399,19 +392,19 @@ function GameDetail() {
       </div>
 
       {/* 리뷰 목록 */}
-      <div style={{ marginTop: "30px" }}>
-        <h4 style={{ marginBottom: "15px", borderBottom: "2px solid #333", paddingBottom: "10px" }}>
+      <div className="review-list">
+        <h4 className="review-list-title">
           📝 리뷰 ({reviews.length})
         </h4>
         {isReviewsLoading ? <div>리뷰 불러오는 중...</div> : (
           (reviews || []).map(r => (
-            <div key={r.review_id || Math.random()} style={{ borderBottom: "1px solid #eee", padding: "15px 0" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+            <div key={r.review_id || Math.random()} className="review-item">
+              <div className="review-item-header">
                 <strong>{r.author_name || r.user_name || "익명"}</strong>
                 <span style={{ color: "#f1c40f" }}>{"⭐".repeat(r.rating)}</span>
               </div>
               <div style={{ color: "#333" }}>{r.content}</div>
-              <div style={{ fontSize: "0.8em", color: "#999", marginTop: "5px" }}>
+              <div className="review-date">
                 {new Date(r.created_at).toLocaleDateString()}
               </div>
             </div>
@@ -421,11 +414,11 @@ function GameDetail() {
       </div>
 
 
-      {/* [NEW] 유튜브 모달 */}
+      {/* 유튜브 모달 */}
       {
         videoModalOpen && (
-          <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }} onClick={() => setVideoModalOpen(false)}>
-            <div style={{ position: "relative", width: "90%", maxWidth: "800px", aspectRatio: "16/9", background: "black" }}>
+          <div className="video-modal-overlay" onClick={() => setVideoModalOpen(false)}>
+            <div className="video-modal-content">
               <iframe
                 width="100%"
                 height="100%"
@@ -437,7 +430,7 @@ function GameDetail() {
               ></iframe>
               <button
                 onClick={(e) => { e.stopPropagation(); setVideoModalOpen(false); }}
-                style={{ position: "absolute", top: "-40px", right: "0", background: "none", border: "none", color: "white", fontSize: "2em", cursor: "pointer" }}
+                className="video-close-btn"
               >
                 &times;
               </button>
@@ -446,7 +439,6 @@ function GameDetail() {
         )
       }
 
-      {/* [NEW] Confirm 모달 렌더링 */}
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         onClose={closeConfirmModal}

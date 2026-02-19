@@ -1,0 +1,173 @@
+/* src/pages/CategorySelect.css */
+
+.category-select-container {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    margin-right: 10px;
+    padding: 5px;
+}
+
+.category-title {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+}
+
+.category-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #eee;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.12);
+}
+
+.category-icon {
+    font-size: 2em;
+    margin-bottom: 10px;
+}
+
+.category-name {
+    font-weight: bold;
+    color: #000;
+    /* [FIX] Darker black */
+}
+
+.category-count {
+    font-size: 0.8em;
+    color: #888;
+    margin-top: 5px;
+}
+
+.player-count-section {
+    margin-bottom: 30px;
+    /* [FIX] Add margin bottom instead of top */
+    /* padding-top: 20px; */
+    /* border-top: 1px solid #eee; */
+}
+
+.player-count-title {
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+.player-btn-grid {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.player-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    min-width: 70px;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.player-btn:hover {
+    background: #f8f9fa;
+    border-color: #bbb;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* [NEW] Contextual Recommendations Styles */
+.recommendation-section-cat {
+    margin-bottom: 30px;
+}
+
+.section-subtitle {
+    margin-bottom: 15px;
+    font-size: 1.2em;
+    color: #111;
+    /* [FIX] Darken text color */
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+.theme-grid-cat {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.theme-btn-cat {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 1em;
+    font-weight: bold;
+    color: #000;
+    /* [FIX] Pure Black for maximum contrast */
+    cursor: pointer;
+    text-align: left;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 80px;
+    line-height: 1.4;
+}
+
+.theme-btn-cat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    background: #f8f9fa;
+}
+
+.theme-btn-cat div:first-child {
+    font-size: 1.1em;
+}
+
+.theme-btn-cat div:last-child {
+    font-size: 0.9em;
+    color: #000;
+    /* [FIX] Pure Black for maximum contrast as requested */
+    font-weight: normal;
+}

@@ -15,28 +15,34 @@ function InfoBar({ games }) {
     return (
         <>
             <div className="infobar-container">
-                {/* 좌측: 핵심 정보 */}
-                <div className="infobar-left">
-                    <div className="infobar-title">{CLUB_INFO.name}</div>
+                {/* 상단: 핵심 액션 (크고 예쁜 버튼) */}
+                <div className="infobar-actions">
+                    <button onClick={() => openModal('request')} className="infobar-action-btn primary">
+                        <span className="action-icon">🎲</span> 게임 신청
+                    </button>
+                    <button onClick={() => openModal('report')} className="infobar-action-btn secondary">
+                        <span className="action-icon">🚨</span> 파손/문의
+                    </button>
                 </div>
 
-                {/* 우측: 버튼 그룹 */}
-                <div className="infobar-right">
-                    <button onClick={() => openModal('guide')} className="infobar-btn-highlight">
-                        📖 이용 안내
+                {/* 하단: 정보 링크 (텍스트) */}
+                <div className="infobar-links">
+                    <button onClick={() => openModal('guide')} className="infobar-link-text">
+                        이용 안내
                     </button>
-                    <button onClick={() => openModal('intro')} className="infobar-btn-text">
+                    <span className="link-divider">|</span>
+                    <button onClick={() => openModal('intro')} className="infobar-link-text">
                         동아리 소개
                     </button>
-                    <button onClick={() => openModal('terms')} className="infobar-btn-text">
+                    <span className="link-divider">|</span>
+                    <button onClick={() => openModal('terms')} className="infobar-link-text">
                         이용 약관
                     </button>
-                    <button onClick={() => openModal('request')} className="infobar-btn-icon">
-                        🎲 게임 신청
-                    </button>
-                    <button onClick={() => openModal('report')} className="infobar-btn-icon">
-                        🚨 파손/문의
-                    </button>
+                </div>
+
+                {/* 최하단: 카피라이트 */}
+                <div className="infobar-copyright">
+                    <span className="copyright-text">Handong Global Univ. {CLUB_INFO.name}</span>
                 </div>
             </div>
 

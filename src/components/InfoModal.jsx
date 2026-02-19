@@ -297,15 +297,8 @@ function InfoModal({ isOpen, onClose, initialTab = 'guide' }) {
 
 const styles = {
     modal: {
-        width: '90%',
-        maxWidth: '600px',
-        maxHeight: '85vh', // [MOD] 높이 조금 증가
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: '12px',
+        // [MOD] Moved to App.css (.modal-content) for responsive control
         overflow: 'hidden',
-        background: 'white',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
     },
     header: {
         display: 'flex',

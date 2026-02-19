@@ -116,7 +116,7 @@ const styles = {
   inputSearch: { padding: "10px 15px", borderRadius: "20px", border: "1px solid #ddd", width: "180px" },
   select: { padding: "10px", borderRadius: "10px", border: "1px solid #ddd", cursor: "pointer" },
   checkboxLabel: { display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", userSelect: "none", margin: "0 10px" },
-  resetBtn: { padding: "10px 15px", background: "#e74c3c", color: "white", border: "none", borderRadius: "20px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "5px" }
+  resetBtn: { padding: "10px 20px", background: "#e74c3c", color: "white", border: "none", borderRadius: "25px", cursor: "pointer", fontWeight: "bold", fontSize: "1.05em", boxShadow: "0 4px 6px rgba(0,0,0,0.15)", display: "flex", alignItems: "center", gap: "5px", transition: "all 0.2s" }
 };
 
 export default FilterBar;
