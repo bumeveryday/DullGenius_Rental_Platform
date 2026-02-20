@@ -1,36 +1,45 @@
+/* [MODIFIED] Login Tooltip Style - Always Position to Left of Buttons */
 .login-tooltip-container {
-  /* Default (Desktop): Absolute positioning ABOVE the button */
+  /* Position to the LEFT of the login button group */
   position: absolute;
-  bottom: 110%;
-  /* Place above */
-  left: 0;
-  /* Align left with button container, or adjust as needed */
+  top: 50%;
+  right: 100%;
+  /* Push to left of parent group */
+  transform: translateY(-50%);
+  margin-right: 10px;
+  /* Gap */
+
   background-color: #3498db;
   color: white;
   padding: 8px 12px;
   border-radius: 8px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
+  z-index: 9999;
+
   font-size: 0.85rem;
   font-weight: bold;
   white-space: nowrap;
-  animation: bounce 2s infinite;
+
+  /* Horizontal bounce animation */
+  animation: bounce-horizontal 2s infinite;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* Arrow pointing RIGHT (towards buttons) */
 .login-tooltip-container::before {
   content: '';
   position: absolute;
-  top: 100%;
-  /* Point down */
-  left: 20px;
-  /* Aligned with Login button roughly */
-  border-width: 8px 8px 0 8px;
-  /* Triangle pointing down */
+  top: 50%;
+  left: 100%;
+  /* To the right of tooltip */
+  transform: translateY(-50%);
+
+  border-width: 6px 0 6px 8px;
+  /* Pointing Right */
   border-style: solid;
-  border-color: #3498db transparent transparent transparent;
+  border-color: transparent transparent transparent #3498db;
 }
 
 .login-tooltip-close {
@@ -71,54 +80,9 @@
 /* 모바일 대응 */
 @media (max-width: 480px) {
   .login-tooltip-container {
-    /* Mobile: Position to the LEFT of the login button */
-    bottom: auto;
-    top: 50%;
-    right: 100%;
-    /* Push to left of buttons */
-    left: auto !important;
-    /* [FIX] Force override */
-    margin-right: 10px;
-    /* Gap */
-    transform: translateY(-50%);
-    margin-top: 0;
-
-    animation: bounce-horizontal 2s infinite;
     font-size: 0.75rem;
-    /* Reduce font size slightly for mobile */
     padding: 6px 12px;
-    /* Slightly more padding */
-    width: auto;
-    /* Allow auto width */
-    min-width: 150px;
-    /* Ensure minimum visibility */
-    max-width: none;
-    /* Allow it to take full width needed */
-    white-space: nowrap;
-    /* Force single line */
-    word-break: keep-all;
-    /* Prevent awkward word breaks */
-    text-align: right;
-    line-height: normal;
-
-    /* Ensure visibility */
-    display: flex;
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .login-tooltip-container::before {
-    /* Arrow pointing RIGHT */
-    top: 50%;
-    left: 100%;
-    right: auto;
-    /* Reset right property */
-    transform: translateY(-50%);
-
-    border-width: 6px 0 6px 8px;
-    /* Pointing Right */
-    border-style: solid;
-    border-color: transparent transparent transparent #3498db;
+    margin-right: 8px;
   }
 }
 
