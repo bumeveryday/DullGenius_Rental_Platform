@@ -44,23 +44,43 @@
 }
 
 .header-sm-btn {
-    padding: 5px 10px;
-    border: 1px solid #ddd;
-    background: #f8f9fa;
+    padding: 6px 14px;
+    border: 1px solid #3498db;
+    background: #3498db;
     border-radius: 5px;
     cursor: pointer;
     font-size: 0.85em;
-    color: #555;
+    color: white;
     transition: all 0.2s;
+    font-weight: 600;
 }
 
 .header-sm-btn:hover {
-    background: #e9ecef;
-    color: #333;
+    background: #2980b9;
+    border-color: #2980b9;
+    color: white;
 }
 
 .header-sm-btn.outline {
     background: white;
+    color: #3498db;
+    border: 1px solid #3498db;
+}
+
+.header-sm-btn.outline:hover {
+    background: #ebf5fb;
+    color: #2980b9;
+}
+
+/* [FIX] 메인 바 레이아웃 추가 (버튼 늘어남 방지) */
+.header-main-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* 가로 늘어남 방지 (Center align) */
+    width: 100%;
+    margin-top: 5px;
+    margin-bottom: 10px;
 }
 
 /* 중앙 브랜딩 영역 */

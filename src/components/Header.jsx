@@ -58,9 +58,9 @@ const Header = () => {
                     </div>
                 ) : (
                     <div className="user-action-group">
-                        <span className="branding-icon" style={{ marginRight: '5px' }}>🔒</span>
                         <LoginTooltip />
-                        {/* <Link to="/login" className="header-link-btn login">로그인</Link> */}
+                        <Link to="/login" className="header-sm-btn">로그인</Link>
+                        <Link to="/signup" className="header-sm-btn outline">회원가입</Link>
                     </div>
                 )}
             </div>

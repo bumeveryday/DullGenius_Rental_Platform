@@ -5,21 +5,18 @@ const LoginTooltip = () => {
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
-        // 세션 스토리지에서 닫힘 여부 확인
-        const isClosed = sessionStorage.getItem('login_tooltip_closed');
-        if (!isClosed) {
-            // 약간의 딜레이 후 표시 (자연스러운 등장을 위해)
-            const timer = setTimeout(() => {
-                setIsVisible(true);
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
+        // [MODIFIED] 세션 스토리지 체크 제거 -> 매번 새로고침/진입 시마다 뜸
+        // 약간의 딜레이 후 표시 (자연스러운 등장을 위해)
+        const timer = setTimeout(() => {
+            setIsVisible(true);
+        }, 1000);
+        return () => clearTimeout(timer);
     }, []);
 
     const handleClose = (e) => {
         e.stopPropagation(); // 부모 링크 클릭 방지
         setIsVisible(false);
-        sessionStorage.setItem('login_tooltip_closed', 'true');
+        // sessionStorage.setItem('login_tooltip_closed', 'true'); // [REMOVED] 닫아도 다음에 또 뜨게 함
     };
 
     if (!isVisible) return null;

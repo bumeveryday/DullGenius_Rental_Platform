@@ -33,7 +33,7 @@ const LazyImage = ({ src, alt, className, style, onClick, aspectRatio = "1/1", f
                 }
             },
             {
-                rootMargin: '200px', // Load images 200px before they appear
+                rootMargin: '800px', // Load images 800px before they appear (more generous)
                 threshold: 0.1
             }
         );
