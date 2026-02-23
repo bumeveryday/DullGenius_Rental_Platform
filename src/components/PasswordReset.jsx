@@ -1,0 +1,154 @@
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { resetOwnPassword } from '../api_members';
+import { useToast } from '../contexts/ToastContext';
+
+function PasswordReset() {
+    const navigate = useNavigate();
+    const { showToast } = useToast();
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        studentId: '',
+        name: '',
+        phone: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const { studentId, name, phone, newPassword, confirmPassword } = formData;
+
+        if (!studentId || !name || !phone || !newPassword || !confirmPassword) {
+            showToast("모든 정보를 입력해주세요.", { type: "warning" });
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            showToast("새 비밀번호가 일치하지 않습니다.", { type: "warning" });
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            showToast("비밀번호는 최소 6자리 이상이어야 합니다.", { type: "warning" });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const result = await resetOwnPassword(studentId, name, phone, newPassword);
+            showToast(result.message || "비밀번호가 성공적으로 변경되었습니다.", { type: "success" });
+            navigate("/login");
+        } catch (error) {
+            console.error("Password Reset Error:", error);
+            showToast(error.message || "비밀번호 재설정에 실패했습니다.", { type: "error" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div style={styles.container}>
+            <div style={{ marginBottom: "20px" }}>
+                <Link to="/login" style={{ textDecoration: "none", color: "#666", fontSize: "0.9em", fontWeight: "bold" }}>← 로그인으로 돌아가기</Link>
+            </div>
+            <h2 style={{ textAlign: "center", marginBottom: "15px" }}>🔑 비밀번호 재설정</h2>
+            <p style={{ textAlign: "center", fontSize: "0.85em", color: "#666", marginBottom: "30px", lineHeight: "1.4" }}>
+                가입 시 입력하신 정보를 대조하여<br />비밀번호를 재설정합니다.
+            </p>
+
+            <form onSubmit={handleSubmit} style={styles.form}>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>학번 (8자리)</label>
+                    <input
+                        name="studentId"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="예: 21500000"
+                        value={formData.studentId}
+                        onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, '');
+                            if (val.length <= 8) setFormData(prev => ({ ...prev, studentId: val }));
+                        }}
+                        style={styles.input}
+                        required
+                    />
+                </div>
+
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>이름</label>
+                    <input
+                        name="name"
+                        type="text"
+                        placeholder="홍길동"
+                        value={formData.name}
+                        onChange={handleChange}
+                        style={styles.input}
+                        required
+                    />
+                </div>
+
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>전화번호</label>
+                    <input
+                        name="phone"
+                        type="text"
+                        placeholder="01012345678 (대시 없이 입력)"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        style={styles.input}
+                        required
+                    />
+                </div>
+
+                <hr style={{ border: "none", borderTop: "1px solid #eee", margin: "10px 0" }} />
+
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>새 비밀번호</label>
+                    <input
+                        name="newPassword"
+                        type="password"
+                        placeholder="최소 6자리 이상"
+                        value={formData.newPassword}
+                        onChange={handleChange}
+                        style={styles.input}
+                        required
+                    />
+                </div>
+
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>비밀번호 확인</label>
+                    <input
+                        name="confirmPassword"
+                        type="password"
+                        placeholder="비밀번호 재입력"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        style={styles.input}
+                        required
+                    />
+                </div>
+
+                <button type="submit" style={styles.button} disabled={loading}>
+                    {loading ? "처리 중..." : "비밀번호 변경하기"}
+                </button>
+            </form>
+        </div>
+    );
+}
+
+const styles = {
+    container: { maxWidth: "400px", margin: "60px auto", padding: "30px", border: "1px solid #ddd", borderRadius: "12px", backgroundColor: "#fff", boxShadow: "0 4px 6px rgba(0,0,0,0.05)" },
+    form: { display: "flex", flexDirection: "column", gap: "18px" },
+    inputGroup: { display: "flex", flexDirection: "column", gap: "6px" },
+    label: { fontSize: "0.85em", fontWeight: "bold", color: "#555" },
+    input: { padding: "12px", border: "1px solid #ddd", borderRadius: "6px", fontSize: "1em", outline: "none" },
+    button: { padding: "14px", backgroundColor: "#333", color: "white", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "1em", marginTop: "10px" }
+};
+
+export default PasswordReset;

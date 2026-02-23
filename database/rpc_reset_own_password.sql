@@ -23,7 +23,7 @@ BEGIN
     FROM public.profiles
     WHERE student_id = p_student_id 
       AND name = p_name 
-      AND phone = p_phone;
+      AND REPLACE(phone, '-', '') = REPLACE(p_phone, '-', '');
 
     IF v_user_id IS NULL THEN
         RETURN jsonb_build_object('success', false, 'message', '입력하신 정보와 일치하는 회원을 찾을 수 없습니다.');

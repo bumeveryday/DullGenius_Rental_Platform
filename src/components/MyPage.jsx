@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMyRentals, fetchUserPoints, fetchPointHistory, withdrawAccount, cancelDibsGame } from '../api';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext'; // [NEW] Context 사용
-import { useToast } from '../contexts/ToastContext'; // [NEW]
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { supabase } from '../lib/supabaseClient';
 
 const MyPage = () => {
   const { user, profile, loading: authLoading, refreshProfile, logout } = useAuth(); // [NEW]
@@ -10,11 +11,16 @@ const MyPage = () => {
   const { showToast } = useToast(); // [NEW]
 
   const [rentals, setRentals] = useState([]);
-  const [pointHistory, setPointHistory] = useState([]); // [NEW] 포인트 내역
-  const [currentPoints, setCurrentPoints] = useState(0); // [NEW] 현재 포인트
+  const [pointHistory, setPointHistory] = useState([]);
+  const [currentPoints, setCurrentPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [videoId, setVideoId] = useState(null);
+
+  // [PW] 비밀번호 변경 상태
+  const [pwForm, setPwForm] = useState({ newPw: '', confirmPw: '' });
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
 
   // [NEW] 유튜브 ID 추출
   const getYoutubeId = (url) => {
@@ -81,6 +87,28 @@ const MyPage = () => {
       loadData();
     }
   }, [user]);
+
+  // [PW] 비밀번호 변경 처리
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    const { newPw, confirmPw } = pwForm;
+    if (!newPw || !confirmPw) return showToast("비밀번호를 모두 입력해주세요.", { type: "warning" });
+    if (newPw !== confirmPw) return showToast("비밀번호가 일치하지 않습니다.", { type: "warning" });
+    if (newPw.length < 6) return showToast("비밀번호는 최소 6자리 이상이어야 합니다.", { type: "warning" });
+
+    setPwLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPw });
+      if (error) throw error;
+      showToast("비밀번호가 변경되었습니다.", { type: "success" });
+      setPwForm({ newPw: '', confirmPw: '' });
+      setPwOpen(false);
+    } catch (err) {
+      showToast(err.message || "비밀번호 변경에 실패했습니다.", { type: "error" });
+    } finally {
+      setPwLoading(false);
+    }
+  };
 
   // [NEW] 회원 탈퇴 처리
   const handleWithdraw = async () => {
@@ -161,6 +189,37 @@ const MyPage = () => {
           * 가입 학기는 최초 1회만 수정 가능합니다.
           <br />
           * 정보 수정이 필요한 경우 덜지니어스 임원진에게 문의해주세요.
+        </div>
+
+        {/* 비밀번호 변경 */}
+        <div style={{ marginTop: "15px", borderTop: "1px solid #f0f0f0", paddingTop: "12px" }}>
+          <button
+            onClick={() => setPwOpen(v => !v)}
+            style={styles.pwToggleBtn}
+          >
+            🔑 비밀번호 변경
+          </button>
+          {pwOpen && (
+            <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "12px" }}>
+              <input
+                type="password"
+                placeholder="새 비밀번호 (최소 6자리)"
+                value={pwForm.newPw}
+                onChange={e => setPwForm(p => ({ ...p, newPw: e.target.value }))}
+                style={styles.pwInput}
+              />
+              <input
+                type="password"
+                placeholder="새 비밀번호 확인"
+                value={pwForm.confirmPw}
+                onChange={e => setPwForm(p => ({ ...p, confirmPw: e.target.value }))}
+                style={styles.pwInput}
+              />
+              <button type="submit" style={styles.pwBtn} disabled={pwLoading}>
+                {pwLoading ? "변경 중..." : "변경하기"}
+              </button>
+            </form>
+          )}
         </div>
       </section>
 
@@ -273,7 +332,7 @@ const MyPage = () => {
         )}
       </section>
 
-      {/* 4. 회원 탈퇴 섹션 [NEW] */}
+      {/* 5. 회원 탈퇴 섹션 */}
       <div style={styles.withdrawalSection}>
         <button
           onClick={handleWithdraw}
@@ -457,7 +516,11 @@ const styles = {
 
   // [NEW] 회원 탈퇴 섹션 스타일
   withdrawalSection: { marginTop: "40px", paddingTop: "20px", borderTop: "1px solid #eee", textAlign: "center" },
-  withdrawalBtn: { background: "none", border: "none", color: "#95a5a6", fontSize: "0.85em", textDecoration: "underline", cursor: "pointer", padding: "10px" }
+  withdrawalBtn: { background: "none", border: "none", color: "#95a5a6", fontSize: "0.85em", textDecoration: "underline", cursor: "pointer", padding: "10px" },
+
+  pwInput: { padding: "10px", border: "1px solid #ddd", borderRadius: "6px", fontSize: "0.95em" },
+  pwBtn: { padding: "10px", backgroundColor: "#555", color: "white", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "0.9em" },
+  pwToggleBtn: { padding: "8px 14px", backgroundColor: "white", color: "#555", border: "1.5px solid #bbb", borderRadius: "20px", cursor: "pointer", fontSize: "0.85em", fontWeight: "bold", display: "inline-flex", alignItems: "center", gap: "4px" }
 };
 
 export default MyPage;

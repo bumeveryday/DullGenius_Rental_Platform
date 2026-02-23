@@ -88,3 +88,16 @@ export const resetUserPassword = async (userId) => {
     return data;
 };
 
+// [User] 비밀번호 자가 재설정 (학번, 이름, 전화번호 대조)
+export const resetOwnPassword = async (studentId, name, phone, newPassword) => {
+    const { data, error } = await supabase.rpc('reset_own_password', {
+        p_student_id: studentId,
+        p_name: name,
+        p_phone: phone,
+        p_new_password: newPassword
+    });
+
+    if (error) throw error;
+    if (!data.success) throw new Error(data.message);
+    return data;
+};

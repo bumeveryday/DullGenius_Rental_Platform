@@ -86,8 +86,13 @@ function Login() {
           {loading ? "로그인 중..." : "로그인"}
         </button>
       </form>
-      <div style={{ textAlign: "center", marginTop: "20px", fontSize: "0.9em" }}>
-        계정이 없으신가요? <Link to="/signup" style={{ color: "#3498db" }}>회원가입</Link>
+      <div style={{ textAlign: "center", marginTop: "20px", fontSize: "0.9em", display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div>
+          계정이 없으신가요? <Link to="/signup" style={{ color: "#3498db" }}>회원가입</Link>
+        </div>
+        <div style={{ marginTop: "5px" }}>
+          <Link to="/reset-password" style={{ color: "#7f8c8d", fontSize: "0.9em", textDecoration: "none" }}>비밀번호를 잊으셨나요?</Link>
+        </div>
       </div>
     </div>
   );

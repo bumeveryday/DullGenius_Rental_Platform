@@ -23,6 +23,7 @@ function Signup() {
     phone: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -92,8 +93,32 @@ function Signup() {
           style={styles.input}
           required
         />
-        <input name="password" type="password" placeholder="비밀번호" value={formData.password} onChange={handleChange} style={styles.input} required />
-        <input name="phone" placeholder="전화번호" value={formData.phone} onChange={handleChange} style={styles.input} required />
+        <div>
+          <label style={styles.label}>비밀번호</label>
+          <div style={styles.passwordWrapper}>
+            <input
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="비밀번호"
+              value={formData.password}
+              onChange={handleChange}
+              style={{ ...styles.input, flex: 1 }}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(p => !p)}
+              style={styles.toggleBtn}
+              tabIndex="-1"
+            >
+              {showPassword ? "숨기기" : "보기"}
+            </button>
+          </div>
+        </div>
+        <div>
+          <label style={styles.label}>전화번호 (예: 01012345678)</label>
+          <input name="phone" placeholder="전화번호" value={formData.phone} onChange={handleChange} style={styles.input} required />
+        </div>
 
         <button type="submit" style={styles.button} disabled={loading}>
           {loading ? "가입 처리 중..." : "가입하기"}
@@ -106,8 +131,11 @@ function Signup() {
 const styles = {
   container: { maxWidth: "400px", margin: "100px auto", padding: "30px", border: "1px solid #ddd", borderRadius: "10px", backgroundColor: "#fff" },
   form: { display: "flex", flexDirection: "column", gap: "15px" },
-  input: { padding: "12px", border: "1px solid #ddd", borderRadius: "5px", fontSize: "1em" },
-  button: { padding: "12px", backgroundColor: "#3498db", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", fontSize: "1em" }
+  input: { padding: "12px", border: "1px solid #ddd", borderRadius: "5px", fontSize: "1em", width: "100%", boxSizing: "border-box" },
+  button: { padding: "12px", backgroundColor: "#3498db", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", fontSize: "1em" },
+  label: { display: "block", fontSize: "0.8em", color: "#888", marginBottom: "4px" },
+  passwordWrapper: { display: "flex", alignItems: "stretch", gap: "6px" },
+  toggleBtn: { padding: "0 12px", border: "1px solid #ddd", borderRadius: "5px", background: "#f5f5f5", cursor: "pointer", fontSize: "0.85em", color: "#555", whiteSpace: "nowrap", flexShrink: 0 }
 };
 
 export default Signup;
