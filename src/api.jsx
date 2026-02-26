@@ -255,7 +255,7 @@ export const fetchTrending = async () => {
         .from('games')
         .select('*')
         .order('total_views', { ascending: false })
-        .limit(5);
+        .limit(20);
 
       if (fbError) throw fbError;
       return data;

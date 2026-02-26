@@ -25,28 +25,33 @@ export const GameProvider = ({ children }) => {
                 // 여기서는 App.jsx 로직을 참고하여 구현.
 
                 if (cachedGames) {
-                    const { data, timestamp } = JSON.parse(cachedGames);
-                    if (Date.now() - timestamp < CACHE_DURATION) {
-                        setGames(data);
+                    try {
+                        const { data, timestamp } = JSON.parse(cachedGames);
+                        if (Date.now() - timestamp < CACHE_DURATION) {
+                            setGames(data);
 
-                        // 캐시된 게임 데이터가 있으면 트렌딩도 캐시에서 시도
-                        if (cachedTrending) {
-                            try {
-                                const tCache = JSON.parse(cachedTrending);
-                                // 트렌딩 데이터 매핑
-                                const mapped = tCache.data.map(t => data.find(g => String(g.id) === String(t.id))).filter(Boolean);
-                                setTrending(mapped);
-                            } catch (e) { console.warn("Trending cache parsing failed", e); }
+                            // 캐시된 게임 데이터가 있으면 트렌딩도 캐시에서 시도
+                            if (cachedTrending) {
+                                try {
+                                    const tCache = JSON.parse(cachedTrending);
+                                    // 트렌딩 데이터 매핑
+                                    const mapped = tCache.data.map(t => data.find(g => String(g.id) === String(t.id))).filter(Boolean);
+                                    setTrending(mapped);
+                                } catch (e) { console.warn("Trending cache parsing failed", e); }
+                            }
+
+                            // Config는 별도로 빠르게 로드
+                            fetchConfig().then(setConfig).catch(console.error);
+
+                            setLoading(false);
+                            // 백그라운드 업데이트 (Stale-while-revalidate 유사)
+                            // return; // 일단 리턴하지 않고 API 호출하여 최신화 할지 결정. 
+                            // App.jsx의 기존 로직은 캐시 유효하면 API 안 불렀음. 동일하게 유지.
+                            return;
                         }
-
-                        // Config는 별도로 빠르게 로드
-                        fetchConfig().then(setConfig).catch(console.error);
-
-                        setLoading(false);
-                        // 백그라운드 업데이트 (Stale-while-revalidate 유사)
-                        // return; // 일단 리턴하지 않고 API 호출하여 최신화 할지 결정. 
-                        // App.jsx의 기존 로직은 캐시 유효하면 API 안 불렀음. 동일하게 유지.
-                        return;
+                    } catch (e) {
+                        console.warn("Games cache parsing failed, fetching from API", e);
+                        // 캐시 파싱 실패 시 무시하고 API 호출 진행
                     }
                 }
             }

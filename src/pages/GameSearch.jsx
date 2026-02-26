@@ -13,11 +13,14 @@ const GameSearch = () => {
     const location = useLocation();
     const { games, loading } = useGameData();
 
-    // 쿼리 파라미터 파싱 (생략 가능, hook으로 리팩토링 가능하나 일단 유지)
+    // 쿼리 파라미터 파싱
     const queryParams = new URLSearchParams(location.search);
     const initialQuery = queryParams.get('query') || "";
     const initialCategory = queryParams.get('category') || "전체";
     const initialPlayers = queryParams.get('players') || "all";
+    const searchType = queryParams.get('type'); // [NEW] 트렌딩 모드 확인용
+
+    const isTrendingMode = searchType === 'trending';
 
     // 상태 관리
     const [inputValue, setInputValue] = useState(initialQuery);
@@ -27,14 +30,19 @@ const GameSearch = () => {
     const [playerFilter, setPlayerFilter] = useState(initialPlayers);
     const [onlyAvailable, setOnlyAvailable] = useState(false);
 
+    // 트렌딩 모드일 경우 전역 trending 데이터를 사용, 아닐 경우 필터 훅 결과 사용
+    const { trending } = useGameData(); // [NEW] 트렌딩 데이터 가져오기
+
     // 필터링 훅 사용
-    const filteredGames = useGameFilter(games, {
+    const baseFilteredGames = useGameFilter(games, {
         searchTerm,
         selectedCategory,
         onlyAvailable,
         difficultyFilter,
         playerFilter
     });
+
+    const filteredGames = isTrendingMode ? trending : baseFilteredGames;
 
     const categories = ["전체", ...new Set(games.map(g => g.category).filter(Boolean))];
 
@@ -50,10 +58,11 @@ const GameSearch = () => {
         } else {
             window.scrollTo(0, 0);
         }
-    }, []); // [FIX] loading 의존성 제거 → loading 변화 시마다 최상단으로 튀는 현상 방지
+    }, [isTrendingMode]); // 탭 변경 시에도 상단 이동 처리를 위해 의존성 추가
 
     // 검색어 디바운스 및 로그
     useEffect(() => {
+        // ... (생략 없이 원본 유지)
         const timer = setTimeout(() => {
             setSearchTerm(inputValue);
             if (inputValue.trim()) {
@@ -65,7 +74,7 @@ const GameSearch = () => {
 
     // 필터 변경 로그
     useEffect(() => {
-        if (loading) return;
+        if (loading || isTrendingMode) return;
         const hasFilter = selectedCategory !== "전체" || difficultyFilter !== "전체" || playerFilter !== "all" || onlyAvailable;
         if (!hasFilter) return;
 
@@ -78,14 +87,14 @@ const GameSearch = () => {
             });
         }, 1000);
         return () => clearTimeout(timer);
-    }, [selectedCategory, difficultyFilter, playerFilter, onlyAvailable, loading]);
+    }, [selectedCategory, difficultyFilter, playerFilter, onlyAvailable, loading, isTrendingMode]);
 
     // 검색 결과 없음 로그
     useEffect(() => {
-        if (searchTerm && filteredGames.length === 0 && !loading) {
+        if (searchTerm && filteredGames.length === 0 && !loading && !isTrendingMode) {
             sendLog(null, 'SEARCH_EMPTY', { query: searchTerm });
         }
-    }, [searchTerm, filteredGames.length, loading]);
+    }, [searchTerm, filteredGames.length, loading, isTrendingMode]);
 
 
     const resetFilters = useCallback(() => {
@@ -108,35 +117,45 @@ const GameSearch = () => {
 
     return (
         <div className="search-container">
-            {/* 상단 헤더 (뒤로가기 + 검색바) */}
+            {/* 상단 헤더 (뒤로가기 + 검색바/타이틀) */}
             <div className="search-header">
                 <button onClick={handleBack} className="back-btn">←</button>
                 <div className="search-input-wrapper">
-                    <input
-                        type="text"
-                        className="search-page-input"
-                        placeholder="게임 이름 검색..."
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        autoFocus={!initialQuery && !initialCategory}
-                    />
+                    {isTrendingMode ? (
+                        <h2 className="trending-search-title">🔥 요즘 뜨는 보드게임 (Top 20)</h2>
+                    ) : (
+                        <input
+                            type="text"
+                            className="search-page-input"
+                            placeholder="게임 이름 검색..."
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            autoFocus={!initialQuery && !initialCategory}
+                        />
+                    )}
                 </div>
             </div>
 
-            {/* 필터 바 */}
-            <FilterBar
-                inputValue={inputValue} setInputValue={setInputValue}
-                selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
-                difficultyFilter={difficultyFilter} setDifficultyFilter={setDifficultyFilter}
-                playerFilter={playerFilter} setPlayerFilter={setPlayerFilter}
-                onlyAvailable={onlyAvailable} setOnlyAvailable={setOnlyAvailable}
-                categories={categories}
-                onReset={resetFilters}
-                hideSearch={true}
-            />
+            {/* 필터 바 (트렌딩 모드일 때는 숨김) */}
+            {!isTrendingMode && (
+                <FilterBar
+                    inputValue={inputValue} setInputValue={setInputValue}
+                    selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
+                    difficultyFilter={difficultyFilter} setDifficultyFilter={setDifficultyFilter}
+                    playerFilter={playerFilter} setPlayerFilter={setPlayerFilter}
+                    onlyAvailable={onlyAvailable} setOnlyAvailable={setOnlyAvailable}
+                    categories={categories}
+                    onReset={resetFilters}
+                    hideSearch={true}
+                />
+            )}
 
             <div className="search-status-bar">
-                총 <strong>{filteredGames.length}</strong>개의 게임
+                {isTrendingMode ? (
+                    <span>인기 순위 <strong>{filteredGames.length}</strong>개의 게임</span>
+                ) : (
+                    <span>총 <strong>{filteredGames.length}</strong>개의 게임</span>
+                )}
             </div>
 
             {/* 게임 리스트 */}
@@ -150,7 +169,12 @@ const GameSearch = () => {
                             onClick={() => sessionStorage.setItem('search_scroll_y', window.scrollY)}
                         >
                             <div className="game-item-card">
-                                <div className="game-item-img-wrapper">
+                                <div className="game-item-img-wrapper" style={{ position: 'relative' }}>
+                                    {isTrendingMode && (
+                                        <div className="trending-rank-search">
+                                            {idx + 1}위
+                                        </div>
+                                    )}
                                     {game.image ? (
                                         <LazyImage
                                             src={getOptimizedImageUrl(game.image, 400)}

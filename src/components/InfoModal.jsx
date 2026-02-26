@@ -5,6 +5,25 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext'; // [NEW] Auth Context
 import { useToast } from '../contexts/ToastContext'; // [NEW] Toast 알림
 
+// 텍스트 포맷팅 헬퍼 함수 (볼드체 및 줄바꿈 처리)
+const formatText = (text) => {
+    if (!text) return null;
+    return text.split('\n').map((line, i) => {
+        const parts = line.split(/(\*\*.*?\*\*)/g);
+        return (
+            <span key={i}>
+                {parts.map((part, j) => {
+                    if (part.startsWith('**') && part.endsWith('**')) {
+                        return <strong key={j}>{part.slice(2, -2)}</strong>;
+                    }
+                    return part;
+                })}
+                <br />
+            </span>
+        );
+    });
+};
+
 /**
  * 정보 표시 모달
  * 탭 메뉴를 통해 다양한 정보(소개, 약관, 개발자, 파손신고, 신청)를 보여줍니다.
@@ -120,7 +139,7 @@ function InfoModal({ isOpen, onClose, initialTab = 'guide' }) {
                 return (
                     <div style={styles.tabContent}>
                         <div style={styles.termsBox}>
-                            {USAGE_GUIDE}
+                            {formatText(USAGE_GUIDE)}
                         </div>
                     </div>
                 );
@@ -128,7 +147,7 @@ function InfoModal({ isOpen, onClose, initialTab = 'guide' }) {
                 return (
                     <div style={styles.tabContent}>
                         <div style={styles.termsBox}>
-                            {TERMS_OF_SERVICE}
+                            {formatText(TERMS_OF_SERVICE)}
                         </div>
                     </div>
                 );
@@ -368,7 +387,9 @@ const styles = {
         borderRadius: '8px',
         border: '1px solid #eee',
         maxHeight: '60vh',
-        overflowY: 'auto'
+        overflowY: 'auto',
+        userSelect: 'text',
+        WebkitUserSelect: 'text'
     },
     divider: {
         margin: '20px 0',

@@ -83,20 +83,23 @@
 }
 
 .player-btn-grid {
-    display: flex;
+    display: grid;
+    /* flex에서 grid로 변경하여 더 깔끔하게 배치 */
+    grid-template-columns: repeat(3, 1fr);
+    /* 3개씩 2줄로 배치 */
     gap: 10px;
-    flex-wrap: wrap;
     margin-top: 10px;
 }
 
 .player-btn {
-    flex: 1;
-    padding: 12px;
+    padding: 12px 8px;
+    /* 좌우 패딩을 살짝 줄여서 폰트 공간 확보 */
     border-radius: 8px;
     border: 1px solid #ddd;
     background: white;
     cursor: pointer;
-    min-width: 70px;
+    text-align: center;
+    font-size: 0.95em;
     transition: background 0.2s, border-color 0.2s;
 }
 
@@ -143,16 +146,31 @@
     font-size: 1em;
     font-weight: bold;
     color: #000;
-    /* [FIX] Pure Black for maximum contrast */
     cursor: pointer;
     text-align: left;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     transition: all 0.2s ease;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
+    /* 양끝 정렬 */
+    align-items: center;
+    /* 수직 중앙 정렬 */
     min-height: 80px;
     line-height: 1.4;
+}
+
+.theme-btn-content-cat {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+}
+
+.theme-btn-arrow-cat {
+    color: #999;
+    font-size: 1.2em;
+    margin-left: 8px;
+    transition: transform 0.2s;
 }
 
 .theme-btn-cat:hover {
@@ -161,13 +179,68 @@
     background: #f8f9fa;
 }
 
-.theme-btn-cat div:first-child {
+.theme-btn-cat:hover .theme-btn-arrow-cat {
+    transform: translateX(3px);
+    /* 호버 시 살짝 우측으로 이동 */
+    color: #666;
+}
+
+.theme-btn-content-cat div:first-child {
     font-size: 1.1em;
 }
 
-.theme-btn-cat div:last-child {
+.theme-btn-content-cat div:last-child {
     font-size: 0.9em;
     color: #000;
-    /* [FIX] Pure Black for maximum contrast as requested */
     font-weight: normal;
+}
+
+/* [NEW] 트렌딩 접속 입구 스타일 */
+.trending-entrance-card {
+    background: white;
+    border: 1px solid #eee;
+    border-left: 4px solid #ff6b6b;
+    /* 불꽃 컨셉의 붉은색 포인트 */
+    border-radius: 12px;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    /* 다른 카드들과 유사한 그림자 */
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    color: #111;
+}
+
+.trending-entrance-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.15);
+    background: #fffafa;
+    /* 호버 시 아주 옅은 붉은빛 틴트 */
+}
+
+.trending-entrance-icon {
+    font-size: 2em;
+    margin-right: 15px;
+}
+
+.trending-entrance-text {
+    flex: 1;
+}
+
+.trending-entrance-text .entrance-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 4px;
+}
+
+.trending-entrance-text .entrance-desc {
+    font-size: 0.8em;
+    opacity: 0.8;
+}
+
+.trending-entrance-arrow {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #666;
 }

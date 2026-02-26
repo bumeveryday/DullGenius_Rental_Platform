@@ -1,22 +1,25 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useGameData } from '../contexts/GameDataContext';
 import { sendLog } from '../api';
-import './CategorySelect.css'; // [NEW] External CSS
+import './CategorySelect.css';
 
 const CategorySelect = () => {
     const navigate = useNavigate();
-    const { games, config, loading } = useGameData(); // [NEW] config 추가
+    const location = useLocation();
+    const { games, config, loading } = useGameData();
+
+    // URL 파라미터 확인
+    const queryParams = new URLSearchParams(location.search);
+    const currentTab = queryParams.get('tab');
 
     // 카테고리 추출 및 정렬
     const categories = ["전체", ...new Set(games.map(g => g.category).filter(Boolean))].filter(c => c !== "전체");
 
-    // [FIX] 스크롤은 마운트 1회만 (loading 의존성 제거 → 로딩 완료 시마다 최상단 이동 버그 방지)
     useEffect(() => {
         window.scrollTo(0, 0);
-    }, []);
+    }, [currentTab]); // 탭 전환 시에도 최상단
 
-    // 페이지 진입 로그 (로딩 완료 후 1회)
     useEffect(() => {
         if (!loading) sendLog(null, 'VIEW', { value: 'Category Select Page' });
     }, [loading]);
@@ -34,6 +37,21 @@ const CategorySelect = () => {
                 <h2 className="category-title">카테고리 선택</h2>
             </div>
 
+            {/* [NEW] 트렌딩 보러가기 입구 타일 */}
+            <div className="trending-entrance-section" style={{ padding: '0 20px', marginBottom: '15px' }}>
+                <div
+                    onClick={() => navigate('/search?type=trending')}
+                    className="trending-entrance-card"
+                >
+                    <div className="trending-entrance-icon">🔥</div>
+                    <div className="trending-entrance-text">
+                        <div className="entrance-title">요즘 뜨는 보드게임</div>
+                        <div className="entrance-desc">Top 20 랭킹 보기</div>
+                    </div>
+                    <div className="trending-entrance-arrow">➔</div>
+                </div>
+            </div>
+
             {/* [NEW] 상황별 추천 섹션 */}
             <div className="recommendation-section-cat">
                 <h3 className="section-subtitle">🎯 상황별 추천</h3>
@@ -48,7 +66,10 @@ const CategorySelect = () => {
                                 className="theme-btn-cat"
                                 style={{ borderLeft: `4px solid ${btn.color}` }}
                             >
-                                {btn.label.split("\\n").map((line, i) => <div key={i}>{line}</div>)}
+                                <div className="theme-btn-content-cat">
+                                    {btn.label.split("\\n").map((line, i) => <div key={i}>{line}</div>)}
+                                </div>
+                                <span className="theme-btn-arrow-cat">➔</span>
                             </button>
                         ))}
                     </div>
@@ -59,7 +80,7 @@ const CategorySelect = () => {
             <div className="player-count-section">
                 <h3 className="section-subtitle">👥 인원수로 찾기</h3>
                 <div className="player-btn-grid">
-                    {['2인', '3인', '4인', '5인 이상'].map((p, i) => (
+                    {['2인', '3인', '4인', '5인 이상', '6인 이상', '8인 이상'].map((p, i) => (
                         <button
                             key={i}
                             onClick={() => navigate(`/search?players=${encodeURIComponent(p)}`)}

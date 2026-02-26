@@ -51,9 +51,9 @@ const Home = () => {
                 <div
                     onClick={() => handleNavigation('/categories')}
                     className="home-nav-btn category">
-                    <div className="nav-icon">📂</div>
-                    <div className="nav-title">카테고리로 찾기</div>
-                    <div className="nav-desc">테마별, 인원별</div>
+                    <div className="nav-icon">✨</div>
+                    <div className="nav-title">추천 보드게임</div>
+                    <div className="nav-desc">카테고리로 찾기</div>
                 </div>
 
                 <div
@@ -71,7 +71,7 @@ const Home = () => {
             <section className="trending-section">
                 <h2 className="section-title" style={{ paddingLeft: "20px" }}>🔥 요즘 뜨는 게임</h2>
                 <div className="trending-list">
-                    {trending.map((game, index) => (
+                    {trending.slice(0, 5).map((game, index) => (
                         <div
                             key={game.id}
                             onClick={() => {
@@ -104,6 +104,24 @@ const Home = () => {
                             <div className="trending-category">{game.category}</div>
                         </div>
                     ))}
+
+                    {/* [NEW] 더보기 버튼 (순위 확장) */}
+                    {trending.length > 5 && (
+                        <div
+                            onClick={() => {
+                                sessionStorage.setItem('home_scroll_y', window.scrollY);
+                                navigate('/search?type=trending');
+                            }}
+                            className="trending-item more-item"
+                        >
+                            <div className="trending-img-wrapper more-wrapper">
+                                <div className="more-content">
+                                    <span className="more-icon">➡️</span>
+                                    <span>인기 순위<br />더보기</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </section>
 

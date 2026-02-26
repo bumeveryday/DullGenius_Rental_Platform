@@ -214,6 +214,30 @@
     border-radius: 4px;
 }
 
+/* [NEW] 트렌딩 모드 전용 순위 뱃지 */
+.trending-rank-search {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 0 0 10px 0;
+    font-size: 0.9em;
+    font-weight: bold;
+    z-index: 5;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.trending-search-title {
+    margin: 0;
+    font-size: 1.3em;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .no-results {
     text-align: center;
     padding: 50px 0;
