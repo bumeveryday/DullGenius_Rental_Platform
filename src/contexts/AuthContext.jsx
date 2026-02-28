@@ -171,7 +171,10 @@ export const AuthProvider = ({ children }) => {
         setProfile(null);
         setRoles([]);
         setLoading(false);
-        await supabase.auth.signOut();
+        // scope: 'local' → 로컬 스토리지 세션만 삭제, 서버 API 호출 없음
+        // scope: 'global'은 JWT가 만료됐을 때 서버가 403을 반환하고 로컬 세션도 삭제하지 않음
+        // 이 앱 수준에서는 local로 충분: JWT는 1시간 후 자연 만료, RLS가 DB 접근을 보호함
+        await supabase.auth.signOut({ scope: 'local' });
         console.debug(`[Auth] signOut() 완료`);
     };
     const hasRole = (roleKey) => roles.includes(roleKey);
