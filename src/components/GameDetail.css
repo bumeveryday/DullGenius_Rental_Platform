@@ -239,6 +239,9 @@
     padding: 10px;
     border-radius: 5px;
     border: 1px solid #ddd;
+    resize: vertical;
+    min-height: 40px;
+    font-family: inherit;
 }
 
 /* 리뷰 목록 */

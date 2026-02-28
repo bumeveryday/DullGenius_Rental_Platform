@@ -101,7 +101,7 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
             <label className="admin-label">난이도 (0.0~5.0)</label>
             <input
               type="number" step="0.1" min="0" max="5"
-              value={formData.difficulty}
+              value={formData.difficulty || ""}
               onChange={e => setFormData({ ...formData, difficulty: e.target.value })}
               placeholder="예: 2.5"
               className="admin-input"
@@ -113,7 +113,7 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
         <div className="admin-form-group">
           <label className="admin-label">장르</label>
           <input
-            value={formData.genre}
+            value={formData.genre || ""}
             onChange={e => setFormData({ ...formData, genre: e.target.value })}
             placeholder="예: 전략, 추리, 파티"
             className="admin-input"
@@ -124,7 +124,7 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
         <div className="admin-form-group">
           <label className="admin-label">인원</label>
           <input
-            value={formData.players}
+            value={formData.players || ""}
             onChange={e => setFormData({ ...formData, players: e.target.value })}
             placeholder="예: 2~4인"
             className="admin-input"
@@ -135,7 +135,7 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
         <div className="admin-form-group">
           <label className="admin-label">태그 (#으로 구분)</label>
           <input
-            value={formData.tags}
+            value={formData.tags || ""}
             onChange={e => setFormData({ ...formData, tags: e.target.value })}
             placeholder="#전략 #파티"
             className="admin-input"
@@ -146,7 +146,7 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
         <div className="admin-form-group">
           <label className="admin-label">이미지 URL</label>
           <input
-            value={formData.image}
+            value={formData.image || ""}
             onChange={e => setFormData({ ...formData, image: e.target.value })}
             className="admin-input"
             style={{ width: "100%" }}

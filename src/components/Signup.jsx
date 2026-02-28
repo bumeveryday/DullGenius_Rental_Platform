@@ -117,7 +117,19 @@ function Signup() {
         </div>
         <div>
           <label style={styles.label}>전화번호 (예: 01012345678)</label>
-          <input name="phone" placeholder="전화번호" value={formData.phone} onChange={handleChange} style={styles.input} required />
+          <input
+            name="phone"
+            type="text"
+            inputMode="numeric"
+            placeholder="전화번호"
+            value={formData.phone}
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^0-9]/g, '');
+              setFormData(prev => ({ ...prev, phone: val }));
+            }}
+            style={styles.input}
+            required
+          />
         </div>
 
         <button type="submit" style={styles.button} disabled={loading}>

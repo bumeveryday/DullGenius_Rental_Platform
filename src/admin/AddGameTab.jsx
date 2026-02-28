@@ -95,9 +95,11 @@ function AddGameTab({ onGameAdded }) {
         async () => {
           try {
             let finalImage = formData.image;
+            console.log("1. Initial formData.image:", finalImage);
 
             // 2-1. 이미지 최적화 및 업로드 (Supabase Storage)
             // 외부 이미지(네이버 등)인 경우에만 처리
+            console.log("2. Condition check:", !!finalImage, finalImage?.startsWith('http'), !finalImage?.includes('supabase.co'));
             if (finalImage && finalImage.startsWith('http') && !finalImage.includes('supabase.co')) {
               try {
                 // Toast: 이미지 처리 중 알림
@@ -106,9 +108,17 @@ function AddGameTab({ onGameAdded }) {
                 // weserv.nl을 통해 리사이징된 이미지(WebP, 600px) Fetch
                 const cleanUrl = finalImage.replace(/^https?:\/\//, '');
                 const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&w=600&output=webp&il`;
+                console.log("3. Fetching from proxyUrl:", proxyUrl);
 
                 const response = await fetch(proxyUrl);
+                console.log("4. Fetch response status:", response.status);
+
+                if (!response.ok) {
+                  throw new Error(`이미지 최적화 서버 응답 에러: ${response.status}`);
+                }
+
                 const blob = await response.blob();
+                console.log("5. Blob size:", blob.size);
 
                 // Supabase Storage 업로드
                 const { supabase } = await import('../lib/supabaseClient'); // Dynamic Import to avoid top-level cyclic dependency if any
@@ -118,18 +128,24 @@ function AddGameTab({ onGameAdded }) {
                   .from('game-images')
                   .upload(fileName, blob, { contentType: 'image/webp' });
 
-                if (uploadError) throw uploadError;
+                if (uploadError) {
+                  console.error("6. Upload Error details:", uploadError);
+                  throw uploadError;
+                }
 
                 // Public URL 획득
                 const { data: { publicUrl } } = supabase.storage
                   .from('game-images')
                   .getPublicUrl(fileName);
 
+                console.log("7. Acquired publicUrl:", publicUrl);
+
                 // 이미지 URL 교체
                 finalImage = publicUrl;
+                console.log("8. finalImage successfully updated to:", finalImage);
 
               } catch (imgError) {
-                console.error("Image optimization failed:", imgError);
+                console.error("9. Image optimization catch block reached:", imgError);
                 showToast("이미지 최적화 실패 (원본 사용)", { type: "warning" });
                 // 실패해도 원본 URL로 계속 진행
               }
@@ -137,6 +153,7 @@ function AddGameTab({ onGameAdded }) {
 
             // 2-2. 신규 게임 DB 저장
             // id는 DB에서 생성되므로 제거하고 보냄
+            console.log("10. Final payload image before addGame:", finalImage);
             const { id, ...rest } = formData;
             await addGame({ ...rest, image: finalImage });
             showToast("추가되었습니다!", { type: "success" });

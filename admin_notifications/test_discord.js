@@ -23,29 +23,23 @@ async function sendTestNotification() {
         }
     ];
 
-    const fields = mockData.map((item, index) => {
+    const embeds = mockData.map((item, index) => {
         const dueDate = new Date(item.due_date);
         const diffDays = Math.floor((Date.now() - dueDate) / (1000 * 60 * 60 * 24));
 
         return {
-            name: `${index + 1}. ${item.game_name}`,
-            value: `👤 **${item.renter_name}** (${item.user.phone})\n⏰ ${dueDate.toLocaleDateString()} (D+${diffDays}일 연체)`,
-            inline: false
+            title: "🚨 연체 발생 알림 (테스트)",
+            description: `### ${item.game_name}에 대한 연체 알림이 발생했습니다.\n\n**연체자** : ${item.renter_name} (${item.user.phone})\n**대상 게임** : ${item.game_name}\n**연체 일수** : D+${diffDays}일`,
+            color: 3447003, // Blue for test
+            timestamp: new Date().toISOString()
         };
     });
 
     const payload = {
         username: process.env.DISCORD_BOT_NAME || "덜지니어스 알림봇(TEST)",
         avatar_url: process.env.DISCORD_AVATAR_URL || "https://cdn-icons-png.flaticon.com/512/3523/3523063.png",
-        embeds: [{
-            title: `🧪 테스트 알림입니다.`,
-            description: `이것은 테스트 메시지입니다. 실제 데이터가 아닙니다.\n현재 **${mockData.length}건**의 테스트 연체 기록이 있습니다.`,
-            color: 3447003, // Blue for test
-            fields: fields,
-            footer: {
-                text: "DullGenius Rental System Test"
-            }
-        }]
+        content: `🧪 **테스트 연체 현황 브리핑**\n현재 **${mockData.length}건**의 테스트 연체 기록이 있습니다.`,
+        embeds: embeds
     };
 
     try {

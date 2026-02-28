@@ -61,31 +61,25 @@ async function sendDiscordNotification(overdueList) {
     console.log(`🚀 Sending notification for ${overdueList.length} overdue items...`);
 
     // 메시지 구성 (Embed 방식)
-    const fields = overdueList.map((item, index) => {
+    const embeds = overdueList.slice(0, 10).map((item, index) => {
         const dueDate = new Date(item.due_date);
         const diffDays = Math.floor((Date.now() - dueDate) / (1000 * 60 * 60 * 24));
         const renter = item.renter_name || item.user?.name || "알수없음";
-        const contact = item.user?.phone ? `(${item.user.phone})` : "";
+        const contact = item.user?.phone || "알 수 없는 전화번호";
 
         return {
-            name: `${index + 1}. ${item.game_name}`,
-            value: `👤 **${renter}** ${contact}\n⏰ ${dueDate.toLocaleDateString()} (D+${diffDays}일 연체)`,
-            inline: false
+            title: "🚨 연체 발생 알림",
+            description: `### ${item.game_name}에 대한 연체 알림이 발생했습니다.\n\n**연체자** : ${renter} (${contact})\n**대상 게임** : ${item.game_name}\n**연체 일수** : D+${diffDays}일`,
+            color: 15158332, // Red color
+            timestamp: new Date().toISOString()
         };
     });
 
     const payload = {
         username: process.env.DISCORD_BOT_NAME || "덜지니어스 연체 관리자",
         avatar_url: process.env.DISCORD_AVATAR_URL || "https://cdn-icons-png.flaticon.com/512/3523/3523063.png",
-        embeds: [{
-            title: `🚨 연체 현황 브리핑 (${new Date().toLocaleDateString()})`,
-            description: `현재 **${overdueList.length}건**의 미반납 연체 기록이 있습니다.`,
-            color: 15158332, // Red color
-            fields: fields,
-            footer: {
-                text: "DullGenius Rental System"
-            }
-        }]
+        content: `🚨 **연체 현황 브리핑 (${new Date().toLocaleDateString()})**\n현재 **${overdueList.length}건**의 미반납 연체 기록이 있습니다.${overdueList.length > 10 ? ' (최대 10건까지만 표시됩니다.)' : ''}`,
+        embeds: embeds
     };
 
     try {

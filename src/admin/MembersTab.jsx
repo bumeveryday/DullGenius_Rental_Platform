@@ -329,7 +329,7 @@ function MembersTab() {
                                 <th onClick={() => handleSort('student_id')} style={{ cursor: 'pointer' }}>
                                     학번 {sortBy === 'student_id' && (sortOrder === 'asc' ? '▲' : '▼')}
                                 </th>
-                                <th>활동 기간</th> {/* [NEW] */}
+                                <th>활동 기간</th>
                                 <th>전화번호</th>
                                 <th>역할</th>
                                 <th onClick={() => handleSort('is_paid')} style={{ cursor: 'pointer' }}>

@@ -85,6 +85,34 @@ function InfoModal({ isOpen, onClose, initialTab = 'guide' }) {
             });
 
             if (error) throw error;
+
+            // [NEW] 디스코드 알림 전송 로직 추가
+            try {
+                const discordUrl = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
+                if (discordUrl) {
+                    const userName = user.user_metadata?.name || '알 수 없는 부원';
+                    const userPhone = user.user_metadata?.phone || '알 수 없는 전화번호';
+
+                    await fetch(discordUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: import.meta.env.VITE_DISCORD_BOT_NAME || "덜지니어스 알림봇",
+                            avatar_url: import.meta.env.VITE_DISCORD_AVATAR_URL || "",
+                            embeds: [{
+                                title: "🚨 파손/분실 신고 접수",
+                                description: `### ${reportSearch}에 대한 파손 신고가 적용되었습니다.\n\n**신고자** : ${userName} (${userPhone})\n**대상 게임** : ${reportSearch}\n**파손 내용** : ${reportContent}`,
+                                color: 15158332, // Red
+                                timestamp: new Date().toISOString()
+                            }]
+                        })
+                    });
+                }
+            } catch (discordError) {
+                console.error("디스코드 알림 전송 실패:", discordError);
+                // 디스코드 전송 실패해도 사용자에게는 정상 접수되었다고 안내
+            }
+
             showToast("파손 신고가 접수되었습니다. 빠른 시일 내에 확인하겠습니다.");
             onClose();
         } catch (error) {

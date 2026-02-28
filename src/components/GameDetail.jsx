@@ -157,6 +157,7 @@ function GameDetail() {
           const result = await dibsGame(game.id, user.id);
 
           if (result.success) {
+            localStorage.removeItem('games_cache'); // [FIX] 전역 캐시 초기화하여 목록/검색에 즉시 반영
             showToast("찜 완료! 30분 내에 수령해주세요.", {
               showButton: true,
               buttonText: "마이페이지로 가기",
@@ -187,8 +188,9 @@ function GameDetail() {
         try {
           const result = await cancelDibsGame(game.id, user.id);
           if (result.success) {
+            localStorage.removeItem('games_cache'); // [FIX] 전역 캐시 초기화
             showToast("찜이 취소되었습니다.");
-            setGame({ ...game, status: "대여가능", available_count: (game.available_count || 0) + 1 });
+            setGame(prev => ({ ...prev, status: "대여가능", renterId: null, available_count: (prev.available_count || 0) + 1 })); // [FIX] prev 기반 업데이트
           } else {
             showToast(result.message || "취소 실패", { type: "error" });
           }
@@ -313,7 +315,7 @@ function GameDetail() {
               {game.status}
               {game.status === "대여가능" && game.available_count > 0 && (
                 <span className="stat-value status-available" style={{ fontSize: "0.8em", marginLeft: "5px" }}>
-                  ({game.available_count}개 남음)
+                  ({game.available_count}{game.quantity >= 2 ? ` / ${game.quantity}` : ""}개 남음)
                 </span>
               )}
             </div>
@@ -369,7 +371,7 @@ function GameDetail() {
               </select>
             </div>
             <div className="review-body-row">
-              <input
+              <textarea
                 className="review-text-input"
                 placeholder="후기를 남겨주세요"
                 value={newReview.comment}

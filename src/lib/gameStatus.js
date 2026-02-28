@@ -8,19 +8,7 @@
  * 함부로 수정하지 마세요. (Do not modify without review)
  */
 export const calculateGameStatus = (game, gameRentals) => {
-    // 1. 실시간 재고 (DB available_count 신뢰)
-    const realAvailableCount = game.available_count ?? 0;
-
-
-
-    // 2. 초기값
-    let status = '대여가능';
-    let renter = null;
-    let renterId = null;
-    let dueDate = null;
-
-    // 3. 상태 결정 정책 (UX 개선: 재고가 있으면 무조건 '대여가능' 우선)
-    // [FIX] 만료된 찜(30분 초과)은 활성 상태에서 제외하여 '유령 예약' 방지
+    // 1. 유효한 예약(찜) 및 대여 기록 필터링
     const now = new Date();
     const activeDibs = gameRentals.filter(r => {
         if (r.type !== 'DIBS') return false;
@@ -28,6 +16,16 @@ export const calculateGameStatus = (game, gameRentals) => {
         return new Date(r.due_date) > now;
     });
     const activeRents = gameRentals.filter(r => r.type === 'RENT');
+
+    // 2. 동적 재고 계산 (관리자페이지 로직 참고: quantity - 대여/예약된 수량)
+    const totalQuantity = game.quantity ?? 1;
+    const realAvailableCount = Math.max(0, totalQuantity - activeDibs.length - activeRents.length);
+
+    // 3. 초기값
+    let status = '대여가능';
+    let renter = null;
+    let renterId = null;
+    let dueDate = null;
 
     // [Step A] 정보 추출 (상태와 무관하게 대여자 정보를 모두 수집)
     // 모든 예약자 + 대여자 이름을 합침 (중복 제거 필요 시 추가 가능)
