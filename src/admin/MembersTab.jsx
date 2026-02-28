@@ -234,12 +234,23 @@ function MembersTab() {
         });
     };
 
+    const EXEMPT_ROLES = ['admin', 'executive', 'payment_exempt'];
+
     const handleSaveRoles = async () => {
         if (!roleEditModal.member) return;
         try {
             await updateUserRoles(roleEditModal.member.id, roleEditModal.selectedRoles);
-            showToast('역할이 수정되었습니다.', { type: 'success' });
-            // 목록 갱신 (JS Join으로 복구되었으므로 즉시 반영됨)
+
+            // 면제 역할이 포함된 경우 is_paid를 자동으로 true로 업데이트
+            const hasExemptRole = roleEditModal.selectedRoles.some(r => EXEMPT_ROLES.includes(r));
+            if (hasExemptRole && !roleEditModal.member.is_paid) {
+                await updatePaymentStatus(roleEditModal.member.id, true);
+                showToast('역할이 수정되었고, 회비 면제로 인해 납부 상태가 자동으로 업데이트되었습니다.', { type: 'success' });
+            } else {
+                showToast('역할이 수정되었습니다.', { type: 'success' });
+            }
+
+            // 목록 갱신
             loadMembers();
             handleCloseRoleEdit();
         } catch (e) {

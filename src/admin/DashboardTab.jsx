@@ -1,6 +1,6 @@
 // src/admin/DashboardTab.js
 import { useState, useEffect } from 'react';
-import { adminUpdateGame, deleteGame, approveDibsByRenter, returnGamesByRenter, editGame, fetchGameLogs, fetchUsers } from '../api';
+import { adminUpdateGame, deleteGame, approveDibsByRenter, returnGamesByRenter, editGame, fetchGameLogs, fetchAllLogs, fetchUsers } from '../api';
 import GameFormModal from './GameFormModal';
 import UserSelectModal from './UserSelectModal'; // [NEW]
 import ConfirmModal from '../components/ConfirmModal'; // [NEW]
@@ -15,9 +15,22 @@ function DashboardTab({ games, loading, onReload }) {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [targetGame, setTargetGame] = useState(null);
+
+  // 로그 관련 상태
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [gameLogs, setGameLogs] = useState([]);
   const [logGameName, setLogGameName] = useState("");
+
+  // [NEW] 로그 검색/필터 관련 상태
+  const [logSearchInput, setLogSearchInput] = useState("");
+  const [logSearchTerm, setLogSearchTerm] = useState("");
+  const [logFilters, setLogFilters] = useState({
+    RENT: true,
+    RETURN: true,
+    DIBS: false,
+    CANCEL: false,
+    OTHER: false
+  });
 
   // [NEW] Confirm 모달 상태
   const [confirmModal, setConfirmModal] = useState({
@@ -512,15 +525,26 @@ function DashboardTab({ games, loading, onReload }) {
     );
   };
 
-  // ⭐ [추가] 로그 보기 핸들러
+  // ⭐ [추가] 개별 로그 보기 핸들러
   const handleShowLogs = async (game) => {
     setLogGameName(game.name);
     setGameLogs([]); // 초기화
+
+    // [NEW] 필터 및 검색어 초기화
+    setLogSearchInput("");
+    setLogSearchTerm("");
+    setLogFilters({
+      RENT: true,
+      RETURN: true,
+      DIBS: true,
+      CANCEL: true,
+      OTHER: true
+    });
+
     setIsLogModalOpen(true);
 
     try {
       const res = await fetchGameLogs(game.id);
-
 
       if (res.status === "success") {
         setGameLogs(res.logs);
@@ -532,11 +556,52 @@ function DashboardTab({ games, loading, onReload }) {
     }
   };
 
+  // ⭐ [NEW] 전체 로그 보기 핸들러
+  const handleShowAllLogs = async () => {
+    setLogGameName("전체"); // 전체 모드
+    setGameLogs([]); // 초기화
+
+    // 필터 및 검색어 초기화 (기본: 대여/반납만)
+    setLogSearchInput("");
+    setLogSearchTerm("");
+    setLogFilters({
+      RENT: true,
+      RETURN: true,
+      DIBS: false,
+      CANCEL: false,
+      OTHER: false
+    });
+
+    setIsLogModalOpen(true);
+
+    try {
+      const res = await fetchAllLogs();
+
+      if (res.status === "success") {
+        setGameLogs(res.logs);
+      } else {
+        showToast("전체 로그를 불러오지 못했습니다.", { type: "error" });
+      }
+    } catch (e) {
+      showToast("전체 로그 로딩 에러", { type: "error" });
+    }
+  };
+
+  // [NEW] 디바운스 - 로그용
+  useEffect(() => {
+    const timer = setTimeout(() => setLogSearchTerm(logSearchInput), 300);
+    return () => clearTimeout(timer);
+  }, [logSearchInput]);
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
         <h3>🚨 게임 관리 (총 {games.length}개)</h3>
-        <button onClick={onReload} style={{ padding: "5px 10px", cursor: "pointer", background: "var(--admin-card-bg)", color: "var(--admin-text-main)", border: "1px solid var(--admin-border)", borderRadius: "5px" }}>🔄 새로고침</button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          {/* [NEW] 전체 이력 조회 버튼 - 크게 변경 */}
+          <button onClick={handleShowAllLogs} style={{ padding: "8px 16px", fontSize: "1.05em", fontWeight: "bold", cursor: "pointer", background: "var(--admin-primary)", color: "white", border: "none", borderRadius: "5px" }}>전체 이력 조회 📜</button>
+          <button onClick={onReload} style={{ padding: "8px 16px", fontSize: "1.05em", fontWeight: "bold", cursor: "pointer", background: "var(--admin-card-bg)", color: "var(--admin-text-main)", border: "1px solid var(--admin-border)", borderRadius: "5px" }}>🔄 새로고침</button>
+        </div>
       </div>
 
       <FilterBar
@@ -605,7 +670,7 @@ function DashboardTab({ games, loading, onReload }) {
 
               {/* 상태별 버튼 로직 [IMPROVED] */}
               <div style={{ display: "flex", gap: "5px" }}>
-                <button onClick={() => handleShowLogs(game)} style={{ ...actionBtnStyle("#2c3e50"), color: "#eee", border: "1px solid #555" }} title="이력 조회">📜</button>
+                <button onClick={() => handleShowLogs(game)} style={{ ...actionBtnStyle("#2c3e50"), color: "#eee", border: "1px solid #555", padding: "6px 12px", fontSize: "1.1em" }} title="이력 조회">📜</button>
                 <button onClick={() => openEditModal(game)} style={actionBtnStyle("#8e44ad")}>✏️ 수정</button>
                 <button onClick={() => handleDelete(game)} style={{ ...actionBtnStyle("transparent"), color: "#e74c3c", border: "1px solid #e74c3c", width: "30px", padding: 0 }}>🗑️</button>
 
@@ -657,101 +722,201 @@ function DashboardTab({ games, loading, onReload }) {
               <button onClick={() => setIsLogModalOpen(false)} style={{ background: "none", border: "none", fontSize: "1.2em", cursor: "pointer", color: "var(--admin-text-main)" }}>✖️</button>
             </h3>
 
+            {/* [NEW] 로그 필터 및 검색 컨트롤 */}
+            <div style={{ marginBottom: "15px", padding: "10px", background: "var(--admin-bg)", borderRadius: "8px", border: "1px solid var(--admin-border)", display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+              {/* 1. 검색창 (전체 모드일 때만 활용도가 높지만 항상 보여줌) */}
+              <input
+                type="text"
+                placeholder="게임명 검색..."
+                value={logSearchInput}
+                onChange={(e) => setLogSearchInput(e.target.value)}
+                style={{ padding: "8px", borderRadius: "5px", border: "1px solid var(--admin-border)", background: "var(--admin-card-bg)", color: "var(--admin-text-main)", flex: "1", minWidth: "150px" }}
+              />
+
+              {/* 2. 다중 선택 필터 */}
+              <div style={{ display: "flex", gap: "15px", flexWrap: "wrap", fontSize: "0.9em", userSelect: "none" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", color: logFilters.RENT ? "#e74c3c" : "var(--admin-text-sub)" }}>
+                  <input type="checkbox" checked={logFilters.RENT} onChange={() => setLogFilters(prev => ({ ...prev, RENT: !prev.RENT }))} />
+                  대여
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", color: logFilters.RETURN ? "#2ecc71" : "var(--admin-text-sub)" }}>
+                  <input type="checkbox" checked={logFilters.RETURN} onChange={() => setLogFilters(prev => ({ ...prev, RETURN: !prev.RETURN }))} />
+                  반납
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", color: logFilters.DIBS ? "#3498db" : "var(--admin-text-sub)" }}>
+                  <input type="checkbox" checked={logFilters.DIBS} onChange={() => setLogFilters(prev => ({ ...prev, DIBS: !prev.DIBS }))} />
+                  찜(예약)
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", color: logFilters.CANCEL ? "#e67e22" : "var(--admin-text-sub)" }}>
+                  <input type="checkbox" checked={logFilters.CANCEL} onChange={() => setLogFilters(prev => ({ ...prev, CANCEL: !prev.CANCEL }))} />
+                  취소/만료
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", color: logFilters.OTHER ? "#95a5a6" : "var(--admin-text-sub)" }}>
+                  <input type="checkbox" checked={logFilters.OTHER} onChange={() => setLogFilters(prev => ({ ...prev, OTHER: !prev.OTHER }))} />
+                  기타
+                </label>
+              </div>
+            </div>
+
             <div style={{ maxHeight: "500px", overflowY: "auto", fontSize: "0.9em" }}>
-              {gameLogs.length === 0 ? (
-                <p style={{ textAlign: "center", color: "var(--admin-text-sub)", padding: "20px" }}>기록이 없습니다.</p>
-              ) : (
-                <table className="admin-table">
-                  <thead style={{ position: "sticky", top: 0, background: "var(--admin-card-bg)", zIndex: 1 }}>
-                    <tr style={{ textAlign: "left", borderBottom: "2px solid var(--admin-border)" }}>
-                      <th style={{ padding: "10px", width: "130px", color: "var(--admin-text-sub)" }}>날짜</th>
-                      <th style={{ padding: "10px", width: "60px", color: "var(--admin-text-sub)", textAlign: "center" }}>행동</th>
-                      <th style={{ padding: "10px", color: "var(--admin-text-sub)" }}>내용</th>
-                      <th style={{ padding: "10px", width: "150px", color: "var(--admin-text-sub)" }}>대여자 정보</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {gameLogs.map((log, idx) => {
-                      // [FIX] details(value)가 객체인 경우와 문자열인 경우를 모두 처리 (JSONB 호환성)
-                      let valStr = "";
-                      if (log.value && typeof log.value === 'object') {
-                        // 객체(JSONB)인 경우: message, status, query 등 상황에 맞는 값 추출
-                        valStr = log.value.message || log.value.status || log.value.query || JSON.stringify(log.value);
-                      } else {
-                        valStr = String(log.value || "");
-                      }
+              {(() => {
+                // [NEW] 필터링 적용 로직
+                const filteredLogs = gameLogs.filter(log => {
+                  // 1. 검색어 필터 (게임명)
+                  if (logSearchTerm && log.gameName) {
+                    const searchClean = logSearchTerm.replace(/\s+/g, "").toLowerCase();
+                    const nameClean = log.gameName.replace(/\s+/g, "").toLowerCase();
+                    if (!nameClean.includes(searchClean)) return false;
+                  }
 
-                      let mainText = valStr;
-                      let userInfo = null;
-                      let isNonMember = false;
+                  // 2. 타입 필터
+                  const t = log.type || "";
+                  if (t === "RENT" && !logFilters.RENT) return false;
+                  if (t === "RETURN" && !logFilters.RETURN) return false;
+                  if (t === "DIBS" && !logFilters.DIBS) return false;
+                  if ((t.includes("CANCEL") || t.includes("EXPIRED")) && !logFilters.CANCEL) return false;
+                  if (!["RENT", "RETURN", "DIBS"].includes(t) && !t.includes("CANCEL") && !t.includes("EXPIRED") && !logFilters.OTHER) return false;
 
-                      if (valStr.includes("→ [")) {
-                        const parts = valStr.split("→ [");
-                        mainText = parts[0].trim();
-                        userInfo = parts[1].replace("]", "").trim();
-                      } else if (log.type === "RENT" && valStr.trim() !== "" && valStr !== "일괄처리") {
-                        mainText = "현장 대여 (수기)";
-                        userInfo = valStr;
-                        isNonMember = true;
-                      }
+                  return true;
+                });
 
-                      return (
-                        <tr key={idx} style={{ borderBottom: "1px solid var(--admin-border)" }}>
-                          <td style={{ padding: "10px 5px", color: "var(--admin-text-sub)", fontSize: "0.85em", minWidth: "80px" }}>
-                            {(() => {
-                              const dateStr = String(log.date || "");
-                              try {
-                                const date = new Date(dateStr);
-                                if (!isNaN(date.getTime())) {
-                                  return date.toLocaleString('ko-KR', {
-                                    year: 'numeric', month: '2-digit', day: '2-digit',
-                                    hour: '2-digit', minute: '2-digit', hour12: false
-                                  });
-                                }
-                              } catch (e) { }
-                              return dateStr.replace(/:[0-9]{2}$/, "").replace("AM", "").replace("PM", "").trim();
-                            })()}
-                          </td>
-                          <td style={{ padding: "10px 5px", textAlign: "center" }}>
-                            <span style={{
-                              padding: "4px 8px",
-                              borderRadius: "4px",
-                              fontSize: "0.8em",
-                              fontWeight: "bold",
-                              color: "white",
-                              display: "inline-block",
-                              minWidth: "40px",
-                              background: log.type === "RENT" ? "#e74c3c" : log.type === "RETURN" ? "#2ecc71" : "#95a5a6"
-                            }}>
-                              {log.type === "RENT" ? "대여" : log.type === "RETURN" ? "반납" : log.type}
-                            </span>
-                          </td>
-                          <td style={{ padding: "10px 5px", color: "var(--admin-text-main)" }}>
-                            {mainText}
-                          </td>
-                          <td style={{ padding: "10px 5px" }}>
-                            {userInfo ? (
-                              <div style={{
-                                fontSize: "0.9em",
-                                color: isNonMember ? "#ccc" : "#0984e3",
-                                fontWeight: "600",
-                                background: isNonMember ? "#333" : "rgba(9, 132, 227, 0.1)",
+                if (gameLogs.length === 0) {
+                  return <p style={{ textAlign: "center", color: "var(--admin-text-sub)", padding: "20px" }}>기록이 없습니다.</p>;
+                }
+
+                if (filteredLogs.length === 0) {
+                  return <p style={{ textAlign: "center", color: "var(--admin-text-sub)", padding: "20px" }}>선택한 조건에 맞는 결과가 없습니다.</p>;
+                }
+
+                return (
+                  <table className="admin-table">
+                    <thead style={{ position: "sticky", top: 0, background: "var(--admin-card-bg)", zIndex: 1 }}>
+                      <tr style={{ textAlign: "left", borderBottom: "2px solid var(--admin-border)" }}>
+                        <th style={{ padding: "10px", width: "130px", color: "var(--admin-text-sub)" }}>날짜</th>
+                        <th style={{ padding: "10px", width: "60px", color: "var(--admin-text-sub)", textAlign: "center" }}>행동</th>
+                        {/* 전체 보기 모드일 때만 게임명 표시 */}
+                        {logGameName === "전체" && (
+                          <th style={{ padding: "10px", width: "150px", color: "var(--admin-text-sub)" }}>게임명</th>
+                        )}
+                        <th style={{ padding: "10px", color: "var(--admin-text-sub)" }}>내용</th>
+                        <th style={{ padding: "10px", width: "150px", color: "var(--admin-text-sub)" }}>대여자 정보</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredLogs.map((log, idx) => {
+                        // details(value)가 객체인 경우와 문자열인 경우를 모두 처리 (JSONB 호환성)
+                        let valStr = "";
+                        if (log.value && typeof log.value === 'object') {
+                          // 객체(JSONB)인 경우: message, status, query 등 상황에 맞는 값 추출
+                          valStr = log.value.message || log.value.status || log.value.query || JSON.stringify(log.value);
+                        } else {
+                          valStr = String(log.value || "");
+                        }
+
+                        let mainText = valStr;
+                        let userInfo = log.userName || null;
+                        let userPhone = log.userPhone || null;
+                        let isNonMember = false;
+
+                        if (valStr.includes("→ [")) {
+                          const parts = valStr.split("→ [");
+                          mainText = parts[0].trim();
+                          userInfo = userInfo || parts[1].replace("]", "").trim();
+                        } else if (valStr === "Kiosk Pickup") {
+                          mainText = "키오스크 대여/수령";
+                        } else if (valStr === "User reserved game") {
+                          mainText = "사용자 찜(예약)";
+                        } else if (valStr === "User cancelled dibs") {
+                          mainText = "사용자 찜 취소";
+                        } else if (valStr === "ADMIN RETURN") {
+                          mainText = "관리자 반납 처리";
+                        } else if (log.type === "RENT" && valStr.trim() !== "" && valStr !== "일괄처리") {
+                          if (!userInfo) {
+                            mainText = "현장 대여 (수기)";
+                            userInfo = valStr;
+                            isNonMember = true;
+                          }
+                        }
+
+                        // 행동 뱃지 색상 및 텍스트 결정
+                        let badgeBg = "#95a5a6";
+                        let badgeText = log.type;
+                        if (log.type === "RENT") { badgeBg = "#e74c3c"; badgeText = "대여"; }
+                        else if (log.type === "RETURN") { badgeBg = "#2ecc71"; badgeText = "반납"; }
+                        else if (log.type === "DIBS") { badgeBg = "#3498db"; badgeText = "찜"; }
+                        else if (log.type?.includes("CANCEL") || log.type?.includes("EXPIRED")) { badgeBg = "#e67e22"; badgeText = "취소/만료"; }
+
+                        return (
+                          <tr key={idx} style={{ borderBottom: "1px solid var(--admin-border)", background: idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
+                            <td style={{ padding: "10px 5px", color: "var(--admin-text-sub)", fontSize: "0.85em", minWidth: "80px" }}>
+                              {(() => {
+                                const dateStr = String(log.date || "");
+                                try {
+                                  const date = new Date(dateStr);
+                                  if (!isNaN(date.getTime())) {
+                                    return date.toLocaleString('ko-KR', {
+                                      year: 'numeric', month: '2-digit', day: '2-digit',
+                                      hour: '2-digit', minute: '2-digit', hour12: false
+                                    });
+                                  }
+                                } catch (e) { }
+                                return dateStr.replace(/:[0-9]{2}$/, "").replace("AM", "").replace("PM", "").trim();
+                              })()}
+                            </td>
+                            <td style={{ padding: "10px 5px", textAlign: "center" }}>
+                              <span style={{
                                 padding: "4px 8px",
-                                borderRadius: "6px",
-                                display: "inline-block"
+                                borderRadius: "4px",
+                                fontSize: "0.8em",
+                                fontWeight: "bold",
+                                color: "white",
+                                display: "inline-block",
+                                minWidth: "40px",
+                                background: badgeBg
                               }}>
-                                👤 {userInfo}
-                              </div>
-                            ) : (
-                              <span style={{ color: "#555", fontSize: "0.8em" }}>-</span>
+                                {badgeText}
+                              </span>
+                            </td>
+
+                            {/* 전체 보기 모드일 때만 게임명 표시 */}
+                            {logGameName === "전체" && (
+                              <td style={{ padding: "10px 5px", color: "var(--admin-primary)", fontWeight: "bold", fontSize: "0.95em" }}>
+                                {log.gameName || "-"}
+                              </td>
                             )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
+
+                            <td style={{ padding: "10px 5px", color: "var(--admin-text-main)" }}>
+                              {mainText}
+                            </td>
+                            <td style={{ padding: "10px 5px" }}>
+                              {userInfo ? (
+                                <div style={{
+                                  fontSize: "0.9em",
+                                  color: isNonMember ? "#ccc" : "#0984e3",
+                                  fontWeight: "600",
+                                  background: isNonMember ? "#333" : "rgba(9, 132, 227, 0.1)",
+                                  padding: "4px 8px",
+                                  borderRadius: "6px",
+                                  display: "inline-block"
+                                }}>
+                                  👤 {userInfo}
+                                  {userPhone && (
+                                    <span style={{ fontSize: "0.85em", opacity: 0.8, marginLeft: "6px", fontWeight: "normal" }}>
+                                      ({userPhone})
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span style={{ color: "#555", fontSize: "0.8em" }}>-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                );
+              })()}
             </div>
 
             <div style={{ marginTop: "20px", textAlign: "right" }}>

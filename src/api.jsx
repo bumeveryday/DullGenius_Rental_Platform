@@ -589,8 +589,11 @@ export const adminUpdateGame = async (gameId, newStatus, renterName, userId, ren
       });
       if (error) throw error;
       if (!data.success) throw new Error(data.message);
-      return { status: "success" };
 
+      // [FIX] 반납 처리 시 명시적으로 로그 추가 (DB RPC 미작동 대비)
+      await sendLog(gameId, 'RETURN', '관리자 반납 처리');
+
+      return { status: "success" };
     } else {
       // 그 외 상태(분실, 수리중 등)는 available_count 조정
       // 예: 분실 시 quantity 감소
@@ -664,6 +667,8 @@ export const returnGamesByRenter = async (renterName, targetUserId, targetGameId
           console.error(`[Fail] Return result false: ${rpcData.message}`);
         } else {
           successCount++;
+          // [FIX] 일괄 반납(개별 모달 포함) 처리 시 명시적으로 로그 추가
+          await sendLog(gameId, 'RETURN', '관리자 일괄 반납');
         }
       } catch (e) {
         console.error("반납 중 에러:", e);
@@ -857,7 +862,7 @@ export const deleteGame = async (gameId) => {
 export const fetchGameLogs = async (gameId) => {
   const { data, error } = await supabase
     .from('logs')
-    .select('*')
+    .select('*, profiles(name, phone)')
     .eq('game_id', gameId)
     .order('created_at', { ascending: false });
   if (error) return { status: "error" };
@@ -868,7 +873,28 @@ export const fetchGameLogs = async (gameId) => {
     ...log,
     date: log.created_at,
     type: log.action_type,
-    value: log.details // details에 "→ [이름]" 형식이 있거나 단순 텍스트
+    value: log.details, // details에 "→ [이름]" 형식이 있거나 단순 텍스트
+    userName: log.profiles?.name || null,
+    userPhone: log.profiles?.phone || null
+  }));
+  return { status: "success", logs: formatted };
+};
+
+export const fetchAllLogs = async () => {
+  const { data, error } = await supabase
+    .from('logs')
+    .select('*, games(name), profiles(name, phone)')
+    .order('created_at', { ascending: false });
+  if (error) return { status: "error" };
+
+  const formatted = data.map(log => ({
+    ...log,
+    date: log.created_at,
+    type: log.action_type,
+    value: log.details,
+    gameName: log.games?.name || "알 수 없음", // 조인된 게임 이름 추가
+    userName: log.profiles?.name || null,
+    userPhone: log.profiles?.phone || null
   }));
   return { status: "success", logs: formatted };
 };
@@ -1022,6 +1048,12 @@ export const kioskReturn = async (gameId, userId, rentalId) => {
     console.error("Kiosk Return Error:", error);
     return { success: false, message: error.message };
   }
+
+  // [FIX] 키오스크 반납 로그 명시적 추가
+  if (data?.success) {
+    await sendLog(gameId, 'RETURN', '키오스크 반납 처리');
+  }
+
   return data;
 };
 

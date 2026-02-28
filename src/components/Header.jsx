@@ -1,13 +1,15 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+
+const EXEMPT_ROLES = ['admin', 'executive', 'payment_exempt'];
 import { LINKS } from '../infoData';
 import logo from '../logo.png'; // [NEW] Logo Import
 import LoginTooltip from './LoginTooltip'; // [NEW] Login Tooltip Import
 import './Header.css';
 
 const Header = () => {
-    const { user, profile, logout } = useAuth(); // [FIX] signOut -> logout
+    const { user, profile, roles, logout } = useAuth(); // [FIX] signOut -> logout
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -41,7 +43,8 @@ const Header = () => {
         setLogoClickCount(prev => prev + 1);
     };
 
-    const isPaidUser = user && profile?.is_paid;
+    const isExempt = user && roles.some(r => EXEMPT_ROLES.includes(r));
+    const isPaidUser = user && (profile?.is_paid || isExempt);
 
     return (
         <header className={`hero-header ${isPaidUser ? 'paid-user' : ''}`}>
