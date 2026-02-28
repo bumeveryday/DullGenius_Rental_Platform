@@ -34,6 +34,7 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
 
   const handleSubmit = () => {
     if (!formData.name) return showToast("이름은 필수입니다.", { type: "warning" });
+    if (formData.difficulty === "") return showToast("난이도를 입력해주세요.", { type: "warning" }); // [NEW] 난이도 필수 검증 추가
     onSubmit(formData); // 부모 컴포넌트에게 입력된 데이터 전달
   };
 

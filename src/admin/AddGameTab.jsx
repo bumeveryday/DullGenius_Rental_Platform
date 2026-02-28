@@ -61,58 +61,19 @@ function AddGameTab({ onGameAdded }) {
   // 모달에서 '저장' 버튼 눌렀을 때 실행
   const handleSaveGame = async (formData) => {
     try {
-      // 1. 이미지 최적화 및 업로드 (Supabase Storage)
-      // 외부 이미지(네이버 등)인 경우에만 처리
-      if (formData.image && formData.image.startsWith('http') && !formData.image.includes('supabase.co')) {
-        try {
-          // Toast: 이미지 처리 중 알림
-          showToast("이미지를 최적화하고 있습니다...", { type: "info" });
-
-          // 1-1. weserv.nl을 통해 리사이징된 이미지(WebP, 600px) Fetch
-          const cleanUrl = formData.image.replace(/^https?:\/\//, '');
-          const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&w=600&output=webp&il`;
-
-          const response = await fetch(proxyUrl);
-          const blob = await response.blob();
-
-          // 1-2. Supabase Storage 업로드
-          const { supabase } = await import('../lib/supabaseClient'); // Dynamic Import to avoid top-level cyclic dependency if any
-          const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webp`; // 임시 ID 사용 (실제 Game ID는 나중에 생성되므로)
-
-          const { error: uploadError } = await supabase.storage
-            .from('game-images')
-            .upload(fileName, blob, { contentType: 'image/webp' });
-
-          if (uploadError) throw uploadError;
-
-          // 1-3. Public URL 획득
-          const { data: { publicUrl } } = supabase.storage
-            .from('game-images')
-            .getPublicUrl(fileName);
-
-          // 이미지 URL 교체
-          formData.image = publicUrl;
-          console.log("Image optimized and uploaded:", publicUrl);
-
-        } catch (imgError) {
-          console.error("Image optimization failed:", imgError);
-          showToast("이미지 최적화 실패 (원본 사용)", { type: "warning" });
-          // 실패해도 원본 URL로 계속 진행
-        }
-      }
-
-      // 2. 중복 체크
+      // 1. 중복 체크를 가장 먼저 수행
       const duplicates = await checkGameExists(formData.name);
 
       if (duplicates && duplicates.length > 0) {
         // 중복 발견: 재고 추가 유도
         const existGame = duplicates[0];
+        const currentCount = existGame.quantity || '?';
         showConfirmModal(
           "📢 중복 게임 발견",
-          `'${formData.name}' 게임이 이미 존재합니다.\n새로 만드는 대신 재고(Copy)를 추가하시겠습니까?\n(현재 재고: ${existGame.game_copies[0]?.count || '?'}개)`,
+          `'${formData.name}' 게임이 이미 존재합니다.\n새로 만드는 대신 재고(Copy)를 추가하시겠습니까?\n(현재 재고: ${currentCount}개)`,
           async () => {
             try {
-              await addGameCopy(existGame.id, ""); // 위치는 공란 or Default
+              await addGameCopy(existGame.id); // 위치 파라미터 불필요
               showToast("기존 게임에 재고가 추가되었습니다!", { type: "success" });
               setIsModalOpen(false);
               setResults([]);
@@ -124,18 +85,60 @@ function AddGameTab({ onGameAdded }) {
           },
           "warning" // Warning type for visual distinction if supported
         );
-        return;
+        return; // 중복일 경우 처리 종료 (이미지 업로드 안함)
       }
 
-      // 2. 신규 생성 (기존 로직)
+      // 2. 신규 생성 모달 승인 후 이미지 최적화 및 저장
       showConfirmModal(
         "게임 추가",
         `[${formData.name}] 추가하시겠습니까?`,
         async () => {
           try {
+            let finalImage = formData.image;
+
+            // 2-1. 이미지 최적화 및 업로드 (Supabase Storage)
+            // 외부 이미지(네이버 등)인 경우에만 처리
+            if (finalImage && finalImage.startsWith('http') && !finalImage.includes('supabase.co')) {
+              try {
+                // Toast: 이미지 처리 중 알림
+                showToast("이미지를 최적화하고 있습니다...", { type: "info" });
+
+                // weserv.nl을 통해 리사이징된 이미지(WebP, 600px) Fetch
+                const cleanUrl = finalImage.replace(/^https?:\/\//, '');
+                const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&w=600&output=webp&il`;
+
+                const response = await fetch(proxyUrl);
+                const blob = await response.blob();
+
+                // Supabase Storage 업로드
+                const { supabase } = await import('../lib/supabaseClient'); // Dynamic Import to avoid top-level cyclic dependency if any
+                const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webp`; // 임시 ID 사용 (실제 Game ID는 나중에 생성되므로)
+
+                const { error: uploadError } = await supabase.storage
+                  .from('game-images')
+                  .upload(fileName, blob, { contentType: 'image/webp' });
+
+                if (uploadError) throw uploadError;
+
+                // Public URL 획득
+                const { data: { publicUrl } } = supabase.storage
+                  .from('game-images')
+                  .getPublicUrl(fileName);
+
+                // 이미지 URL 교체
+                finalImage = publicUrl;
+
+              } catch (imgError) {
+                console.error("Image optimization failed:", imgError);
+                showToast("이미지 최적화 실패 (원본 사용)", { type: "warning" });
+                // 실패해도 원본 URL로 계속 진행
+              }
+            }
+
+            // 2-2. 신규 게임 DB 저장
             // id는 DB에서 생성되므로 제거하고 보냄
             const { id, ...rest } = formData;
-            await addGame({ ...rest, location: "" });
+            await addGame({ ...rest, image: finalImage });
             showToast("추가되었습니다!", { type: "success" });
             setIsModalOpen(false);
             setResults([]);
@@ -148,7 +151,7 @@ function AddGameTab({ onGameAdded }) {
         }
       );
     } catch (e) {
-      console.error("중복 체크 실패:", e);
+      console.error("저장 준비 중 오류:", e);
       showToast("오류 발생: " + e.message, { type: "error" });
     }
   };

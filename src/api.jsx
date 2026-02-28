@@ -352,7 +352,7 @@ export const addGame = async (gameData) => {
       name: gameData.name,
       category: gameData.category || '보드게임',
       players: gameData.players,
-      difficulty: gameData.difficulty,
+      difficulty: gameData.difficulty === "" ? null : gameData.difficulty, // [FIX] 빈 문자열은 DB에서 numeric 변환 불가
       image: gameData.image,
       video_url: gameData.video_url,
       recommendation_text: gameData.recommendation_text,
@@ -753,11 +753,51 @@ export const approveDibsByRenter = async (renterName, userId) => {
 };
 
 export const deleteGame = async (gameId) => {
-  // [Updated] 안전 삭제 RPC 사용
+  // 1. 삭제할 게임의 이미지 URL 미리 가져오기
+  const { data: gameInfo, error: fetchError } = await supabase
+    .from('games')
+    .select('image')
+    .eq('id', gameId)
+    .single();
+
+  if (fetchError) throw fetchError;
+  const targetImageUrl = gameInfo?.image;
+
+  // 2. [Updated] 안전 삭제 RPC 사용
   const { data, error } = await supabase.rpc('safe_delete_game', { p_game_id: gameId });
 
   if (error) throw error;
   if (!data.success) throw new Error(data.message);
+
+  // 3. 이미지 보존 검사 및 스토리지 삭제 진행
+  // 삭제 대상 파일이고 실제로 삭제까지 완료(?)된 상황에서만 작동
+  if (targetImageUrl && targetImageUrl.includes('supabase.co') && targetImageUrl.includes('/storage/v1/object/public/game-images/')) {
+    try {
+      // 3-1. 동일한 이미지 URL을 사용하는 다른 게임이 있는지 확인 (해당 게임은 이미 삭제되었으므로 0이어야 안 씀)
+      const { count, error: countError } = await supabase
+        .from('games')
+        .select('id', { count: 'exact', head: true })
+        .eq('image', targetImageUrl);
+
+      if (!countError && count === 0) {
+        // 3-2. 스토리지 파일명 추출
+        const urlParts = targetImageUrl.split('/game-images/');
+        if (urlParts.length === 2) {
+          const fileName = urlParts[1];
+          // 3-3. 스토리지 물리파일 삭제 호출
+          const { error: storageError } = await supabase.storage
+            .from('game-images')
+            .remove([fileName]);
+
+          if (storageError) {
+            console.error("Storage image delete failed:", storageError);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error checking/deleting associated image:", e);
+    }
+  }
 
   return data;
 };
