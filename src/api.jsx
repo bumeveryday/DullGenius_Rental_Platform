@@ -1093,6 +1093,12 @@ export const kioskPickup = async (rentalId) => {
     console.error("Kiosk Pickup Error:", error);
     return { success: false, message: error.message };
   }
+
+  // 수령 이력 로그 기록
+  if (data?.success) {
+    await sendLog(data?.game_id || null, 'RENT', '키오스크 수령 처리');
+  }
+
   return data;
 };
 

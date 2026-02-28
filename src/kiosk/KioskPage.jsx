@@ -80,7 +80,7 @@ function KioskPage() {
     useEffect(() => {
         // 환경 변수 검증
         if (!MASTER_KEY) {
-            console.error('❌ REACT_APP_KIOSK_MASTER_KEY 환경 변수가 설정되지 않았습니다.');
+            console.error('❌ VITE_KIOSK_MASTER_KEY 환경 변수가 설정되지 않았습니다.');
             return;
         }
 
@@ -231,7 +231,7 @@ function KioskPage() {
                         marginBottom: "20px",
                         fontSize: "0.9rem"
                     }}>
-                        ⚠️ 시스템 오류: REACT_APP_KIOSK_MASTER_KEY 환경 변수가 설정되지 않았습니다.
+                        ⚠️ 시스템 오류: VITE_KIOSK_MASTER_KEY 환경 변수가 설정되지 않았습니다.
                     </div>
                 )}
                 <input
