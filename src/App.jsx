@@ -25,6 +25,7 @@ const Admin = lazy(() => import('./Admin'));
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginTooltip from './components/LoginTooltip';
 import ChunkErrorBoundary from './components/ChunkErrorBoundary';
+import InstallPromptBanner from './components/InstallPromptBanner';
 
 const PasswordReset = lazy(() => import('./components/PasswordReset'));
 
@@ -34,6 +35,7 @@ function App() {
       <AuthProvider>
         <GameProvider>
           <BrowserRouter>
+            <InstallPromptBanner />
             <ChunkErrorBoundary>
             <Suspense fallback={
               <div className="loading-container">

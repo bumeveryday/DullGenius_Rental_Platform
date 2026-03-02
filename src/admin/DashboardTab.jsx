@@ -351,12 +351,14 @@ function DashboardTab({ games, loading, onReload }) {
     if (rentalId) {
       const targetRental = game.rentals?.find(r => r.rental_id === rentalId);
       const renterName = targetRental?.renter_name || targetRental?.profiles?.name || "알 수 없음";
+      const userId = targetRental?.user_id || null;
 
       showConfirmModal(
         "반납 확인",
         `[${game.name}] ${renterName}님의 대여 건을 반납 처리하시겠습니까?`,
         async () => {
-          const res = await returnGamesByRenter(null, null, null, rentalId);
+          // [FIX] userId도 함께 전달하여 매칭 신뢰성 향상
+          const res = await returnGamesByRenter(null, userId, null, rentalId);
           if (res.status === "success" && res.count > 0) {
             showToast("반납되었습니다.", { type: "success" });
             onReload();
@@ -368,29 +370,39 @@ function DashboardTab({ games, loading, onReload }) {
       return;
     }
 
-    // [MOD] 메인 카드 버튼 클릭 시: 해당 대여자가 빌린 전체 게임 수를 먼저 파악
-    const renterName = game.renter; // 예: "A, B" or "A"
+    // [MOD] 메인 카드 버튼 클릭 시
+    // [FIX] renter_name이 '회원'(웹 대여) 또는 null(키오스크)일 수 있으므로 userId 기반 매칭 우선
+    const userId = game.renterId || null;
+    const renterName = game.renter;
     const firstRenter = renterName?.split(',')[0].trim();
-    if (!firstRenter) return;
+    if (!firstRenter && !userId) return;
 
-    // [FIX] 모든 게임을 뒤져서 이 사람이 빌린 '전체' 건수 합산 (일괄 처리 여부 결정의 근거)
+    // [FIX] userId 있으면 userId로, 없으면 이름으로 카운팅 (renter_name='회원' 오매칭 방지)
     const totalUserRentals = games.reduce((acc, g) => {
       const userRentals = g.rentals?.filter(r =>
         r.type === 'RENT' &&
         !r.returned_at &&
-        (r.renter_name === firstRenter || r.profiles?.name === firstRenter)
+        (userId
+          ? r.user_id === userId
+          : (r.renter_name === firstRenter || r.profiles?.name === firstRenter))
       ) || [];
       return acc + userRentals.length;
     }, 0);
 
-    // 단일 건(이 게임 1통뿐)인 경우 -> 바로 반납 컨펌
+    // 단일 건인 경우 -> 바로 반납 컨펌
     if (totalUserRentals <= 1) {
-      const finalRentalId = game.rentals?.[0]?.rental_id;
+      // [FIX] RENT 타입 중에서 명시적으로 찾아 finalRentalId 설정
+      const targetRental = game.rentals?.find(r => r.type === 'RENT' && !r.returned_at)
+        || game.rentals?.[0];
+      const finalRentalId = targetRental?.rental_id;
+      const displayName = firstRenter || "알 수 없음";
+
       showConfirmModal(
         "반납 확인",
-        `[${game.name}] ${firstRenter}님의 대여 건을 반납 처리하시겠습니까?`,
+        `[${game.name}] ${displayName}님의 대여 건을 반납 처리하시겠습니까?`,
         async () => {
-          const res = await returnGamesByRenter(null, null, null, finalRentalId);
+          // [FIX] userId 전달로 키오스크/웹 대여 모두 정확히 매칭
+          const res = await returnGamesByRenter(null, userId, null, finalRentalId);
           if (res.status === "success" && res.count > 0) {
             showToast("반납되었습니다.", { type: "success" });
             onReload();
@@ -405,8 +417,13 @@ function DashboardTab({ games, loading, onReload }) {
         "일괄 반납 확인",
         `💡 [${firstRenter}] 님이 빌려간 게임이 총 ${totalUserRentals}개입니다.\n(다른 게임 포함)\n\n모두 한꺼번에 '반납' 처리하시겠습니까?`,
         async () => {
-          await returnGamesByRenter(firstRenter);
-          showToast(`${totalUserRentals}건이 일괄 반납되었습니다.`, { type: "success" });
+          // [FIX] userId 전달로 renter_name 불일치 문제 해결 (키오스크=null, 웹='회원')
+          const res = await returnGamesByRenter(firstRenter, userId);
+          if (res.count > 0) {
+            showToast(`${res.count}건이 일괄 반납되었습니다.`, { type: "success" });
+          } else {
+            showToast("❌ 반납 처리 실패: 대여 기록을 찾을 수 없습니다.", { type: "error" });
+          }
           onReload();
         },
         "warning"

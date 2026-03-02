@@ -1,0 +1,321 @@
+﻿diff --git a/.claude/settings.local.json b/.claude/settings.local.json
+index dcc2dbb..e5f049f 100644
+--- a/.claude/settings.local.json
++++ b/.claude/settings.local.json
+@@ -2,7 +2,28 @@
+   "permissions": {
+     "allow": [
+       "Bash(node:*)",
+-      "Bash(supabase:*)"
++      "Bash(supabase:*)",
++      "Bash(xargs grep:*)",
++      "Bash(npx:*)",
++      "WebSearch",
++      "WebFetch(domain:supabase.com)",
++      "Bash(curl:*)",
++      "WebFetch(domain:api.supabase.com)",
++      "Bash(__NEW_LINE_5db394c6c2151156__ echo:*)",
++      "Bash(__NEW_LINE_7b0e0f6883d39280__ echo:*)",
++      "Bash(__NEW_LINE_f04ce43c66f6bd9e__ echo:*)",
++      "Bash(__NEW_LINE_c81e44a00e682a0d__ echo:*)",
++      "Bash(__NEW_LINE_f56573f7d3f4e98b__ echo:*)",
++      "Bash(__NEW_LINE_90d177df2110863e__ echo:*)",
++      "Bash(__NEW_LINE_c9b3e55ab448b3e4__:*)",
++      "Bash(__NEW_LINE_913a77849e38a774__:*)",
++      "Bash(__NEW_LINE_b24bee37505e744b__ echo:*)",
++      "Bash(__NEW_LINE_f9d53979a5f97e7b__:*)",
++      "Bash(__NEW_LINE_291fb067331c79dd__:*)",
++      "Bash(__NEW_LINE_b34a4d622b868267__ echo:*)",
++      "Bash(__NEW_LINE_d4e8e7cf06134f1f__ echo:*)",
++      "Bash(__NEW_LINE_44afb4b9bd40a0d9__ echo:*)",
++      "Bash(__NEW_LINE_71e280df023c2a93__ echo:*)"
+     ]
+   }
+ }
+diff --git a/.env.example b/.env.example
+index e52282a..60ccb83 100644
+--- a/.env.example
++++ b/.env.example
+@@ -11,6 +11,10 @@ REACT_APP_NAVER_CLIENT_SECRET=your_client_secret_here
+ # REACT_APP_ENABLE_DIBS=true
+ REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+ 
++# [Schema Pull] - node scripts/pull_schema.js ?ㅽ뻾 ???꾩슂
++# 諛쒓툒: https://supabase.com/dashboard/account/tokens
++SUPABASE_ACCESS_TOKEN=sbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
++
+ # [李멸퀬]
+ # ?ㅼ젣 媛믪? .env ?뚯씪????ν븯?몄슂 (.gitignore???깅줉?섏뼱 ?덉쓬)
+ # 愿由ъ옄 ?몄쬆? Supabase user_roles ?뚯씠釉붾줈 愿由щ릺誘濡?鍮꾨?踰덊샇 ?섍꼍蹂?섎뒗 ?쒓굅?섏뿀?듬땲??
+diff --git a/package.json b/package.json
+index ca500fd..e3a718d 100644
+--- a/package.json
++++ b/package.json
+@@ -22,7 +22,8 @@
+   "scripts": {
+     "dev": "vite",
+     "build": "vite build",
+-    "preview": "vite preview"
++    "preview": "vite preview",
++    "pull-schema": "node scripts/pull_schema.js"
+   },
+   "eslintConfig": {
+     "extends": [
+diff --git a/src/App.jsx b/src/App.jsx
+index 6ecedad..968937e 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -25,6 +25,7 @@ const Admin = lazy(() => import('./Admin'));
+ import ProtectedRoute from './components/ProtectedRoute';
+ import LoginTooltip from './components/LoginTooltip';
+ import ChunkErrorBoundary from './components/ChunkErrorBoundary';
++import InstallPromptBanner from './components/InstallPromptBanner';
+ 
+ const PasswordReset = lazy(() => import('./components/PasswordReset'));
+ 
+@@ -34,6 +35,7 @@ function App() {
+       <AuthProvider>
+         <GameProvider>
+           <BrowserRouter>
++            <InstallPromptBanner />
+             <ChunkErrorBoundary>
+             <Suspense fallback={
+               <div className="loading-container">
+diff --git a/src/admin/DashboardTab.jsx b/src/admin/DashboardTab.jsx
+index 13676d2..0827b74 100644
+--- a/src/admin/DashboardTab.jsx
++++ b/src/admin/DashboardTab.jsx
+@@ -351,12 +351,14 @@ function DashboardTab({ games, loading, onReload }) {
+     if (rentalId) {
+       const targetRental = game.rentals?.find(r => r.rental_id === rentalId);
+       const renterName = targetRental?.renter_name || targetRental?.profiles?.name || "?????놁쓬";
++      const userId = targetRental?.user_id || null;
+ 
+       showConfirmModal(
+         "諛섎궔 ?뺤씤",
+         `[${game.name}] ${renterName}?섏쓽 ???嫄댁쓣 諛섎궔 泥섎━?섏떆寃좎뒿?덇퉴?`,
+         async () => {
+-          const res = await returnGamesByRenter(null, null, null, rentalId);
++          // [FIX] userId???④퍡 ?꾨떖?섏뿬 留ㅼ묶 ?좊ː???μ긽
++          const res = await returnGamesByRenter(null, userId, null, rentalId);
+           if (res.status === "success" && res.count > 0) {
+             showToast("諛섎궔?섏뿀?듬땲??", { type: "success" });
+             onReload();
+@@ -368,29 +370,39 @@ function DashboardTab({ games, loading, onReload }) {
+       return;
+     }
+ 
+-    // [MOD] 硫붿씤 移대뱶 踰꾪듉 ?대┃ ?? ?대떦 ??ъ옄媛 鍮뚮┛ ?꾩껜 寃뚯엫 ?섎? 癒쇱? ?뚯븙
+-    const renterName = game.renter; // ?? "A, B" or "A"
++    // [MOD] 硫붿씤 移대뱶 踰꾪듉 ?대┃ ??+    // [FIX] renter_name??'?뚯썝'(????? ?먮뒗 null(?ㅼ삤?ㅽ겕)?????덉쑝誘濡?userId 湲곕컲 留ㅼ묶 ?곗꽑
++    const userId = game.renterId || null;
++    const renterName = game.renter;
+     const firstRenter = renterName?.split(',')[0].trim();
+-    if (!firstRenter) return;
++    if (!firstRenter && !userId) return;
+ 
+-    // [FIX] 紐⑤뱺 寃뚯엫???ㅼ졇?????щ엺??鍮뚮┛ '?꾩껜' 嫄댁닔 ?⑹궛 (?쇨큵 泥섎━ ?щ? 寃곗젙??洹쇨굅)
++    // [FIX] userId ?덉쑝硫?userId濡? ?놁쑝硫??대쫫?쇰줈 移댁슫??(renter_name='?뚯썝' ?ㅻℓ移?諛⑹?)
+     const totalUserRentals = games.reduce((acc, g) => {
+       const userRentals = g.rentals?.filter(r =>
+         r.type === 'RENT' &&
+         !r.returned_at &&
+-        (r.renter_name === firstRenter || r.profiles?.name === firstRenter)
++        (userId
++          ? r.user_id === userId
++          : (r.renter_name === firstRenter || r.profiles?.name === firstRenter))
+       ) || [];
+       return acc + userRentals.length;
+     }, 0);
+ 
+-    // ?⑥씪 嫄???寃뚯엫 1?듬퓧)??寃쎌슦 -> 諛붾줈 諛섎궔 而⑦럩
++    // ?⑥씪 嫄댁씤 寃쎌슦 -> 諛붾줈 諛섎궔 而⑦럩
+     if (totalUserRentals <= 1) {
+-      const finalRentalId = game.rentals?.[0]?.rental_id;
++      // [FIX] RENT ???以묒뿉??紐낆떆?곸쑝濡?李얠븘 finalRentalId ?ㅼ젙
++      const targetRental = game.rentals?.find(r => r.type === 'RENT' && !r.returned_at)
++        || game.rentals?.[0];
++      const finalRentalId = targetRental?.rental_id;
++      const displayName = firstRenter || "?????놁쓬";
++
+       showConfirmModal(
+         "諛섎궔 ?뺤씤",
+-        `[${game.name}] ${firstRenter}?섏쓽 ???嫄댁쓣 諛섎궔 泥섎━?섏떆寃좎뒿?덇퉴?`,
++        `[${game.name}] ${displayName}?섏쓽 ???嫄댁쓣 諛섎궔 泥섎━?섏떆寃좎뒿?덇퉴?`,
+         async () => {
+-          const res = await returnGamesByRenter(null, null, null, finalRentalId);
++          // [FIX] userId ?꾨떖濡??ㅼ삤?ㅽ겕/?????紐⑤몢 ?뺥솗??留ㅼ묶
++          const res = await returnGamesByRenter(null, userId, null, finalRentalId);
+           if (res.status === "success" && res.count > 0) {
+             showToast("諛섎궔?섏뿀?듬땲??", { type: "success" });
+             onReload();
+@@ -405,8 +417,13 @@ function DashboardTab({ games, loading, onReload }) {
+         "?쇨큵 諛섎궔 ?뺤씤",
+         `?뮕 [${firstRenter}] ?섏씠 鍮뚮젮媛?寃뚯엫??珥?${totalUserRentals}媛쒖엯?덈떎.\n(?ㅻⅨ 寃뚯엫 ?ы븿)\n\n紐⑤몢 ?쒓볼踰덉뿉 '諛섎궔' 泥섎━?섏떆寃좎뒿?덇퉴?`,
+         async () => {
+-          await returnGamesByRenter(firstRenter);
+-          showToast(`${totalUserRentals}嫄댁씠 ?쇨큵 諛섎궔?섏뿀?듬땲??`, { type: "success" });
++          // [FIX] userId ?꾨떖濡?renter_name 遺덉씪移?臾몄젣 ?닿껐 (?ㅼ삤?ㅽ겕=null, ??'?뚯썝')
++          const res = await returnGamesByRenter(firstRenter, userId);
++          if (res.count > 0) {
++            showToast(`${res.count}嫄댁씠 ?쇨큵 諛섎궔?섏뿀?듬땲??`, { type: "success" });
++          } else {
++            showToast("??諛섎궔 泥섎━ ?ㅽ뙣: ???湲곕줉??李얠쓣 ???놁뒿?덈떎.", { type: "error" });
++          }
+           onReload();
+         },
+         "warning"
+diff --git a/src/api.jsx b/src/api.jsx
+index b35d1e6..06f2e55 100644
+--- a/src/api.jsx
++++ b/src/api.jsx
+@@ -119,7 +119,7 @@ export const rentGame = async (gameId, userId) => {
+   const { data, error } = await supabase.rpc('rent_game', {
+     p_game_id: gameId,
+     p_user_id: userId,
+-    p_renter_name: '?뚯썝'
++    p_renter_name: null
+   });
+   if (error) throw error;
+   return data;
+@@ -638,9 +638,6 @@ export const adminUpdateGame = async (gameId, newStatus, renterName, userId, ren
+       if (error) throw error;
+       if (!data.success) throw new Error(data.message);
+ 
+-      // [FIX] 諛섎궔 泥섎━ ??紐낆떆?곸쑝濡?濡쒓렇 異붽? (DB RPC 誘몄옉???鍮?
+-      await sendLog(gameId, 'RETURN', '愿由ъ옄 諛섎궔 泥섎━');
+-
+       return { status: "success" };
+     } else {
+       // 洹????곹깭(遺꾩떎, ?섎━以?????available_count 議곗젙
+@@ -715,8 +712,6 @@ export const returnGamesByRenter = async (renterName, targetUserId, targetGameId
+           console.error(`[Fail] Return result false: ${rpcData.message}`);
+         } else {
+           successCount++;
+-          // [FIX] ?쇨큵 諛섎궔(媛쒕퀎 紐⑤떖 ?ы븿) 泥섎━ ??紐낆떆?곸쑝濡?濡쒓렇 異붽?
+-          await sendLog(gameId, 'RETURN', '愿由ъ옄 ?쇨큵 諛섎궔');
+         }
+       } catch (e) {
+         console.error("諛섎궔 以??먮윭:", e);
+@@ -1097,11 +1092,6 @@ export const kioskReturn = async (gameId, userId, rentalId) => {
+     return { success: false, message: error.message };
+   }
+ 
+-  // [FIX] ?ㅼ삤?ㅽ겕 諛섎궔 濡쒓렇 紐낆떆??異붽?
+-  if (data?.success) {
+-    await sendLog(gameId, 'RETURN', '?ㅼ삤?ㅽ겕 諛섎궔 泥섎━');
+-  }
+-
+   return data;
+ };
+ 
+@@ -1142,11 +1132,6 @@ export const kioskPickup = async (rentalId) => {
+     return { success: false, message: error.message };
+   }
+ 
+-  // ?섎졊 ?대젰 濡쒓렇 湲곕줉
+-  if (data?.success) {
+-    await sendLog(data?.game_id || null, 'RENT', '?ㅼ삤?ㅽ겕 ?섎졊 泥섎━');
+-  }
+-
+   return data;
+ };
+ 
+diff --git a/src/contexts/AuthContext.jsx b/src/contexts/AuthContext.jsx
+index 5b96f48..54fdb56 100644
+--- a/src/contexts/AuthContext.jsx
++++ b/src/contexts/AuthContext.jsx
+@@ -20,9 +20,9 @@ export const AuthProvider = ({ children }) => {
+     const lastUserId = useRef(null);
+     const fetchGenRef = useRef(0); // 濡쒓렇?꾩썐 ??in-flight fetch 臾댄슚?붿슜
+ 
+-    const fetchProfileAndRoles = async (userId) => {
++    const fetchProfileAndRoles = async (userId, retryCount = 0) => {
+         const gen = ++fetchGenRef.current;
+-        console.debug(`[Auth] fetchProfileAndRoles ?쒖옉 (gen=${gen}, userId=${userId})`);
++        console.debug(`[Auth] fetchProfileAndRoles ?쒖옉 (gen=${gen}, userId=${userId}, retry=${retryCount})`);
+         try {
+             const { data: profileData, error: profileError } = await supabase
+                 .from('profiles')
+@@ -73,8 +73,19 @@ export const AuthProvider = ({ children }) => {
+                 console.debug(`[Auth] ?먮윭 臾댁떆 - 濡쒓렇?꾩썐 ??諛쒖깮 (gen=${gen})`);
+                 return;
+             }
++            // ?ㅽ듃?뚰겕 蹂寃?ERR_NETWORK_CHANGED) ???쇱떆???ㅻ쪟??理쒕? 2???ъ떆??+            const isNetworkError = error instanceof TypeError && error.message === 'Failed to fetch';
++            if (isNetworkError && retryCount < 2) {
++                console.warn(`[Auth] ?ㅽ듃?뚰겕 ?ㅻ쪟, ${1500 * (retryCount + 1)}ms ???ъ떆??(${retryCount + 1}/2)`);
++                setTimeout(() => {
++                    if (isMounted.current && gen === fetchGenRef.current) {
++                        fetchProfileAndRoles(userId, retryCount + 1);
++                    }
++                }, 1500 * (retryCount + 1));
++                return;
++            }
+             console.error('Error fetching user data:', error.message);
+-            showToast("?ъ슜???뺣낫瑜?遺덈윭?ㅻ뒗???ㅽ뙣?덉뒿?덈떎.", { type: "error" });
++            showToast("?ъ슜???뺣낫瑜?遺덈윭?ㅻ뒗???ㅽ뙣?덉뒿?덈떎. ?섏씠吏瑜??덈줈怨좎묠 ?댁＜?몄슂.", { type: "error" });
+         } finally {
+             if (isMounted.current && gen === fetchGenRef.current) {
+                 console.debug(`[Auth] setLoading(false) (gen=${gen})`);
+diff --git a/src/pages/Home.jsx b/src/pages/Home.jsx
+index 6681362..c2e2c36 100644
+--- a/src/pages/Home.jsx
++++ b/src/pages/Home.jsx
+@@ -18,6 +18,23 @@ const Home = () => {
+     const isOfficeOpen = officeStatus?.open &&
+         (!officeStatus.auto_close_at || new Date() < new Date(officeStatus.auto_close_at));
+ 
++    // 留덇컧 30遺????щ? 怨꾩궛
++    const getCloseTime = () => {
++        if (officeStatus?.auto_close_at) return new Date(officeStatus.auto_close_at);
++        if (officeHoursConfig?.auto_close_hour != null) {
++            const d = new Date();
++            d.setHours(officeHoursConfig.auto_close_hour, officeHoursConfig.auto_close_minute || 0, 0, 0);
++            return d;
++        }
++        return null;
++    };
++    const closeTime = getCloseTime();
++    const msToClose = closeTime ? closeTime - new Date() : null;
++    const isClosingSoon = isOfficeOpen && msToClose != null && msToClose > 0 && msToClose <= 30 * 60 * 1000;
++    const closeTimeStr = closeTime
++        ? `${closeTime.getHours()}??{closeTime.getMinutes() > 0 ? ` ${closeTime.getMinutes()}遺? : ''}`
++        : '';
++
+     useEffect(() => {
+         Promise.all([fetchOfficeStatus(), fetchOfficeHoursConfig()])
+             .then(([status, config]) => {
+@@ -85,7 +102,9 @@ const Home = () => {
+                 <div style={{
+                     margin: "12px 16px 0",
+                     padding: "14px 20px",
+-                    background: officeHoursConfig?.banner_color ?? "linear-gradient(135deg, #1a5c2a, #27ae60)",
++                    background: isClosingSoon
++                        ? "linear-gradient(135deg, #7d3800, #e67e22)"
++                        : (officeHoursConfig?.banner_color ?? "linear-gradient(135deg, #1a5c2a, #27ae60)"),
+                     borderRadius: "12px",
+                     display: "flex",
+                     alignItems: "center",
+@@ -95,11 +114,19 @@ const Home = () => {
+                     fontSize: "1rem",
+                     boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+                 }}>
+-                    <span style={{ fontSize: "1.4rem" }}>{officeHoursConfig?.banner_icon ?? '?윟'}</span>
++                    <span style={{ fontSize: "1.4rem" }}>
++                        {isClosingSoon ? '?? : (officeHoursConfig?.banner_icon ?? '?윟')}
++                    </span>
+                     <div>
+-                        <div>{officeHoursConfig?.banner_title ?? '?ㅽ뵾?ㅼ븘??吏꾪뻾 以?'}</div>
++                        <div>
++                            {isClosingSoon
++                                ? `${closeTimeStr}???ㅽ뵾?ㅼ븘?뚭? ?앸굹??`
++                                : (officeHoursConfig?.banner_title ?? '?ㅽ뵾?ㅼ븘??吏꾪뻾 以?')}
++                        </div>
+                         <div style={{ fontWeight: "normal", fontSize: "0.82rem", opacity: 0.85, marginTop: "2px" }}>
+-                            {officeHoursConfig?.banner_subtitle ?? '吏湲?諛⑸Ц?섏떆硫?寃뚯엫????ы븷 ???덉뼱??}
++                            {isClosingSoon
++                                ? '留덇컧 ?꾩뿉 諛⑸Ц??二쇱꽭??
++                                : (officeHoursConfig?.banner_subtitle ?? '吏湲?諛⑸Ц?섏떆硫?寃뚯엫????ы븷 ???덉뼱??)}
+                         </div>
+                     </div>
+                 </div>

@@ -22,7 +22,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pull-schema": "node scripts/pull_schema.js"
   },
   "eslintConfig": {
     "extends": [

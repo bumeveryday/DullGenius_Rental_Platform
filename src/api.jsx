@@ -119,7 +119,7 @@ export const rentGame = async (gameId, userId) => {
   const { data, error } = await supabase.rpc('rent_game', {
     p_game_id: gameId,
     p_user_id: userId,
-    p_renter_name: '회원'
+    p_renter_name: null
   });
   if (error) throw error;
   return data;
@@ -638,9 +638,6 @@ export const adminUpdateGame = async (gameId, newStatus, renterName, userId, ren
       if (error) throw error;
       if (!data.success) throw new Error(data.message);
 
-      // [FIX] 반납 처리 시 명시적으로 로그 추가 (DB RPC 미작동 대비)
-      await sendLog(gameId, 'RETURN', '관리자 반납 처리');
-
       return { status: "success" };
     } else {
       // 그 외 상태(분실, 수리중 등)는 available_count 조정
@@ -715,8 +712,6 @@ export const returnGamesByRenter = async (renterName, targetUserId, targetGameId
           console.error(`[Fail] Return result false: ${rpcData.message}`);
         } else {
           successCount++;
-          // [FIX] 일괄 반납(개별 모달 포함) 처리 시 명시적으로 로그 추가
-          await sendLog(gameId, 'RETURN', '관리자 일괄 반납');
         }
       } catch (e) {
         console.error("반납 중 에러:", e);
@@ -1097,11 +1092,6 @@ export const kioskReturn = async (gameId, userId, rentalId) => {
     return { success: false, message: error.message };
   }
 
-  // [FIX] 키오스크 반납 로그 명시적 추가
-  if (data?.success) {
-    await sendLog(gameId, 'RETURN', '키오스크 반납 처리');
-  }
-
   return data;
 };
 
@@ -1140,11 +1130,6 @@ export const kioskPickup = async (rentalId) => {
   if (error) {
     console.error("Kiosk Pickup Error:", error);
     return { success: false, message: error.message };
-  }
-
-  // 수령 이력 로그 기록
-  if (data?.success) {
-    await sendLog(data?.game_id || null, 'RENT', '키오스크 수령 처리');
   }
 
   return data;

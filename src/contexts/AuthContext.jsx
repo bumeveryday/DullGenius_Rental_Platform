@@ -20,9 +20,9 @@ export const AuthProvider = ({ children }) => {
     const lastUserId = useRef(null);
     const fetchGenRef = useRef(0); // 로그아웃 시 in-flight fetch 무효화용
 
-    const fetchProfileAndRoles = async (userId) => {
+    const fetchProfileAndRoles = async (userId, retryCount = 0) => {
         const gen = ++fetchGenRef.current;
-        console.debug(`[Auth] fetchProfileAndRoles 시작 (gen=${gen}, userId=${userId})`);
+        console.debug(`[Auth] fetchProfileAndRoles 시작 (gen=${gen}, userId=${userId}, retry=${retryCount})`);
         try {
             const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
@@ -73,8 +73,19 @@ export const AuthProvider = ({ children }) => {
                 console.debug(`[Auth] 에러 무시 - 로그아웃 후 발생 (gen=${gen})`);
                 return;
             }
+            // 네트워크 변경(ERR_NETWORK_CHANGED) 등 일시적 오류는 최대 2회 재시도
+            const isNetworkError = error instanceof TypeError && error.message === 'Failed to fetch';
+            if (isNetworkError && retryCount < 2) {
+                console.warn(`[Auth] 네트워크 오류, ${1500 * (retryCount + 1)}ms 후 재시도 (${retryCount + 1}/2)`);
+                setTimeout(() => {
+                    if (isMounted.current && gen === fetchGenRef.current) {
+                        fetchProfileAndRoles(userId, retryCount + 1);
+                    }
+                }, 1500 * (retryCount + 1));
+                return;
+            }
             console.error('Error fetching user data:', error.message);
-            showToast("사용자 정보를 불러오는데 실패했습니다.", { type: "error" });
+            showToast("사용자 정보를 불러오는데 실패했습니다. 페이지를 새로고침 해주세요.", { type: "error" });
         } finally {
             if (isMounted.current && gen === fetchGenRef.current) {
                 console.debug(`[Auth] setLoading(false) (gen=${gen})`);

@@ -18,6 +18,23 @@ const Home = () => {
     const isOfficeOpen = officeStatus?.open &&
         (!officeStatus.auto_close_at || new Date() < new Date(officeStatus.auto_close_at));
 
+    // 마감 30분 전 여부 계산
+    const getCloseTime = () => {
+        if (officeStatus?.auto_close_at) return new Date(officeStatus.auto_close_at);
+        if (officeHoursConfig?.auto_close_hour != null) {
+            const d = new Date();
+            d.setHours(officeHoursConfig.auto_close_hour, officeHoursConfig.auto_close_minute || 0, 0, 0);
+            return d;
+        }
+        return null;
+    };
+    const closeTime = getCloseTime();
+    const msToClose = closeTime ? closeTime - new Date() : null;
+    const isClosingSoon = isOfficeOpen && msToClose != null && msToClose > 0 && msToClose <= 30 * 60 * 1000;
+    const closeTimeStr = closeTime
+        ? `${closeTime.getHours()}시${closeTime.getMinutes() > 0 ? ` ${closeTime.getMinutes()}분` : ''}`
+        : '';
+
     useEffect(() => {
         Promise.all([fetchOfficeStatus(), fetchOfficeHoursConfig()])
             .then(([status, config]) => {
@@ -85,7 +102,9 @@ const Home = () => {
                 <div style={{
                     margin: "12px 16px 0",
                     padding: "14px 20px",
-                    background: officeHoursConfig?.banner_color ?? "linear-gradient(135deg, #1a5c2a, #27ae60)",
+                    background: isClosingSoon
+                        ? "linear-gradient(135deg, #7d3800, #e67e22)"
+                        : (officeHoursConfig?.banner_color ?? "linear-gradient(135deg, #1a5c2a, #27ae60)"),
                     borderRadius: "12px",
                     display: "flex",
                     alignItems: "center",
@@ -95,11 +114,19 @@ const Home = () => {
                     fontSize: "1rem",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
                 }}>
-                    <span style={{ fontSize: "1.4rem" }}>{officeHoursConfig?.banner_icon ?? '🟢'}</span>
+                    <span style={{ fontSize: "1.4rem" }}>
+                        {isClosingSoon ? '⏰' : (officeHoursConfig?.banner_icon ?? '🟢')}
+                    </span>
                     <div>
-                        <div>{officeHoursConfig?.banner_title ?? '오피스아워 진행 중!'}</div>
+                        <div>
+                            {isClosingSoon
+                                ? `${closeTimeStr}에 오피스아워가 끝나요!`
+                                : (officeHoursConfig?.banner_title ?? '오피스아워 진행 중!')}
+                        </div>
                         <div style={{ fontWeight: "normal", fontSize: "0.82rem", opacity: 0.85, marginTop: "2px" }}>
-                            {officeHoursConfig?.banner_subtitle ?? '지금 방문하시면 게임을 대여할 수 있어요'}
+                            {isClosingSoon
+                                ? '마감 전에 방문해 주세요'
+                                : (officeHoursConfig?.banner_subtitle ?? '지금 방문하시면 게임을 대여할 수 있어요')}
                         </div>
                     </div>
                 </div>
