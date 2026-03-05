@@ -16,6 +16,7 @@ export const CONTACTS = {
 
 export const LINKS = {
     gameRequest: "https://forms.gle/VaASrMoiC6pda75t8", // 게임 신청 구글 폼 (기존 링크 활용)
+    recruit: "https://docs.google.com/forms/d/e/1FAIpQLScrbBs5TsTkT0Nkm4HMtkg7STmPkUNjIdlSeiV3dp60Q7wFzQ/viewform?usp=header", // 부원 가입 신청 폼
 };
 
 export const DEVELOPERS = [
