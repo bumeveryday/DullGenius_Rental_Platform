@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchMyRentals, fetchUserPoints, fetchPointHistory, withdrawAccount, cancelDibsGame } from '../api';
+import { fetchMyRentals, fetchUserPoints, fetchPointHistory, withdrawAccount, cancelDibsGame, fetchMyRentalHistory } from '../api';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -11,9 +11,12 @@ const MyPage = () => {
   const { showToast } = useToast(); // [NEW]
 
   const [rentals, setRentals] = useState([]);
+  const [rentalHistory, setRentalHistory] = useState([]);
   const [pointHistory, setPointHistory] = useState([]);
   const [currentPoints, setCurrentPoints] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [pointsOpen, setPointsOpen] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [videoId, setVideoId] = useState(null);
 
@@ -62,10 +65,11 @@ const MyPage = () => {
       setLoading(true);
       try {
         // [FIX] user.id (UUID)를 사용
-        const [rentalsResult, points, history] = await Promise.all([
+        const [rentalsResult, points, history, historyResult] = await Promise.all([
           fetchMyRentals(user.id),
           fetchUserPoints(user.id),
-          fetchPointHistory(user.id)
+          fetchPointHistory(user.id),
+          fetchMyRentalHistory(user.id)
         ]);
 
         if (rentalsResult.status === "success") {
@@ -76,6 +80,12 @@ const MyPage = () => {
 
         setCurrentPoints(points);
         setPointHistory(history || []);
+
+        if (historyResult.status === "success") {
+          setRentalHistory(historyResult.data);
+        } else {
+          console.error("❌ [MyPage] Rental history fetch error:", historyResult.message);
+        }
 
       } catch (e) {
         console.error("❌ [MyPage] Fetch failed:", e);
@@ -309,11 +319,59 @@ const MyPage = () => {
         )}
       </section>
 
-      {/* 3. 포인트 내역 섹션 [NEW] */}
+      {/* 2-b. 과거 대여 이력 섹션 */}
       <section style={{ ...styles.card, marginTop: "20px" }}>
-        <h3 style={styles.sectionTitle}>💰 포인트 적립 내역</h3>
+        <h3
+          style={{ ...styles.sectionTitle, cursor: "pointer", userSelect: "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+          onClick={() => setHistoryOpen(v => !v)}
+        >
+          <span>📋 과거 대여 이력 (최근 30건)</span>
+          <span style={{ fontSize: "0.85em", color: "#aaa" }}>{historyOpen ? "▲" : "▼"}</span>
+        </h3>
+        {historyOpen && (loading ? (
+          <div style={{ padding: "20px", textAlign: "center", color: "#888" }}>로딩 중...</div>
+        ) : rentalHistory.length === 0 ? (
+          <div style={{ padding: "20px", textAlign: "center", color: "#95a5a6" }}>
+            아직 반납한 게임이 없습니다.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {rentalHistory.map((item) => (
+              <div key={item.rentalId} style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                padding: "10px 12px", background: "#f8f9fa", borderRadius: "8px",
+                border: "1px solid #eee"
+              }}>
+                <div>
+                  <div style={{ fontWeight: "bold", color: "#2c3e50", fontSize: "0.95em" }}>
+                    {item.gameName}
+                  </div>
+                  <div style={{ fontSize: "0.8em", color: "#7f8c8d", marginTop: "2px" }}>
+                    {formatDate(item.borrowedAt)} → {formatDate(item.returnedAt)}
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: "0.75em", padding: "3px 8px", borderRadius: "10px",
+                  background: "#ecf0f1", color: "#7f8c8d", fontWeight: "bold"
+                }}>
+                  반납완료
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </section>
 
-        {pointHistory.length === 0 ? (
+      {/* 3. 포인트 내역 섹션 */}
+      <section style={{ ...styles.card, marginTop: "20px" }}>
+        <h3
+          style={{ ...styles.sectionTitle, cursor: "pointer", userSelect: "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+          onClick={() => setPointsOpen(v => !v)}
+        >
+          <span>💰 포인트 적립 내역</span>
+          <span style={{ fontSize: "0.85em", color: "#aaa" }}>{pointsOpen ? "▲" : "▼"}</span>
+        </h3>
+        {pointsOpen && (pointHistory.length === 0 ? (
           <div style={{ padding: "20px", textAlign: "center", color: "#888" }}>아직 포인트 내역이 없습니다. 동아리 활동을 해보세요!</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -329,7 +387,7 @@ const MyPage = () => {
               </div>
             ))}
           </div>
-        )}
+        ))}
       </section>
 
       {/* 5. 회원 탈퇴 섹션 */}

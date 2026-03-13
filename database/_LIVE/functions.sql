@@ -1,12 +1,64 @@
 -- ================================================================
 -- FUNCTIONS — public schema 현재 배포 상태
 -- 프로젝트: hptvqangstiaatdtusrg
--- 생성 시각: 2026. 3. 4. 오후 6:33:39
+-- 생성 시각: 2026. 3. 13. 오전 12:12:37
 -- 생성 스크립트: scripts/pull_schema.js
 -- (자동 생성 파일 — 직접 수정하지 마세요)
 -- ================================================================
 
--- 총 29개 함수
+-- 총 36개 함수
+
+-- ----------------------------------------------------------------
+-- 함수: admin_extend_rentals
+-- ----------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.admin_extend_rentals(p_user_id uuid DEFAULT NULL::uuid, p_renter_name text DEFAULT NULL::text, p_game_id integer DEFAULT NULL::integer, p_rental_id uuid DEFAULT NULL::uuid, p_days integer DEFAULT 7)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+DECLARE
+    v_new_due_date TIMESTAMP WITH TIME ZONE;
+    r RECORD;
+    v_count INTEGER := 0;
+BEGIN
+    -- [��전장치 1] 타 렌탈 건 침해 방지: 조건이 모두 NULL이면 전체 업데이트 위험이 있으므로 즉시 차단
+    IF p_user_id IS NULL AND p_renter_name IS NULL AND p_game_id IS NULL AND p_rental_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', '연장 대상을 특정할 수 없습니다. (모든 식별자가 비어있음)');
+    END IF;
+    -- 현재 시간의 날짜(자정 00:00:00) 기준으로 N일을 더한 뒤, 23시간 59분 59초를 더해 해당일 밤 12시 세팅
+    v_new_due_date := date_trunc('day', now()) + (p_days || ' days')::interval + interval '23 hours 59 minutes 59 seconds';
+    FOR r IN 
+        SELECT rental_id, game_id, user_id, renter_name 
+        FROM public.rentals
+        WHERE type = 'RENT' 
+          AND returned_at IS NULL
+          AND (p_rental_id IS NULL OR rental_id = p_rental_id)
+          AND (p_game_id IS NULL OR game_id = p_game_id)
+          -- [안전장치 2] user_id와 renter_name 조건 최적화
+          -- user_id가 있으면 user_id만 확실하게 매칭하고, 없으면 renter_name 매칭으로 우회하여 동명이나 권한 겹침 오류 최소화
+          AND (
+              (p_user_id IS NOT NULL AND user_id = p_user_id) OR
+              (p_user_id IS NULL AND p_renter_name IS NOT NULL AND renter_name = p_renter_name) OR
+              (p_user_id IS NULL AND p_renter_name IS NULL)
+          )
+    LOOP
+        -- 기한 수정
+        UPDATE public.rentals SET due_date = v_new_due_date WHERE rental_id = r.rental_id;
+        
+        -- 연장 로그 기록 추가
+        INSERT INTO public.logs (game_id, user_id, action_type, details)
+        VALUES (r.game_id, r.user_id, 'EXTEND', jsonb_build_object('message', COALESCE(p_days, 7) || '일 기한 연장', 'days', p_days, 'new_due_date', v_new_due_date, 'renter', COALESCE(r.renter_name, 'Unknown')));
+        
+        v_count := v_count + 1;
+    END LOOP;
+    
+    IF v_count = 0 THEN
+        RETURN jsonb_build_object('success', false, 'message', '조건에 맞는 연장할 활성 대여 건이 없습니다. 이미 반납되었거나 대상을 찾을 수 없습니다.');
+    END IF;
+    
+    RETURN jsonb_build_object('success', true, 'message', v_count || '건 연장 처리 완료', 'new_due_date', v_new_due_date);
+END;
+$function$
 
 -- ----------------------------------------------------------------
 -- 함수: admin_rent_game
@@ -21,7 +73,6 @@ DECLARE
     v_affected INTEGER;
     v_target_rental_id UUID;
 BEGIN
-    -- [AUTH] 관리자 확인
     IF NOT public.is_admin() THEN
         RETURN jsonb_build_object('success', false, 'message', '관리자 권한이 필요합니다.');
     END IF;
@@ -50,7 +101,8 @@ BEGIN
             borrowed_at = now(),
             due_date = now() + interval '7 days',
             renter_name = p_renter_name,
-            user_id = COALESCE(p_user_id, user_id)
+            user_id = COALESCE(p_user_id, user_id),
+            source = 'admin'
         WHERE rental_id = v_target_rental_id
           AND type = 'DIBS';
         GET DIAGNOSTICS v_affected = ROW_COUNT;
@@ -67,11 +119,10 @@ BEGIN
             RETURN jsonb_build_object('success', false, 'message', '재고가 없습니다.');
         END IF;
 
-        INSERT INTO public.rentals (game_id, user_id, game_name, renter_name, type, borrowed_at, due_date)
-        VALUES (p_game_id, p_user_id, v_game_name, p_renter_name, 'RENT', now(), now() + interval '7 days');
+        INSERT INTO public.rentals (game_id, user_id, game_name, renter_name, type, borrowed_at, due_date, source)
+        VALUES (p_game_id, p_user_id, v_game_name, p_renter_name, 'RENT', now(), now() + interval '7 days', 'admin');
     END IF;
 
-    -- [Fix 3] to_jsonb(문자열) → jsonb_build_object
     INSERT INTO public.logs (game_id, user_id, action_type, details)
     VALUES (p_game_id, p_user_id, 'RENT', jsonb_build_object('action', 'ADMIN RENT', 'renter', p_renter_name));
 
@@ -206,10 +257,9 @@ DECLARE
     v_active_count INTEGER;
 BEGIN
     IF auth.uid() IS NULL OR (auth.uid() != p_user_id AND NOT public.is_admin()) THEN
-        RETURN jsonb_build_object('success', false, 'message', '권한이 없습니다.');
+        RETURN jsonb_build_object('success', false, 'message', '권한이 없습니��.');
     END IF;
 
-    -- 동시성 안전을 위해 게임 행 잠금
     SELECT name, quantity INTO v_game_name, v_quantity
     FROM public.games WHERE id = p_game_id FOR UPDATE;
 
@@ -225,7 +275,6 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '이미 찜한 게임입니다.');
     END IF;
 
-    -- 실제 활성 대여/찜 수 계산 (만료된 DIBS 제외)
     SELECT COUNT(*) INTO v_active_count
     FROM public.rentals
     WHERE game_id = p_game_id
@@ -237,13 +286,12 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '재고가 없습니다.');
     END IF;
 
-    -- available_count를 실제 기준으로 동기화하며 차감
     UPDATE public.games
     SET available_count = (v_quantity - v_active_count) - 1
     WHERE id = p_game_id;
 
-    INSERT INTO public.rentals (game_id, user_id, game_name, type, borrowed_at, due_date)
-    VALUES (p_game_id, p_user_id, v_game_name, 'DIBS', now(), now() + interval '30 minutes');
+    INSERT INTO public.rentals (game_id, user_id, game_name, type, borrowed_at, due_date, source)
+    VALUES (p_game_id, p_user_id, v_game_name, 'DIBS', now(), now() + interval '30 minutes', 'app');
 
     INSERT INTO public.logs (game_id, user_id, action_type, details)
     VALUES (p_game_id, p_user_id, 'DIBS', to_jsonb('User reserved game'::text));
@@ -288,7 +336,7 @@ BEGIN
       AND returned_at IS NULL
       AND due_date < now();
     GET DIAGNOSTICS v_expired_dibs_count = ROW_COUNT;
-    -- 고아 RESERVED 상태 복구
+    -- 고��� RESERVED 상태 복구
     UPDATE public.game_copies
     SET status = 'AVAILABLE'
     WHERE status = 'RESERVED'
@@ -380,6 +428,136 @@ END;
 $function$
 
 -- ----------------------------------------------------------------
+-- 함수: get_overdue_stats
+-- ----------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_overdue_stats(p_days integer DEFAULT 90)
+ RETURNS TABLE(total_rentals bigint, overdue_count bigint, overdue_rate numeric, avg_overdue_hours numeric)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+    IF NOT public.is_admin() THEN RAISE EXCEPTION '관리자 권한이 필요합니다.'; END IF;
+    IF p_days <= 0 OR p_days > 365 THEN RAISE EXCEPTION 'p_days는 1~365 범위여야 합니다.'; END IF;
+
+    RETURN QUERY
+    SELECT COUNT(*),
+        COUNT(*) FILTER (WHERE returned_at > due_date),
+        ROUND((COUNT(*) FILTER (WHERE returned_at > due_date)::numeric / NULLIF(COUNT(*), 0)) * 100, 1),
+        ROUND(AVG(CASE WHEN returned_at > due_date THEN EXTRACT(EPOCH FROM (returned_at - due_date)) / 3600 END)::numeric, 1)
+    FROM public.rentals
+    WHERE type = 'RENT' AND returned_at IS NOT NULL
+      AND borrowed_at >= now() - (p_days || ' days')::interval;
+END;
+$function$
+
+-- ----------------------------------------------------------------
+-- 함수: get_popular_searches
+-- ----------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_popular_searches(p_limit integer DEFAULT 20, p_days integer DEFAULT 30)
+ RETURNS TABLE(query text, search_count bigint)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+    IF NOT public.is_admin() THEN RAISE EXCEPTION '관리자 권한이 필요합니다.'; END IF;
+    IF p_days <= 0 OR p_days > 365 THEN RAISE EXCEPTION 'p_days는 1~365 범위여야 합니다.'; END IF;
+    IF p_limit <= 0 OR p_limit > 100 THEN RAISE EXCEPTION 'p_limit는 1~100 범위여야 합니다.'; END IF;
+
+    RETURN QUERY
+    SELECT (details->>'query') AS query, COUNT(*) AS search_count
+    FROM public.logs
+    WHERE action_type = 'SEARCH'
+      AND created_at >= now() - (p_days || ' days')::interval
+      AND details->>'query' IS NOT NULL
+    GROUP BY details->>'query'
+    ORDER BY search_count DESC
+    LIMIT p_limit;
+END;
+$function$
+
+-- ----------------------------------------------------------------
+-- 함수: get_rental_source_breakdown
+-- ----------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_rental_source_breakdown(p_days integer DEFAULT 30)
+ RETURNS TABLE(source text, count bigint, ratio numeric)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+    IF NOT public.is_admin() THEN RAISE EXCEPTION '관리자 권한이 필요합니다.'; END IF;
+    IF p_days <= 0 OR p_days > 365 THEN RAISE EXCEPTION 'p_days는 1~365 범위여야 합니다.'; END IF;
+
+    RETURN QUERY
+    SELECT COALESCE(r.source, 'admin'), COUNT(*),
+        ROUND((COUNT(*)::numeric / NULLIF(SUM(COUNT(*)) OVER (), 0)) * 100, 1)
+    FROM public.rentals r
+    WHERE r.type = 'RENT' AND r.borrowed_at >= now() - (p_days || ' days')::interval
+    GROUP BY r.source
+    ORDER BY count DESC;
+END;
+$function$
+
+-- ----------------------------------------------------------------
+-- 함수: get_rental_stats
+-- ----------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_rental_stats(p_days integer DEFAULT 30)
+ RETURNS TABLE(date date, rent_count bigint, return_count bigint)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+    IF NOT public.is_admin() THEN RAISE EXCEPTION '관리자 권한이 필요합니다.'; END IF;
+    IF p_days <= 0 OR p_days > 365 THEN RAISE EXCEPTION 'p_days는 1~365 범위여야 합니다.'; END IF;
+
+    RETURN QUERY
+    WITH date_series AS (
+        SELECT generate_series(current_date - (p_days - 1), current_date, '1 day'::interval)::date AS d
+    ),
+    rents AS (
+        SELECT borrowed_at::date AS d, COUNT(*) AS cnt
+        FROM public.rentals
+        WHERE type = 'RENT' AND borrowed_at >= current_date - (p_days - 1)
+        GROUP BY borrowed_at::date
+    ),
+    returns AS (
+        SELECT returned_at::date AS d, COUNT(*) AS cnt
+        FROM public.rentals
+        WHERE returned_at IS NOT NULL AND returned_at >= current_date - (p_days - 1)
+        GROUP BY returned_at::date
+    )
+    SELECT ds.d, COALESCE(r.cnt, 0), COALESCE(rt.cnt, 0)
+    FROM date_series ds
+    LEFT JOIN rents r ON ds.d = r.d
+    LEFT JOIN returns rt ON ds.d = rt.d
+    ORDER BY ds.d;
+END;
+$function$
+
+-- ----------------------------------------------------------------
+-- 함수: get_top_rented_games
+-- ----------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_top_rented_games(p_limit integer DEFAULT 10, p_days integer DEFAULT 90)
+ RETURNS TABLE(game_id integer, game_name text, rent_count bigint, avg_duration_hours numeric)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+    IF NOT public.is_admin() THEN RAISE EXCEPTION '관리자 권한이 필요합니다.'; END IF;
+    IF p_days <= 0 OR p_days > 365 THEN RAISE EXCEPTION 'p_days는 1~365 범위여야 합니다.'; END IF;
+    IF p_limit <= 0 OR p_limit > 100 THEN RAISE EXCEPTION 'p_limit는 1~100 범위여야 합니다.'; END IF;
+
+    RETURN QUERY
+    SELECT r.game_id, r.game_name, COUNT(*) AS rent_count,
+        ROUND(AVG(EXTRACT(EPOCH FROM (COALESCE(r.returned_at, now()) - r.borrowed_at)) / 3600)::numeric, 1)
+    FROM public.rentals r
+    WHERE r.type = 'RENT' AND r.borrowed_at >= now() - (p_days || ' days')::interval
+    GROUP BY r.game_id, r.game_name
+    ORDER BY rent_count DESC
+    LIMIT p_limit;
+END;
+$function$
+
+-- ----------------------------------------------------------------
 -- 함수: get_trending_games
 -- ----------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.get_trending_games()
@@ -426,7 +604,7 @@ DECLARE
     v_year text;
     v_auto_semester text;
 BEGIN
-    -- 메���데이터에서 값 추출
+    -- 메타데이터에서 값 추출
     v_meta_student_id := new.raw_user_meta_data->>'student_id';
     v_meta_name := new.raw_user_meta_data->>'name';
     v_meta_phone := new.raw_user_meta_data->>'phone';
@@ -456,7 +634,7 @@ BEGIN
         COALESCE(v_allowed_phone, v_meta_phone, ''),
         v_auto_semester -- 자동 계산된 학기
     );
-    -- ���할 부여
+    -- 역할 부여
     INSERT INTO public.user_roles (user_id, role_key)
     VALUES (
         new.id, 
@@ -498,6 +676,23 @@ BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.user_roles 
     WHERE user_id = auth.uid() 
+      AND role_key IN ('admin', 'executive')
+  );
+END;
+$function$
+
+-- ----------------------------------------------------------------
+-- 함수: is_kiosk_or_admin
+-- ----------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.is_kiosk_or_admin()
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.user_roles 
+    WHERE user_id = auth.uid() 
       AND role_key IN ('admin', 'executive', 'kiosk')
   );
 END;
@@ -530,9 +725,12 @@ CREATE OR REPLACE FUNCTION public.kiosk_pickup(p_rental_id uuid)
 AS $function$
 DECLARE v_game_id INTEGER; v_user_id UUID; v_type TEXT;
 BEGIN
+    IF NOT public.is_kiosk_or_admin() THEN
+        RETURN jsonb_build_object('success', false, 'message', '키오스크 권한이 필요합니다.');
+    END IF;
     SELECT game_id, user_id, type INTO v_game_id, v_user_id, v_type FROM public.rentals WHERE rental_id = p_rental_id;
     IF v_type != 'DIBS' THEN RETURN jsonb_build_object('success', false, 'message', '예약 상태가 아닙니다.'); END IF;
-    UPDATE public.rentals SET type = 'RENT', borrowed_at = now(), due_date = now() + interval '2 days' WHERE rental_id = p_rental_id;
+    UPDATE public.rentals SET type = 'RENT', borrowed_at = now(), due_date = now() + interval '2 days', source = 'kiosk' WHERE rental_id = p_rental_id;
     INSERT INTO public.logs (game_id, user_id, action_type, details) VALUES (v_game_id, v_user_id, 'RENT', to_jsonb('Kiosk Pickup'::text));
     RETURN jsonb_build_object('success', true);
 END;
@@ -551,17 +749,19 @@ DECLARE
     v_quantity     INTEGER;
     v_active_count INTEGER;
 BEGIN
+    IF NOT public.is_kiosk_or_admin() THEN
+        RETURN jsonb_build_object('success', false, 'message', '키오스크 권한이 필요합니다.');
+    END IF;
+
     IF is_payment_check_enabled() AND NOT is_user_payment_exempt(p_user_id) THEN
         IF NOT COALESCE((SELECT is_paid FROM public.profiles WHERE id = p_user_id), false) THEN
             RETURN jsonb_build_object('success', false, 'message', '회비 납부가 필요합니다.');
         END IF;
     END IF;
 
-    -- 동시성 안전을 위해 게임 행 잠금
     SELECT name, quantity INTO v_game_name, v_quantity
     FROM public.games WHERE id = p_game_id FOR UPDATE;
 
-    -- 실제 활성 대여/찜 수 계산 (만료된 DIBS 제외)
     SELECT COUNT(*) INTO v_active_count
     FROM public.rentals
     WHERE game_id = p_game_id
@@ -573,13 +773,12 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '재고가 없습니다.');
     END IF;
 
-    -- available_count를 실��� 기준으로 동기화하며 차감
     UPDATE public.games
     SET available_count = (v_quantity - v_active_count) - 1
     WHERE id = p_game_id;
 
-    INSERT INTO public.rentals (game_id, user_id, game_name, type, borrowed_at, due_date)
-    VALUES (p_game_id, p_user_id, v_game_name, 'RENT', now(), now() + interval '2 days');
+    INSERT INTO public.rentals (game_id, user_id, game_name, type, borrowed_at, due_date, source)
+    VALUES (p_game_id, p_user_id, v_game_name, 'RENT', now(), now() + interval '2 days', 'kiosk');
 
     INSERT INTO public.logs (game_id, user_id, action_type, details)
     VALUES (p_game_id, p_user_id, 'RENT', to_jsonb('Kiosk Rental'::text));
@@ -603,6 +802,10 @@ DECLARE
     v_quantity     INTEGER;
     v_active_count INTEGER;
 BEGIN
+    IF NOT public.is_kiosk_or_admin() THEN
+        RETURN jsonb_build_object('success', false, 'message', '키오스크 권한이 필요합니다.');
+    END IF;
+
     IF p_rental_id IS NOT NULL THEN
         SELECT rental_id, game_name, game_id
         INTO   v_rental_id, v_game_name, v_game_id
@@ -637,12 +840,12 @@ BEGIN
       AND  (type = 'RENT' OR (type = 'DIBS' AND due_date > now()));
     UPDATE public.games SET available_count = v_quantity - v_active_count WHERE id = v_game_id;
 
-    -- 'RETURN_REWARD' → 'RETURN_ON_TIME'  (CHECK constraint 허용값)
-    -- 비회원(user_id IS NULL)은 포인트 지급 없음
     IF p_user_id IS NOT NULL THEN
         PERFORM public.earn_points(
-            p_user_id, 100, 'RETURN_ON_TIME',
-            '키오스크 반납: ' || COALESCE(v_game_name, '게임')
+            p_user_id,
+            50,
+            'RETURN_ON_TIME',
+            '제때 반납 보상'
         );
     END IF;
 
@@ -672,7 +875,7 @@ BEGIN
     FOREACH v_player_id IN ARRAY p_player_ids LOOP
         v_is_winner := (v_player_id = ANY(p_winner_ids));
         v_points := CASE WHEN v_is_winner THEN 200 ELSE 50 END;
-        PERFORM public.earn_points(v_player_id, v_points, 'MATCH_REWARD', COALESCE(v_game_name, '보드게임') || (CASE WHEN v_is_winner THEN ' 승리' ELSE ' 참여' END));
+        PERFORM public.earn_points(v_player_id, v_points, 'MATCH_REWARD', COALESCE(v_game_name, '��드게임') || (CASE WHEN v_is_winner THEN ' 승리' ELSE ' 참여' END));
     END LOOP;
     RETURN jsonb_build_object('success', true);
 END;
@@ -701,7 +904,6 @@ CREATE OR REPLACE FUNCTION public.rent_game(p_game_id integer, p_user_id uuid, p
 AS $function$
 DECLARE v_game_name TEXT; v_affected INTEGER;
 BEGIN
-    -- [AUTH] 본인 확인
     IF auth.uid() IS NULL OR (auth.uid() != p_user_id AND NOT public.is_admin()) THEN
         RETURN jsonb_build_object('success', false, 'message', '권한이 없습니다.');
     END IF;
@@ -711,11 +913,11 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '존재하지 않는 게임입니다.');
     END IF;
 
-    -- [Fix 2] COALESCE(p_renter_name, '회원') → p_renter_name (null 허용)
     UPDATE public.rentals
     SET type = 'RENT', returned_at = NULL, borrowed_at = now(),
         due_date = now() + interval '7 days',
-        renter_name = p_renter_name
+        renter_name = p_renter_name,
+        source = 'app'
     WHERE game_id = p_game_id AND user_id = p_user_id AND type = 'DIBS' AND returned_at IS NULL;
     GET DIAGNOSTICS v_affected = ROW_COUNT;
 
@@ -726,12 +928,10 @@ BEGIN
         IF v_affected = 0 THEN
             RETURN jsonb_build_object('success', false, 'message', '재고가 없습니다.');
         END IF;
-        -- [Fix 2] COALESCE(p_renter_name, '회원') → p_renter_name
-        INSERT INTO public.rentals (game_id, user_id, game_name, renter_name, type, borrowed_at, due_date)
-        VALUES (p_game_id, p_user_id, v_game_name, p_renter_name, 'RENT', now(), now() + interval '7 days');
+        INSERT INTO public.rentals (game_id, user_id, game_name, renter_name, type, borrowed_at, due_date, source)
+        VALUES (p_game_id, p_user_id, v_game_name, p_renter_name, 'RENT', now(), now() + interval '7 days', 'app');
     END IF;
 
-    -- [Fix 3] to_jsonb(문자열) → jsonb_build_object
     INSERT INTO public.logs (game_id, user_id, action_type, details)
     VALUES (p_game_id, p_user_id, 'RENT', jsonb_build_object('action', 'RENT'));
 
@@ -752,7 +952,7 @@ DECLARE
     v_user_id UUID;
     v_target_email TEXT;
 BEGIN
-    -- 1. 프로필 정보 대조 (학번, 이름, 전화번호 일치 여부 확인)
+    -- 1. 프로필 정보 대조 (학번, 이���, 전화번호 일치 여부 확인)
     SELECT id INTO v_user_id
     FROM public.profiles
     WHERE student_id = p_student_id 
@@ -763,7 +963,7 @@ BEGIN
     END IF;
     -- 2. 해당 유저의 이메일 확인
     SELECT email INTO v_target_email FROM auth.users WHERE id = v_user_id;
-    -- 3. 비밀��호 업데이트 (bcrypt 해시 생성을 위해 crypt 함수 사용)
+    -- 3. 비밀번호 업데이트 (bcrypt 해시 생성을 위해 crypt 함수 사용)
     UPDATE auth.users
     SET encrypted_password = crypt(p_new_password, gen_salt('bf')),
         updated_at = now()

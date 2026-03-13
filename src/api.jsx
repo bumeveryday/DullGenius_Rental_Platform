@@ -1028,6 +1028,40 @@ export const fetchMyRentals = async (userId) => {
   return { status: "success", data: formatted };
 };
 
+export const fetchMyRentalHistory = async (userId) => {
+  const { data, error } = await supabase
+    .from('rentals')
+    .select(`
+      rental_id,
+      borrowed_at,
+      returned_at,
+      type,
+      game_id,
+      games (id, name, image)
+    `)
+    .eq('user_id', userId)
+    .not('returned_at', 'is', null)
+    .order('returned_at', { ascending: false })
+    .limit(30);
+
+  if (error) {
+    console.error("대여 이력 로딩 실패:", error);
+    return { status: "error", message: error.message };
+  }
+
+  const formatted = data.map(r => ({
+    rentalId: r.rental_id,
+    gameId: r.game_id,
+    gameName: r.games?.name || "알 수 없는 게임",
+    gameImage: r.games?.image,
+    borrowedAt: r.borrowed_at,
+    returnedAt: r.returned_at,
+    type: r.type || 'RENT',
+  }));
+
+  return { status: "success", data: formatted };
+};
+
 
 // ==========================================
 // [Kiosk & Points System APIs]

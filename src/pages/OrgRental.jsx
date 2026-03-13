@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LINKS, CONTACTS } from '../infoData';
 import { ORG_RENTAL_TEXTS } from '../constants';
+import InfoModal from '../components/InfoModal';
 import './OrgRental.css';
 
 const OrgRental = () => {
     const navigate = useNavigate();
+    const [showTerms, setShowTerms] = useState(false);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -45,6 +47,16 @@ const OrgRental = () => {
                 </div>
 
                 <div className="org-action">
+                    <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '10px', lineHeight: '1.5' }}>
+                        신청 시{' '}
+                        <button
+                            onClick={() => setShowTerms(true)}
+                            style={{ background: 'none', border: 'none', padding: 0, color: '#4a6cf7', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline' }}
+                        >
+                            동아리 이용 약관
+                        </button>
+                        에 동의한 것으로 간주합니다.
+                    </p>
                     <a
                         href={LINKS.orgRentalForm}
                         target="_blank"
@@ -55,6 +67,12 @@ const OrgRental = () => {
                     </a>
                 </div>
             </div>
+
+            <InfoModal
+                isOpen={showTerms}
+                onClose={() => setShowTerms(false)}
+                initialTab="terms"
+            />
         </div>
     );
 };

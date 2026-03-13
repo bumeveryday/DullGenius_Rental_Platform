@@ -37,7 +37,23 @@ const CategorySelect = () => {
                 <h2 className="category-title">카테고리 선택</h2>
             </div>
 
-            {/* [NEW] 트렌딩 보러가기 입구 타일 */}
+            {/* 인원수로 찾기 섹션 */}
+            <div className="player-count-section">
+                <h3 className="section-subtitle">👥 인원수로 찾기</h3>
+                <div className="player-btn-grid">
+                    {['2인', '3인', '4인', '5인 이상', '6인 이상', '8인 이상'].map((p, i) => (
+                        <button
+                            key={i}
+                            onClick={() => navigate(`/search?players=${encodeURIComponent(p)}`)}
+                            className="player-btn"
+                        >
+                            {p}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* 트렌딩 보러가기 입구 타일 */}
             <div className="trending-entrance-section" style={{ padding: '0 20px', marginBottom: '15px' }}>
                 <div
                     onClick={() => navigate('/search?type=trending')}
@@ -52,7 +68,7 @@ const CategorySelect = () => {
                 </div>
             </div>
 
-            {/* [NEW] 상황별 추천 섹션 */}
+            {/* 상황별 추천 섹션 */}
             <div className="recommendation-section-cat">
                 <h3 className="section-subtitle">🎯 상황별 추천</h3>
                 {config && (
@@ -74,22 +90,6 @@ const CategorySelect = () => {
                         ))}
                     </div>
                 )}
-            </div>
-
-            {/* [MOVED] 인원수로 찾기 섹션 (위로 이동) */}
-            <div className="player-count-section">
-                <h3 className="section-subtitle">👥 인원수로 찾기</h3>
-                <div className="player-btn-grid">
-                    {['2인', '3인', '4인', '5인 이상', '6인 이상', '8인 이상'].map((p, i) => (
-                        <button
-                            key={i}
-                            onClick={() => navigate(`/search?players=${encodeURIComponent(p)}`)}
-                            className="player-btn"
-                        >
-                            {p}
-                        </button>
-                    ))}
-                </div>
             </div>
 
             <div className="category-section">

@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Kiosk.css';
 import { useToast } from '../contexts/ToastContext'; // Toast 알림
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient.jsx';
 import MatchModal from './MatchModal';
 import RouletteModal from './RouletteModal';
 import ReturnModal from './ReturnModal';
@@ -13,10 +15,9 @@ const REFRESH_HOUR = 4; // 새벽 4시 자동 새로고침
 
 function KioskPage() {
     const { showToast } = useToast();
+    const { user, hasRole, loading: authLoading } = useAuth();
 
     // [State]
-    const [isAuthorized, setIsAuthorized] = useState(false);
-    const [activationCode, setActivationCode] = useState("");
     const [isIdle, setIsIdle] = useState(false);
     // Track usage to prevent reload during activity
     const isIdleRef = useRef(false);
@@ -66,24 +67,40 @@ function KioskPage() {
         }
     };
 
-    // [Effect 1] 초기 인증 체크 & 자동 새로고침 스케줄러
+    const [loginError, setLoginError] = useState(null);
+    const [manualEmail, setManualEmail] = useState('');
+    const [manualPassword, setManualPassword] = useState('');
+    const [manualLoading, setManualLoading] = useState(false);
+
+    const handleManualLogin = async (e) => {
+        e.preventDefault();
+        setManualLoading(true);
+        const { error } = await supabase.auth.signInWithPassword({ email: manualEmail, password: manualPassword });
+        setManualLoading(false);
+        if (error) setLoginError(`로그인 실패: ${error.message}`);
+        else setLoginError(null);
+    };
+
+    // [Effect] Kiosk 자동 로그인: 세션 없을 때만 env var 계정으로 자동 sign-in
     useEffect(() => {
-        // 세션 검증 (만료 시간 체크)
-        const validateSession = () => {
-            try {
-                const stored = JSON.parse(localStorage.getItem('kiosk_session') || 'null');
-                if (stored && stored.authorized && stored.expiresAt > Date.now()) {
-                    setIsAuthorized(true);
-                } else {
-                    localStorage.removeItem('kiosk_session');
-                }
-            } catch {
-                localStorage.removeItem('kiosk_session');
+        if (authLoading) return;
+        if (!user) {
+            const email = import.meta.env.VITE_KIOSK_EMAIL;
+            const password = import.meta.env.VITE_KIOSK_PASSWORD;
+            if (!email || !password) {
+                setLoginError('환경변수(VITE_KIOSK_EMAIL, VITE_KIOSK_PASSWORD)가 설정되지 않았습니다.');
+                return;
             }
-        };
+            supabase.auth.signInWithPassword({ email, password })
+                .then(({ error }) => {
+                    if (error) setLoginError(`로그인 실패: ${error.message}`);
+                })
+                .catch((err) => setLoginError(`연결 오류: ${err.message}`));
+        }
+    }, [authLoading, user]);
 
-        validateSession();
-
+    // [Effect 1] 자동 새로고침 스케줄러
+    useEffect(() => {
         // 새벽 4시 리프레시 체크 (1분마다)
         const refreshInterval = setInterval(() => {
             const now = new Date();
@@ -160,75 +177,56 @@ function KioskPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // isIdle 제거 - 한 번만 설정
 
-    // [Handlers]
-    const handleActivation = async () => {
-        if (!activationCode.trim()) {
-            showToast("마스터 키를 입력해주세요.", { type: "error" });
-            return;
-        }
-
-        try {
-            const res = await fetch('/.netlify/functions/verify-kiosk-key', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key: activationCode }),
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                localStorage.setItem('kiosk_session', JSON.stringify({
-                    authorized: true,
-                    expiresAt: Date.now() + 15552000000, // 180일 (1000 * 60 * 60 * 24 * 180)
-                }));
-                setIsAuthorized(true);
-                setActivationCode("");
-                showToast("기기 인증 완료! 키오스크 모드를 시작합니다.", { type: "success" });
-
-                // [Fullscreen] 강제 전체화면 요청 (브라우저 정책상 사용자 상호작용 필요)
-                try {
-                    if (document.documentElement.requestFullscreen) {
-                        document.documentElement.requestFullscreen();
-                    } else if (document.documentElement.webkitRequestFullscreen) {
-                        document.documentElement.webkitRequestFullscreen();
-                    }
-                } catch (err) {
-                    console.warn("Fullscreen request failed:", err);
-                }
-            } else {
-                showToast("인증 실패. 마스터 키를 확인하세요.", { type: "error" });
-                setActivationCode("");
-            }
-        } catch (err) {
-            showToast("서버 연결 오류. 잠시 후 다시 시도해주세요.", { type: "error" });
-            setActivationCode("");
-        }
-    };
-
     // [Views]
+    const isAuthorized = !authLoading && user && hasRole('kiosk');
+
     if (!isAuthorized) {
+        // 로그인은 됐지만 kiosk role이 아닌 경우 (일반 유저가 /kiosk 접근)
+        if (!authLoading && user && !hasRole('kiosk')) {
+            return (
+                <div className="activation-screen">
+                    <h1 style={{ marginBottom: "20px" }}>🔒 접근 불가</h1>
+                    <p style={{ color: "#888", fontSize: "1rem" }}>키오스크 전용 페이지입니다.</p>
+                    <a href="/" style={{ color: "#667eea", marginTop: "20px", display: "block" }}>홈으로 돌아가기</a>
+                </div>
+            );
+        }
+        // 에러 발생 시
+        if (loginError) {
+            return (
+                <div className="activation-screen">
+                    <h1 style={{ marginBottom: "20px" }}>⚠️ 오류</h1>
+                    <p style={{ color: "#e74c3c", fontSize: "0.95rem", maxWidth: "400px", textAlign: "center", marginBottom: "24px" }}>{loginError}</p>
+                    <form onSubmit={handleManualLogin} style={{ display: "flex", flexDirection: "column", gap: "10px", width: "280px" }}>
+                        <input
+                            type="email"
+                            placeholder="이메일"
+                            value={manualEmail}
+                            onChange={(e) => setManualEmail(e.target.value)}
+                            style={{ padding: "10px 14px", borderRadius: "6px", border: "1px solid #444", background: "#1a1a2e", color: "#fff", fontSize: "0.95rem" }}
+                            required
+                        />
+                        <input
+                            type="password"
+                            placeholder="비밀번호"
+                            value={manualPassword}
+                            onChange={(e) => setManualPassword(e.target.value)}
+                            style={{ padding: "10px 14px", borderRadius: "6px", border: "1px solid #444", background: "#1a1a2e", color: "#fff", fontSize: "0.95rem" }}
+                            required
+                        />
+                        <button type="submit" disabled={manualLoading} style={{ padding: "10px 24px", background: "#667eea", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", opacity: manualLoading ? 0.7 : 1 }}>
+                            {manualLoading ? "로그인 중..." : "로그인"}
+                        </button>
+                    </form>
+                    <button onClick={() => window.location.reload()} style={{ marginTop: "12px", padding: "8px 20px", background: "transparent", color: "#888", border: "1px solid #444", borderRadius: "6px", cursor: "pointer", fontSize: "0.85rem" }}>새로고침</button>
+                </div>
+            );
+        }
         return (
             <div className="activation-screen">
-                <h1 style={{ marginBottom: "30px" }}>🔒 기기 인증 필요</h1>
-                <input
-                    type="password"
-                    className="activation-input"
-                    placeholder="Master Key 입력"
-                    value={activationCode}
-                    onChange={(e) => setActivationCode(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleActivation()}
-                />
-                <button
-                    className="kiosk-btn"
-                    style={{
-                        fontSize: "1rem",
-                        padding: "10px 30px",
-                        background: "#333",
-                        cursor: "pointer"
-                    }}
-                    onClick={handleActivation}
-                >
-                    인증하기
-                </button>
+                <h1 style={{ marginBottom: "20px" }}>🎲 덜지니어스 키오스크</h1>
+                <p style={{ color: "#888", fontSize: "1rem" }}>키오스크 계정으로 로그인하는 중...</p>
+                <div className="spinner" style={{ marginTop: "20px" }} />
             </div>
         );
     }

@@ -5,6 +5,7 @@ import { TEXTS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmModal from './ConfirmModal';
+import InfoModal from './InfoModal';
 import LazyImage from './common/LazyImage'; // [NEW] Lazy Image
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 import './GameDetail.css'; // [NEW] External CSS
@@ -34,15 +35,17 @@ function GameDetail() {
     title: "",
     message: "",
     onConfirm: null,
-    type: "info"
+    type: "info",
+    subContent: null,
   });
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
-  const showConfirmModal = (title, message, onConfirm, type = "info") => {
-    setConfirmModal({ isOpen: true, title, message, onConfirm, type });
+  const showConfirmModal = (title, message, onConfirm, type = "info", subContent = null) => {
+    setConfirmModal({ isOpen: true, title, message, onConfirm, type, subContent });
   };
 
   const closeConfirmModal = () => {
-    setConfirmModal({ isOpen: false, title: "", message: "", onConfirm: null, type: "info" });
+    setConfirmModal({ isOpen: false, title: "", message: "", onConfirm: null, type: "info", subContent: null });
   };
 
   useEffect(() => {
@@ -152,6 +155,16 @@ function GameDetail() {
       return;
     }
 
+    const termsNotice = (
+      <div style={{ marginTop: '12px', padding: '8px 12px', background: '#f0f4ff', borderRadius: '8px', border: '1px solid #d0d9f0', fontSize: '0.82rem', color: '#555', lineHeight: '1.5', textAlign: 'left' }}>
+        <span>대여 시 </span>
+        <button onClick={() => setShowTermsModal(true)} style={{ background: 'none', border: 'none', padding: 0, color: '#4a6cf7', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.82rem', textDecoration: 'underline' }}>
+          동아리 이용 약관
+        </button>
+        <span>에 동의한 것으로 간주합니다.</span>
+      </div>
+    );
+
     showConfirmModal(
       "찜하기 확인",
       `'${game.name}'을(를) 찜하시겠습니까?\n30분 내로 동아리방에서 수령해야 합니다.`,
@@ -180,7 +193,8 @@ function GameDetail() {
           showToast("오류 발생: " + (e.message || "알 수 없는 오류"), { type: "error" });
         }
       },
-      "primary"
+      "primary",
+      termsNotice
     );
   };
 
@@ -550,7 +564,9 @@ function GameDetail() {
         title={confirmModal.title}
         message={confirmModal.message}
         type={confirmModal.type}
+        subContent={confirmModal.subContent}
       />
+      <InfoModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} initialTab="terms" />
     </div >
   );
 }

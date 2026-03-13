@@ -65,9 +65,6 @@ const GameSearch = () => {
         // ... (생략 없이 원본 유지)
         const timer = setTimeout(() => {
             setSearchTerm(inputValue);
-            if (inputValue.trim()) {
-                sendLog(null, 'SEARCH', { query: inputValue.trim() });
-            }
         }, 300);
         return () => clearTimeout(timer);
     }, [inputValue]);
@@ -89,12 +86,11 @@ const GameSearch = () => {
         return () => clearTimeout(timer);
     }, [selectedCategory, difficultyFilter, playerFilter, onlyAvailable, loading, isTrendingMode]);
 
-    // 검색 결과 없음 로그
+    // SEARCH 로그 (result_count 포함 — searchTerm 변경 시에만 발화)
     useEffect(() => {
-        if (searchTerm && filteredGames.length === 0 && !loading && !isTrendingMode) {
-            sendLog(null, 'SEARCH_EMPTY', { query: searchTerm });
-        }
-    }, [searchTerm, filteredGames.length, loading, isTrendingMode]);
+        if (searchTerm.length < 2 || isTrendingMode) return;
+        sendLog(null, 'SEARCH', { query: searchTerm, result_count: filteredGames.length });
+    }, [searchTerm, isTrendingMode]);
 
 
     const resetFilters = useCallback(() => {
@@ -154,7 +150,15 @@ const GameSearch = () => {
                 {isTrendingMode ? (
                     <span>인기 순위 <strong>{filteredGames.length}</strong>개의 게임</span>
                 ) : (
-                    <span>총 <strong>{filteredGames.length}</strong>개의 게임</span>
+                    <>
+                        <span>총 <strong>{filteredGames.length}</strong>개의 게임</span>
+                        <button
+                            onClick={() => setOnlyAvailable(v => !v)}
+                            className={`available-filter-chip${onlyAvailable ? ' active' : ''}`}
+                        >
+                            🟢 대여 가능만
+                        </button>
+                    </>
                 )}
             </div>
 

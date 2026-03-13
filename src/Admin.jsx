@@ -14,7 +14,7 @@
  * ============================================================
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchGames, fetchConfig, fetchOfficeStatus } from './api';
 import { useAuth } from './contexts/AuthContext'; // [SECURITY] Supabase 권한 기반 인증
@@ -29,6 +29,7 @@ import PointsTab from './admin/PointsTab';
 import MembersTab from './admin/MembersTab'; // [NEW]
 import SystemTab from './admin/SystemTab'; // [NEW] 시스템 설정 탭
 import ReportsTab from './admin/ReportsTab'; // [NEW] 신고/신청 관리 탭
+const StatsTab = React.lazy(() => import('./admin/StatsTab'));
 import { setOfficeOpen, setOfficeClosed } from './api_members';
 
 function Admin() {
@@ -212,6 +213,7 @@ function Admin() {
         <TabButton label="👥 회원 관리" id="members" activeTab={activeTab} onClick={setActiveTab} />
         <TabButton label="💰 포인트 시스템" id="points" activeTab={activeTab} onClick={setActiveTab} />
         <TabButton label="🎨 홈페이지 설정" id="config" activeTab={activeTab} onClick={setActiveTab} />
+        <TabButton label="📊 통계" id="stats" activeTab={activeTab} onClick={setActiveTab} />
       </div>
 
       {/* 탭 컨텐츠 영역 */}
@@ -251,6 +253,12 @@ function Admin() {
 
         {activeTab === "members" && ( // [NEW]
           <MembersTab />
+        )}
+
+        {activeTab === "stats" && (
+          <React.Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', color: 'var(--admin-text-sub)' }}>로딩 중...</div>}>
+            <StatsTab />
+          </React.Suspense>
         )}
       </div>
     </div>

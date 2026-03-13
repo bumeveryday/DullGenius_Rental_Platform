@@ -14,7 +14,8 @@ function ConfirmModal({
     message,
     confirmText = "확인",
     cancelText = "취소",
-    type = "info" // "info" | "warning" | "danger"
+    type = "info", // "info" | "warning" | "danger"
+    subContent = null // 메시지 아래 추가 렌더링 (약관 동의 문구 등)
 }) {
 
     // ESC 키로 모달 닫기
@@ -77,6 +78,7 @@ function ConfirmModal({
                             </span>
                         ))}
                     </p>
+                    {subContent}
                 </div>
 
                 {/* 버튼 */}

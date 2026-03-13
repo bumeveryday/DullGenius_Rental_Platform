@@ -169,6 +169,16 @@ function InfoModal({ isOpen, onClose, initialTab = 'guide' }) {
                         <div style={styles.termsBox}>
                             {formatText(USAGE_GUIDE)}
                         </div>
+                        <div style={styles.termsNotice}>
+                            <span>본 서비스를 이용하면 </span>
+                            <button
+                                onClick={() => setActiveTab('terms')}
+                                style={styles.termsLink}
+                            >
+                                동아리 이용 약관
+                            </button>
+                            <span>에 동의한 것으로 간주합니다.</span>
+                        </div>
                     </div>
                 );
             case 'terms':
@@ -503,7 +513,27 @@ const styles = {
         padding: '10px',
         cursor: 'pointer',
         borderBottom: '1px solid #eee'
-    }
+    },
+    termsNotice: {
+        marginTop: '12px',
+        padding: '10px 14px',
+        background: '#f0f4ff',
+        borderRadius: '8px',
+        border: '1px solid #d0d9f0',
+        fontSize: '0.85rem',
+        color: '#555',
+        lineHeight: '1.5',
+    },
+    termsLink: {
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        color: '#4a6cf7',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        fontSize: '0.85rem',
+        textDecoration: 'underline',
+    },
 };
 
 export default InfoModal;

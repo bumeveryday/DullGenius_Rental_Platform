@@ -38,6 +38,17 @@ export const AuthProvider = ({ children }) => {
 
             if (profileError) {
                 if (profileError.code === 'PGRST116') {
+                    // kiosk 계정처럼 profiles가 없는 경우: 역할만 조회해서 kiosk role이면 허용
+                    const { data: roleData } = await supabase
+                        .from('user_roles')
+                        .select('role_key')
+                        .eq('user_id', userId);
+                    const roleKeys = (roleData ?? []).map(r => r.role_key);
+                    if (roleKeys.includes('kiosk')) {
+                        setProfile(null);
+                        setRoles(roleKeys);
+                        return;
+                    }
                     console.warn('탈퇴했거나 정보가 없는 회원입니다. 자동 로그아웃 처리합니다.');
                     await supabase.auth.signOut();
                     setUser(null);

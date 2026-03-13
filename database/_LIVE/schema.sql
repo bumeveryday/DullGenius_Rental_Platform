@@ -1,7 +1,7 @@
 -- ================================================================
 -- SCHEMA — Tables (public schema 현재 배포 상태)
 -- 프로젝트: hptvqangstiaatdtusrg
--- 생성 시각: 2026. 3. 4. 오후 6:33:43
+-- 생성 시각: 2026. 3. 13. 오전 12:12:40
 -- 생성 스크립트: scripts/pull_schema.js
 -- (자동 생성 파일 — 직접 수정하지 마세요)
 -- ================================================================
@@ -86,7 +86,8 @@ CREATE TABLE public.games (
   manual_url text,
   quantity int4 DEFAULT 1,
   available_count int4,
-  recommendation_text text
+  recommendation_text text,
+  is_rentable bool DEFAULT true
 );
 
 -- ----------------------------------------------------------------
@@ -159,7 +160,8 @@ CREATE TABLE public.rentals (
   note text,
   type text DEFAULT 'RENT'::text,
   renter_name text,
-  game_id int4 NOT NULL  -- FK → games(id)
+  game_id int4 NOT NULL,  -- FK → games(id)
+  source text DEFAULT 'admin'::text
 );
 
 -- ----------------------------------------------------------------
