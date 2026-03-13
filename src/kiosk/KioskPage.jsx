@@ -15,7 +15,7 @@ const REFRESH_HOUR = 4; // 새벽 4시 자동 새로고침
 
 function KioskPage() {
     const { showToast } = useToast();
-    const { user, hasRole, loading: authLoading } = useAuth();
+    const { user, hasRole, logout, loading: authLoading } = useAuth();
 
     // [State]
     const [isIdle, setIsIdle] = useState(false);
@@ -187,7 +187,15 @@ function KioskPage() {
                 <div className="activation-screen">
                     <h1 style={{ marginBottom: "20px" }}>🔒 접근 불가</h1>
                     <p style={{ color: "#888", fontSize: "1rem" }}>키오스크 전용 페이지입니다.</p>
-                    <a href="/" style={{ color: "#667eea", marginTop: "20px", display: "block" }}>홈으로 돌아가기</a>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", marginTop: "20px" }}>
+                        <button
+                            onClick={logout}
+                            style={{ padding: "10px 24px", background: "#667eea", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}
+                        >
+                            키오스크로 전환
+                        </button>
+                        <a href="/" style={{ color: "#666", fontSize: "0.85rem" }}>홈으로 돌아가기</a>
+                    </div>
                 </div>
             );
         }
