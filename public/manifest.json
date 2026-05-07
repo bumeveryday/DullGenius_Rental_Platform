@@ -1,7 +1,9 @@
 {
+  "id": "/",
   "name": "덜지니어스 보드게임 대여소",
   "short_name": "보드게임 대여",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",

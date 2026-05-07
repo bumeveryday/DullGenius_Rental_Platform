@@ -1,7 +1,9 @@
 {
+  "id": "/kiosk",
   "name": "덜지니어스 키오스크",
   "short_name": "키오스크",
   "start_url": "/kiosk",
+  "scope": "/kiosk",
   "display": "fullscreen",
   "background_color": "#0a0a1a",
   "theme_color": "#0a0a1a",

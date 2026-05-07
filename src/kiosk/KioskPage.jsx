@@ -9,6 +9,7 @@ import RouletteModal from './RouletteModal';
 import ReturnModal from './ReturnModal';
 import ReservationModal from './ReservationModal'; // [NEW] 예약 수령 모달
 import MurderMysteryTimerModal from './MurderMysteryTimerModal'; // [NEW] 머더 미스터리 타이머
+import KioskInstallNudge from './KioskInstallNudge';
 
 // [Constants]
 const IDLE_TIMEOUT_MS = 180000; // 3분 (번인 방지)
@@ -88,6 +89,22 @@ function KioskPage() {
         if (error) setLoginError(`로그인 실패: ${error.message}`);
         else setLoginError(null);
     };
+
+    // [Effect] manifest link 교체 — SPA 라우팅으로 /kiosk 진입 시 index.html의 document.write가 다시 실행되지 않으므로,
+    // 여기서 직접 /manifest-kiosk.json 으로 교체해야 PWA 설치 시 키오스크 매니페스트(start_url=/kiosk)가 적용됨
+    useEffect(() => {
+        const link = document.querySelector('link[rel="manifest"]');
+        if (!link) return;
+        const previousHref = link.getAttribute('href');
+        if (previousHref !== '/manifest-kiosk.json') {
+            link.setAttribute('href', '/manifest-kiosk.json');
+        }
+        return () => {
+            if (previousHref && previousHref !== '/manifest-kiosk.json') {
+                link.setAttribute('href', previousHref);
+            }
+        };
+    }, []);
 
     // [Effect] Kiosk 자동 로그인: 세션 없을 때만 env var 계정으로 자동 sign-in
     useEffect(() => {
@@ -253,6 +270,7 @@ function KioskPage() {
 
     return (
         <div className="kiosk-container">
+            <KioskInstallNudge />
             {/* 상단바 */}
             <header style={{ padding: "20px", borderBottom: "1px solid #333", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>🎲 덜지니어스 키오스크</div>
@@ -300,18 +318,20 @@ function KioskPage() {
                 </div>
             </button>
 
-            {/* 플로팅 타이머 버튼 (우측 상단) */}
-            <button className="floating-timer-btn" onClick={() => {
-                setShowMurderMysteryTimer(true);
-                timerActiveRef.current = true;
-            }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontSize: '2.2rem' }}>⏱️</div>
-                    <div style={{ fontSize: '0.9rem', marginTop: '4px', fontWeight: 'bold', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
-                        타이머
+            {/* 플로팅 타이머 버튼 (우측 상단) — 타이머 모달이 열려 있으면 X 버튼과 위치 충돌 방지를 위해 숨김 */}
+            {!showMurderMysteryTimer && (
+                <button className="floating-timer-btn" onClick={() => {
+                    setShowMurderMysteryTimer(true);
+                    timerActiveRef.current = true;
+                }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div style={{ fontSize: '2.2rem' }}>⏱️</div>
+                        <div style={{ fontSize: '0.9rem', marginTop: '4px', fontWeight: 'bold', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
+                            타이머
+                        </div>
                     </div>
-                </div>
-            </button>
+                </button>
+            )}
 
             {/* 플로팅 반납 버튼 (우측 하단) */}
             <button className="floating-return-btn" onClick={() => setShowReturnModal(true)}>
