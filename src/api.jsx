@@ -1169,7 +1169,14 @@ export const fetchAllLogs = async () => {
 };
 
 // [MyPage]
-export const fetchMyRentals = async (userId) => {
+export const fetchMyRentals = async () => {
+  // [SECURITY] 클라이언트가 임의의 userId를 넘기지 못하도록 auth.uid() 사용
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    console.error("사용자 인증 실패:", authError);
+    return { status: "error", message: "인증 오류" };
+  }
+
   // rentals -> game_copies -> games (name)
   // Supabase join syntax:
   const { data, error } = await supabase
@@ -1183,7 +1190,7 @@ export const fetchMyRentals = async (userId) => {
       game_id,
       games (id, name, image, video_url, manual_url)
     `)
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .order('borrowed_at', { ascending: false });
 
   if (error) {
@@ -1225,7 +1232,13 @@ export const fetchMyRentals = async (userId) => {
   return { status: "success", data: formatted };
 };
 
-export const fetchMyRentalHistory = async (userId) => {
+export const fetchMyRentalHistory = async () => {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    console.error("사용자 인증 실패:", authError);
+    return { status: "error", message: "인증 오류" };
+  }
+
   const { data, error } = await supabase
     .from('rentals')
     .select(`
@@ -1236,7 +1249,7 @@ export const fetchMyRentalHistory = async (userId) => {
       game_id,
       games (id, name, image)
     `)
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .not('returned_at', 'is', null)
     .order('returned_at', { ascending: false })
     .limit(30);
@@ -1265,16 +1278,22 @@ export const fetchMyRentalHistory = async (userId) => {
 // ==========================================
 
 /**
- * 특정 사용자의 포인트 거래 내역을 가져옵니다.
- * 
- * @param {string} userId - 사용자 UUID
+ * 현재 로그인 사용자의 포인트 거래 내역을 가져옵니다.
+ * 클라이언트가 userId를 위조하지 못하도록 auth.uid() 사용.
+ *
  * @returns {Promise<Array>} 포인트 거래 내역 배열
  */
-export const fetchPointHistory = async (userId) => {
+export const fetchPointHistory = async () => {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    console.error("사용자 인증 실패:", authError);
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('point_transactions')
     .select('*')
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -1308,16 +1327,19 @@ export const registerMatch = async (gameId, playerIds, winnerIds) => {
 };
 
 /**
- * 특정 사용자의 현재 가용 포인트를 조회합니다.
- * 
- * @param {string} userId - 사용자 UUID
+ * 현재 로그인 사용자의 가용 포인트를 조회합니다.
+ * 클라이언트가 userId를 위조하지 못하도록 auth.uid() 사용.
+ *
  * @returns {Promise<number>} 현재 포인트
  */
-export const fetchUserPoints = async (userId) => {
+export const fetchUserPoints = async () => {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return 0;
+
   const { data, error } = await supabase
     .from('profiles')
     .select('current_points')
-    .eq('id', userId)
+    .eq('id', user.id)
     .single();
 
   if (error) return 0;

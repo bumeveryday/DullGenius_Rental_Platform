@@ -1,9 +1,10 @@
 // src/components/InfoModal.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { CLUB_INFO, CONTACTS, LINKS, DEVELOPERS, TERMS_OF_SERVICE, USAGE_GUIDE } from '../infoData';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext'; // [NEW] Auth Context
 import { useToast } from '../contexts/ToastContext'; // [NEW] Toast 알림
+import { useFocusTrap } from '../hooks/useFocusTrap.jsx';
 
 // 텍스트 포맷팅 헬퍼 함수 (볼드체 및 줄바꿈 처리)
 const formatText = (text) => {
@@ -32,6 +33,23 @@ function InfoModal({ isOpen, onClose, initialTab = 'guide' }) {
     const { user } = useAuth(); // [NEW] 로그인 정보
     const { showToast } = useToast(); // [NEW] Toast 알림
     const [activeTab, setActiveTab] = useState(initialTab);
+    const titleId = useId();
+    const activeTabBtnRef = useRef(null);
+    // 초기 포커스는 활성 탭 버튼에 직접 줘야 하므로 'none'으로 호출
+    const containerRef = useFocusTrap({
+        active: isOpen,
+        onEscape: onClose,
+        initialFocus: 'none',
+    });
+
+    // 모달이 열리면 활성 탭 버튼에 포커스
+    useEffect(() => {
+        if (!isOpen) return;
+        const id = requestAnimationFrame(() => {
+            activeTabBtnRef.current?.focus();
+        });
+        return () => cancelAnimationFrame(id);
+    }, [isOpen, activeTab]);
 
     // [NEW] Form States
     const [reportSearch, setReportSearch] = useState('');
@@ -59,14 +77,7 @@ function InfoModal({ isOpen, onClose, initialTab = 'guide' }) {
         return () => { document.body.style.overflow = 'unset'; };
     }, [isOpen, initialTab]);
 
-    // ESC 키로 닫기
-    useEffect(() => {
-        const handleEsc = (e) => {
-            if (e.key === 'Escape' && isOpen) onClose();
-        };
-        window.addEventListener('keydown', handleEsc);
-        return () => window.removeEventListener('keydown', handleEsc);
-    }, [isOpen, onClose]);
+    // ESC 키 처리는 useFocusTrap이 담당 (중복 제거)
 
     // [NEW] 파손 신고 제출
     const handleReportSubmit = async (e) => {
@@ -295,53 +306,87 @@ function InfoModal({ isOpen, onClose, initialTab = 'guide' }) {
         }
     };
 
+    const tabLabel = activeTab === 'intro' ? '소개'
+        : activeTab === 'guide' ? '이용 안내'
+        : activeTab === 'terms' ? '이용 약관'
+        : activeTab === 'report' ? '파손 신고'
+        : activeTab === 'request' ? '게임 신청'
+        : '개발팀';
+
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" style={styles.modal} onClick={e => e.stopPropagation()}>
+            <div
+                ref={containerRef}
+                className="modal-content"
+                style={styles.modal}
+                onClick={e => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+            >
+                <h2 id={titleId} className="sr-only" style={styles.srOnly}>{tabLabel}</h2>
                 {/* 헤더 & 탭 */}
                 <div style={styles.header}>
                     <div style={styles.tabScroll} className="no-scrollbar"> {/* [MOD] 스타일 이름 변경 가능 */}
                         <div style={styles.tabContainer}>
                             <button
+                                ref={activeTab === 'intro' ? activeTabBtnRef : null}
                                 style={activeTab === 'intro' ? styles.activeTab : styles.tab}
                                 onClick={() => setActiveTab('intro')}
+                                aria-selected={activeTab === 'intro'}
+                                role="tab"
                             >
                                 소개
                             </button>
                             <button
+                                ref={activeTab === 'guide' ? activeTabBtnRef : null}
                                 style={activeTab === 'guide' ? styles.activeTab : styles.tab}
                                 onClick={() => setActiveTab('guide')}
+                                aria-selected={activeTab === 'guide'}
+                                role="tab"
                             >
                                 안내
                             </button>
                             <button
+                                ref={activeTab === 'terms' ? activeTabBtnRef : null}
                                 style={activeTab === 'terms' ? styles.activeTab : styles.tab}
                                 onClick={() => setActiveTab('terms')}
+                                aria-selected={activeTab === 'terms'}
+                                role="tab"
                             >
                                 약관
                             </button>
                             <button
+                                ref={activeTab === 'report' ? activeTabBtnRef : null}
                                 style={activeTab === 'report' ? styles.activeTab : styles.tab}
                                 onClick={() => setActiveTab('report')}
+                                aria-selected={activeTab === 'report'}
+                                role="tab"
                             >
                                 파손
                             </button>
                             <button
+                                ref={activeTab === 'request' ? activeTabBtnRef : null}
                                 style={activeTab === 'request' ? styles.activeTab : styles.tab}
                                 onClick={() => setActiveTab('request')}
+                                aria-selected={activeTab === 'request'}
+                                role="tab"
                             >
                                 신청
                             </button>
                             {/* 공간 부족시 개발자는 텍스트로 대체하거나 아래로 뺌 */}
                             <button
+                                ref={activeTab === 'dev' ? activeTabBtnRef : null}
                                 style={activeTab === 'dev' ? styles.activeTab : styles.tab}
                                 onClick={() => setActiveTab('dev')}
+                                aria-selected={activeTab === 'dev'}
+                                role="tab"
                             >
                                 개발팀
                             </button>
                         </div>
                     </div>
-                    <button onClick={onClose} style={styles.closeBtn}>✕</button>
+                    <button onClick={onClose} style={styles.closeBtn} aria-label="닫기">✕</button>
                 </div>
 
                 {/* 컨텐츠 */}
@@ -357,6 +402,17 @@ const styles = {
     modal: {
         // [MOD] Moved to App.css (.modal-content) for responsive control
         overflow: 'hidden',
+    },
+    srOnly: {
+        position: 'absolute',
+        width: '1px',
+        height: '1px',
+        padding: 0,
+        margin: '-1px',
+        overflow: 'hidden',
+        clip: 'rect(0, 0, 0, 0)',
+        whiteSpace: 'nowrap',
+        border: 0,
     },
     header: {
         display: 'flex',

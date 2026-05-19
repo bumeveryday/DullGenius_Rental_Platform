@@ -148,21 +148,33 @@ const MyPage = () => {
     }
   };
 
-  // [NEW] 찜 취소 처리
+  // [NEW] 찜 취소 처리. 중복 클릭 방지를 위해 처리 중인 gameId set 유지
+  const [cancelingIds, setCancelingIds] = useState(() => new Set());
   const handleCancelDibs = async (gameId, gameName) => {
+    if (cancelingIds.has(gameId)) return;
     if (!window.confirm(`'${gameName}' 찜을 취소하시겠습니까?`)) return;
 
+    setCancelingIds(prev => {
+      const next = new Set(prev);
+      next.add(gameId);
+      return next;
+    });
     try {
       const result = await cancelDibsGame(gameId, user.id);
       if (result.success) {
         showToast("찜이 취소되었습니다.");
-        // 목록에서 제거
         setRentals(prev => prev.filter(r => r.gameId !== gameId));
       } else {
         showToast(result.message || "취소 실패", { type: "error" });
       }
     } catch (e) {
       showToast("오류 발생: " + (e.message || "알 수 없는 오류"), { type: "error" });
+    } finally {
+      setCancelingIds(prev => {
+        const next = new Set(prev);
+        next.delete(gameId);
+        return next;
+      });
     }
   };
 
@@ -301,12 +313,18 @@ const MyPage = () => {
                         </button>
                       )}
                       {item.type === 'DIBS' && (
-                        <button
-                          onClick={() => handleCancelDibs(item.gameId, item.gameName)}
-                          style={{ padding: "4px 8px", borderRadius: "12px", border: "1px solid #e74c3c", background: "white", color: "#e74c3c", cursor: "pointer", fontSize: "0.75em", fontWeight: "bold" }}
-                        >
-                          ❌ 찜 취소
-                        </button>
+                        (() => {
+                          const isCanceling = cancelingIds.has(item.gameId);
+                          return (
+                            <button
+                              onClick={() => handleCancelDibs(item.gameId, item.gameName)}
+                              disabled={isCanceling}
+                              style={{ padding: "4px 8px", borderRadius: "12px", border: "1px solid #e74c3c", background: "white", color: "#e74c3c", cursor: isCanceling ? "wait" : "pointer", fontSize: "0.75em", fontWeight: "bold", opacity: isCanceling ? 0.6 : 1 }}
+                            >
+                              {isCanceling ? "처리 중..." : "❌ 찜 취소"}
+                            </button>
+                          );
+                        })()
                       )}
                     </div>
                   </div>

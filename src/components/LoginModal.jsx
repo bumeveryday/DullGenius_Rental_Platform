@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { TEXTS, getAuthErrorMessage } from '../constants'; // [UPDATED]
 import { useAuth } from '../contexts/AuthContext'; // [NEW]
 import { useToast } from '../contexts/ToastContext';
+import { useFocusTrap } from '../hooks/useFocusTrap.jsx';
+import ModalButton from './ModalButton.jsx';
 
 function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, sessionUser, setSessionUser, setUser }) {
   const { login, signup } = useAuth(); // [NEW]
@@ -14,6 +16,20 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
   const [guestId, setGuestId] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [guestPw, setGuestPw] = useState("");
+
+  // A11y: 모달 제목 id + input id
+  const titleId = useId();
+  const nameId = useId();
+  const studentIdId = useId();
+  const phoneId = useId();
+  const pwId = useId();
+
+  // 게스트 모드는 입력 필드부터 포커스, 멤버 모드는 첫 버튼
+  const containerRef = useFocusTrap({
+    active: isOpen,
+    onEscape: onClose,
+    initialFocus: currentUser ? 'first' : 'firstInput',
+  });
 
   // 모달 초기화
   useEffect(() => {
@@ -146,9 +162,16 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
   // [VIEW 1] Member Mode (로그인 상태)
   if (currentUser) {
     return (
-      <div style={styles.overlay}>
-        <div style={styles.modal}>
-          <h3>{TEXTS.USER_MODAL_TITLE}</h3>
+      <div style={styles.overlay} onClick={onClose}>
+        <div
+          ref={containerRef}
+          style={styles.modal}
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+        >
+          <h3 id={titleId}>{TEXTS.USER_MODAL_TITLE}</h3>
           <p style={{ color: "#666", fontSize: "0.9em", marginBottom: "20px" }}
             dangerouslySetInnerHTML={{ __html: TEXTS.USER_MODAL_DESC.replace("{gameName}", gameName) }}
           />
@@ -163,24 +186,12 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
           </div>
 
           <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
-            <button
-              onClick={onClose}
-              style={styles.cancelBtn}
-              disabled={isLoading}
-              onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(108, 117, 125, 1)', e.target.style.transform = 'translateY(-1px)')}
-              onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(108, 117, 125, 0.9)', e.target.style.transform = 'translateY(0)')}
-            >
+            <ModalButton variant="cancel" onClick={onClose} disabled={isLoading}>
               ✕ {TEXTS.BTN_CANCEL}
-            </button>
-            <button
-              onClick={handleMemberRent}
-              style={{ ...styles.confirmBtn, opacity: isLoading ? 0.7 : 1 }}
-              disabled={isLoading}
-              onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(52, 152, 219, 1)', e.target.style.transform = 'translateY(-1px)', e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.25)')}
-              onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(52, 152, 219, 0.95)', e.target.style.transform = 'translateY(0)', e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)')}
-            >
+            </ModalButton>
+            <ModalButton variant="primary" onClick={handleMemberRent} disabled={isLoading} style={{ flex: 2 }}>
               ✓ {isLoading ? TEXTS.BTN_RENT_LOADING : TEXTS.BTN_RENT_NOW}
-            </button>
+            </ModalButton>
           </div>
         </div>
       </div>
@@ -189,22 +200,33 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
 
   // [VIEW 2] Guest Mode (비로그인 상태)
   return (
-    <div style={styles.overlay}>
-      <div style={styles.modal}>
-        <h3>{TEXTS.USER_MODAL_TITLE}</h3>
+    <div style={styles.overlay} onClick={onClose}>
+      <div
+        ref={containerRef}
+        style={styles.modal}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
+        <h3 id={titleId}>{TEXTS.USER_MODAL_TITLE}</h3>
         <p style={{ color: "#666", fontSize: "0.9em", marginBottom: "20px" }}
           dangerouslySetInnerHTML={{ __html: TEXTS.USER_MODAL_DESC.replace("{gameName}", gameName) }}
         />
 
         <form style={{ display: "flex", flexDirection: "column", gap: "10px" }} onSubmit={(e) => { e.preventDefault(); handleGuestRent(); }}>
+          <label htmlFor={nameId} style={styles.srOnly}>이름</label>
           <input
+            id={nameId}
             placeholder="이름 (예: 홍길동)"
             value={guestName}
             onChange={(e) => setGuestName(e.target.value)}
             style={styles.input}
             autoComplete="name"
           />
+          <label htmlFor={studentIdId} style={styles.srOnly}>학번 (8자리)</label>
           <input
+            id={studentIdId}
             placeholder="학번 (예: 22400001)"
             value={guestId}
             onChange={(e) => {
@@ -217,7 +239,9 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
             maxLength={8}
             autoComplete="username"
           />
+          <label htmlFor={phoneId} style={styles.srOnly}>연락처</label>
           <input
+            id={phoneId}
             placeholder="연락처 (010-0000-0000)"
             value={guestPhone}
             onChange={(e) => setGuestPhone(e.target.value)}
@@ -225,13 +249,16 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
             autoComplete="tel"
           />
 
+          <label htmlFor={pwId} style={styles.srOnly}>비밀번호</label>
           <input
+            id={pwId}
             type="password"
             placeholder="비밀번호 입력 (필수)"
             value={guestPw}
             onChange={(e) => setGuestPw(e.target.value)}
             style={styles.input}
-            autoComplete="current-password"
+            // 이름·전화번호까지 채우면 가입 흐름으로 분기되므로 new-password 힌트
+            autoComplete={(guestName && guestPhone) ? "new-password" : "current-password"}
           />
 
           <div style={{ fontSize: "0.85em", color: "#888", marginTop: "5px", lineHeight: "1.4", background: "#f9f9f9", padding: "10px", borderRadius: "8px" }}>
@@ -239,25 +266,12 @@ function LoginModal({ isOpen, onClose, onConfirm, gameName, currentUser, session
           </div>
 
           <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={styles.cancelBtn}
-              disabled={isLoading}
-              onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(108, 117, 125, 1)', e.target.style.transform = 'translateY(-1px)')}
-              onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(108, 117, 125, 0.9)', e.target.style.transform = 'translateY(0)')}
-            >
+            <ModalButton variant="cancel" type="button" onClick={onClose} disabled={isLoading}>
               ✕ {TEXTS.BTN_CANCEL}
-            </button>
-            <button
-              type="submit"
-              style={{ ...styles.confirmBtn, opacity: isLoading ? 0.7 : 1 }}
-              disabled={isLoading}
-              onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(52, 152, 219, 1)', e.target.style.transform = 'translateY(-1px)', e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.25)')}
-              onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = 'rgba(52, 152, 219, 0.95)', e.target.style.transform = 'translateY(0)', e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)')}
-            >
+            </ModalButton>
+            <ModalButton variant="primary" type="submit" disabled={isLoading} style={{ flex: 2 }}>
               ✓ {isLoading ? TEXTS.BTN_RENT_LOADING : TEXTS.BTN_RENT_LOGIN_REQUIRED}
-            </button>
+            </ModalButton>
           </div>
         </form>
       </div>
@@ -272,8 +286,7 @@ const styles = {
   label: { display: "block", textAlign: "left", fontSize: "0.85em", color: "#666", marginBottom: "5px" },
   checkboxContainer: { display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "5px 0" },
   resetBtn: { background: "none", border: "none", color: "#999", textDecoration: "underline", fontSize: "0.8em", marginTop: "10px", cursor: "pointer" },
-  cancelBtn: { flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.2)", background: "rgba(108, 117, 125, 0.9)", color: "white", fontWeight: "600", cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)" },
-  confirmBtn: { flex: 2, padding: "12px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.2)", background: "rgba(52, 152, 219, 0.95)", color: "white", fontWeight: "600", cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)" }
+  srOnly: { position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 },
 };
 
 export default LoginModal;

@@ -148,9 +148,21 @@
   border-radius: 6px;
 }
 
-.admin-input:focus {
-  outline: none;
+.admin-input:focus,
+.admin-input:focus-visible {
+  outline: 2px solid var(--admin-primary);
+  outline-offset: 2px;
   border-color: var(--admin-primary);
+}
+
+/* Admin 컨테이너 내 모든 button·input·select·textarea의 키보드 포커스 표시 (마우스 클릭 시에는 표시 안 함) */
+.admin-container button:focus-visible,
+.admin-container input:focus-visible,
+.admin-container select:focus-visible,
+.admin-container textarea:focus-visible,
+.admin-container a:focus-visible {
+  outline: 2px solid var(--admin-primary);
+  outline-offset: 2px;
 }
 
 /* Auth Container */

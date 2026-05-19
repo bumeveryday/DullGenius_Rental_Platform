@@ -62,15 +62,15 @@ const ToastContainer = ({ toasts, hideToast }) => {
     );
 };
 
-const Toast = ({ toast, onClose }) => {
-    const typeColors = {
-        success: { bg: 'rgba(39, 174, 96, 0.95)', icon: '✅' },
-        error: { bg: 'rgba(231, 76, 60, 0.95)', icon: '❌' },
-        warning: { bg: 'rgba(243, 156, 18, 0.95)', icon: '⚠️' },
-        info: { bg: 'rgba(52, 152, 219, 0.95)', icon: 'ℹ️' },
-    };
+const TOAST_TYPE_COLORS = {
+    success: { bg: 'var(--color-success-alpha)', icon: '✅' },
+    error: { bg: 'var(--color-danger-alpha)', icon: '❌' },
+    warning: { bg: 'var(--color-warning-alpha)', icon: '⚠️' },
+    info: { bg: 'var(--color-primary-alpha)', icon: 'ℹ️' },
+};
 
-    const { bg, icon } = typeColors[toast.type] || typeColors.info;
+const Toast = ({ toast, onClose }) => {
+    const { bg, icon } = TOAST_TYPE_COLORS[toast.type] || TOAST_TYPE_COLORS.info;
 
     return (
         <div

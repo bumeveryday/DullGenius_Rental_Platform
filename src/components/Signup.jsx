@@ -119,7 +119,9 @@ function Signup() {
             placeholder="전화번호"
             value={formData.phone}
             onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, '');
+              // 숫자만 추출 후 국가코드(+82) 입력 시 0으로 정규화
+              let val = e.target.value.replace(/[^0-9]/g, '');
+              if (val.startsWith('82') && val.length > 2) val = '0' + val.slice(2);
               setFormData(prev => ({ ...prev, phone: val }));
             }}
             style={styles.input}

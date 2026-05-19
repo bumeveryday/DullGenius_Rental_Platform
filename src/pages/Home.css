@@ -12,6 +12,17 @@
     gap: 10px;
 }
 
+@media (max-width: 380px) {
+    .home-nav-section {
+        grid-template-columns: 1fr;
+    }
+
+    .home-nav-btn {
+        min-height: 90px;
+        padding: 18px 16px;
+    }
+}
+
 .home-nav-btn {
     border-radius: 15px;
     padding: 25px 20px;
@@ -124,6 +135,22 @@
     margin-top: 10px;
     padding-bottom: 20px;
     border-top: 1px solid #eee;
+}
+
+.home-footer-bgg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+    flex-wrap: wrap;
+}
+
+.home-footer-bgg-caption {
+    font-size: 0.8em;
+    color: #888;
 }
 
 .trending-img {

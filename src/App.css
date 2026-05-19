@@ -1,4 +1,21 @@
 ﻿/* =========================================
+   0. 디자인 토큰 (Design Tokens)
+   ========================================= */
+:root {
+  /* 토스트·모달 공용 색상. alpha=기본, opaque=hover 강조 */
+  --color-primary: #3498db;
+  --color-primary-alpha: rgba(52, 152, 219, 0.95);
+  --color-primary-opaque: rgba(52, 152, 219, 1);
+  --color-danger: #e74c3c;
+  --color-danger-alpha: rgba(231, 76, 60, 0.95);
+  --color-danger-opaque: rgba(231, 76, 60, 1);
+  --color-warning-alpha: rgba(243, 156, 18, 0.95);
+  --color-success-alpha: rgba(39, 174, 96, 0.95);
+  --color-neutral-alpha: rgba(108, 117, 125, 0.9);
+  --color-neutral-opaque: rgba(108, 117, 125, 1);
+}
+
+/* =========================================
    1. 기본 설정 (Base)
    ========================================= */
 * {
@@ -588,19 +605,19 @@ a {
 
 /* Toast 타입별 배경색 (Context에서 inline으로 적용되지만 fallback) */
 .toast-success {
-  background: rgba(39, 174, 96, 0.95) !important;
+  background: var(--color-success-alpha) !important;
 }
 
 .toast-error {
-  background: rgba(231, 76, 60, 0.95) !important;
+  background: var(--color-danger-alpha) !important;
 }
 
 .toast-warning {
-  background: rgba(243, 156, 18, 0.95) !important;
+  background: var(--color-warning-alpha) !important;
 }
 
 .toast-info {
-  background: rgba(52, 152, 219, 0.95) !important;
+  background: var(--color-primary-alpha) !important;
 }
 
 /* slideUp 애니메이션 (GameDetail.js에서 참조) */

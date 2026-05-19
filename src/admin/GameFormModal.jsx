@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../contexts/ToastContext'; // [NEW]
 import { searchBGG, fetchBGGGame } from '../api'; // [NEW] BGG API 함수
+import PoweredByBGG from '../components/PoweredByBGG';
 
 function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
   const { showToast } = useToast(); // [NEW]
@@ -284,6 +285,13 @@ function GameFormModal({ isOpen, onClose, initialData, onSubmit, title }) {
               ))}
             </div>
           )}
+
+          <div style={{ marginTop: "10px", display: "flex", alignItems: "center", gap: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            <PoweredByBGG variant="dark" height={22} />
+            <span style={{ fontSize: "0.75em", color: "var(--admin-text-sub)" }}>
+              Game data from BoardGameGeek
+            </span>
+          </div>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>

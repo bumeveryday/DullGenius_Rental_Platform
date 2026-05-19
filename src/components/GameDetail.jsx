@@ -548,7 +548,6 @@ function GameDetail() {
         {reviews.length === 0 && !isReviewsLoading && <div style={{ color: "#999", textAlign: "center", padding: "20px" }}>아직 리뷰가 없습니다. 첫 리뷰를 남겨주세요!</div>}
       </div>
 
-
       {/* 유튜브 모달 */}
       {
         videoModalOpen && (

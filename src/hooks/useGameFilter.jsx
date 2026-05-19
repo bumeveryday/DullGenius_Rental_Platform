@@ -31,8 +31,8 @@ export const useGameFilter = (games, filters) => {
             // 이름 필터 (빈 게임 제외)
             if (!game.name || game.name.trim() === "") return false;
 
-            // TRPG는 선택한 경우에만 표시 (Admin 제외)
-            if (!isAdmin && selectedCategory !== "TRPG" && game.category === "TRPG") return false;
+            // TRPG는 선택한 경우에만 표시 (Admin·검색 중 제외)
+            if (!isAdmin && !searchTerm && selectedCategory !== "TRPG" && game.category === "TRPG") return false;
 
             // [Professional Search Improvements]
             // 1. 공백 제거 및 대소문자 정규화

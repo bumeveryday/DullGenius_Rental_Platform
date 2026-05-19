@@ -83,11 +83,17 @@ function RequestRow({ req, games, gamesById, onReview }) {
               {matchedNames.join(', ')}
             </span>
           ) : (
-            <span style={{ color: '#e74c3c' }}>매칭 실패</span>
+            <span style={{ color: '#e74c3c' }} title="원문에서 게임 식별 실패 — 검토·수정에서 수동 선택 필요">
+              매칭 실패 (수동 선택 필요)
+            </span>
           )}
         </Field>
         <Field label="수령일">
-          {req.pickup_at ? formatDateTime(req.pickup_at) : <span style={{ color: '#e74c3c' }}>파싱 실패</span>}
+          {req.pickup_at ? formatDateTime(req.pickup_at) : (
+            <span style={{ color: '#e74c3c' }} title="원문 수령일을 자동 해석하지 못함 — 검토·수정에서 직접 입력 필요">
+              날짜 해석 실패 (직접 입력 필요)
+            </span>
+          )}
         </Field>
         <Field label="기간">{req.duration_days ? `${req.duration_days}일` : '-'}</Field>
         <Field label="비용">{req.rental_fee != null ? `${req.rental_fee.toLocaleString()}원` : '-'}</Field>

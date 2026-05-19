@@ -9,7 +9,6 @@ import RouletteModal from './RouletteModal';
 import ReturnModal from './ReturnModal';
 import ReservationModal from './ReservationModal'; // [NEW] 예약 수령 모달
 import MurderMysteryTimerModal from './MurderMysteryTimerModal'; // [NEW] 머더 미스터리 타이머
-import KioskInstallNudge from './KioskInstallNudge';
 
 // [Constants]
 const IDLE_TIMEOUT_MS = 180000; // 3분 (번인 방지)
@@ -270,7 +269,6 @@ function KioskPage() {
 
     return (
         <div className="kiosk-container">
-            <KioskInstallNudge />
             {/* 상단바 */}
             <header style={{ padding: "20px", borderBottom: "1px solid #333", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>🎲 덜지니어스 키오스크</div>

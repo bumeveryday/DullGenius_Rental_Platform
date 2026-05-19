@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGameData } from '../contexts/GameDataContext';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 import InfoBar from '../components/InfoBar';
+import PoweredByBGG from '../components/PoweredByBGG';
 import Header from '../components/Header'; // [NEW] Header Component
 import LazyImage from '../components/common/LazyImage'; // [NEW] Lazy Image
 import { sendLog, fetchOfficeStatus, fetchOfficeHoursConfig } from '../api';
@@ -218,6 +219,10 @@ const Home = () => {
             {/* [5] 하단 정보 바 (InfoBar) - [MOVED TO FOOTER] */}
             <footer className="home-footer">
                 <InfoBar games={games} />
+                <div className="home-footer-bgg">
+                    <PoweredByBGG variant="light" height={26} />
+                    <span className="home-footer-bgg-caption">Game data from BoardGameGeek</span>
+                </div>
             </footer>
         </div>
     );
