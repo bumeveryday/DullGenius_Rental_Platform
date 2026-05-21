@@ -21,3 +21,15 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# PWA Service Worker는 항상 최신을 받아야 업데이트가 전파됨
+# (CDN/브라우저 캐시가 옛 sw.js를 잡고 있으면 새 빌드가 키오스크에 적용 안 됨)
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/registerSW.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

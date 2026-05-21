@@ -123,17 +123,34 @@ function KioskPage() {
         }
     }, [authLoading, user]);
 
+    // [Effect 1a] 새 SW 활성 시 자동 reload — 새벽 4시 reload로 SW가 갱신되면
+    // controllerchange가 발화하므로 한 번 더 reload해서 새 precache의 index.html을 받아옴
+    useEffect(() => {
+        if (!('serviceWorker' in navigator)) return;
+        let reloaded = false;
+        const onChange = () => {
+            if (reloaded) return;
+            reloaded = true;
+            window.location.reload();
+        };
+        navigator.serviceWorker.addEventListener('controllerchange', onChange);
+        return () => navigator.serviceWorker.removeEventListener('controllerchange', onChange);
+    }, []);
+
     // [Effect 1] 자동 새로고침 스케줄러
     useEffect(() => {
         // 새벽 4시 리프레시 체크 (1분마다)
-        const refreshInterval = setInterval(() => {
+        const refreshInterval = setInterval(async () => {
             const now = new Date();
             // Check if it's 4 AM AND user is idle to prevent interruption
             if (now.getHours() === REFRESH_HOUR && now.getMinutes() === 0) {
                 if (isIdleRef.current) {
+                    // 새 sw.js를 명시적으로 체크 — 있으면 install→activate→controllerchange 트리거
+                    try {
+                        const reg = await navigator.serviceWorker?.getRegistration();
+                        await reg?.update();
+                    } catch (_) { /* 네트워크 일시 오류는 무시, reload는 진행 */ }
                     window.location.reload();
-                } else {
-
                 }
             }
         }, 60000);
